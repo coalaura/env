@@ -35,3 +35,9 @@ if ! command -v xh >/dev/null 2>&1; then
     echo "Installing xh..."
     curl -sfL https://raw.githubusercontent.com/ducaale/xh/master/install.sh | sh
 fi
+
+# init xh
+if ! grep -q 'alias http' ~/.bashrc; then
+    echo "Adding xh alias..."
+    echo 'alias http="xh"' >> ~/.bashrc
+fi

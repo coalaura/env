@@ -43,6 +43,8 @@ init_coreutils()
 
 -- initialize other aliases
 os.setalias("grep", "rg $*")
+os.setalias("http", "xh $*")
+os.setalias("clear", "cls")
 
 -- load starship
 load(io.popen('starship init cmd'):read("*a"))()
