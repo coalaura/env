@@ -1,0 +1,26 @@
+# Colorize the input text
+clink.colorize_input = False
+
+# Selects default key bindings
+clink.default_bindings = bash
+
+# Pressing Ctrl-D exits session
+cmd.ctrld_exits = False
+
+# Enable command auto-answer
+cmd.auto_answer = True
+
+# The number of history lines to save
+history.max_lines = 50000
+
+# History item timestamps
+history.time_stamp = show
+
+# Expand envvars when completing
+match.expand_envvars = True
+
+# Try substring if no prefix matches
+match.substring = True
+
+# Hide the logo
+clink.logo = none

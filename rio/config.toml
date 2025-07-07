@@ -1,0 +1,75 @@
+theme = "catppuccin-macchiato"
+padding-x = 2
+confirm-before-quit = false
+
+[cursor]
+shape = "underline"
+blinking = false
+
+[editor]
+program = "code"
+
+[window]
+width = 1000
+height = 540
+mode = "windowed"
+windows-corner-preference = "RoundSmall"
+
+[title]
+content = "{{ TITLE || PROGRAM }}"
+placeholder = "rio"
+
+[renderer]
+performance = "high"
+backend = "automatic"
+target-fps = 30
+
+[fonts]
+size = 15
+use-drawable-chars = true
+
+[fonts.regular]
+family = "Comic Code"
+style = "Normal"
+width = "Normal"
+weight = 500
+
+[fonts.bold]
+family = "Comic Code"
+style = "Normal"
+width = "Normal"
+weight = 800
+
+[fonts.italic]
+family = "Comic Code"
+style = "Italic"
+width = "Normal"
+weight = 500
+
+[fonts.bold-italic]
+family = "Comic Code"
+style = "Italic"
+width = "Normal"
+weight = 800
+
+[scroll]
+multiplier = 3.0
+divider = 1.0
+
+[navigation]
+mode = "Plain"
+clickable = true
+hide-if-single = true
+use-current-path = true
+use-split = false
+
+[shell]
+program = "bash"
+
+[bindings]
+keys = [
+	{ key = "w", with = "super", action = "Quit" }
+]
+
+[platform]
+windows.shell.program = "cmd"
