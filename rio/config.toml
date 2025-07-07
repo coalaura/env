@@ -53,7 +53,7 @@ width = "Normal"
 weight = 800
 
 [scroll]
-multiplier = 3.0
+multiplier = 4.0
 divider = 1.0
 
 [navigation]

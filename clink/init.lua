@@ -1,3 +1,25 @@
+local function init_coreutils()
+    local pipe = io.popen("coreutils --list")
+
+    if not pipe then
+        print("\x1b[0;31mFailed to initialize coreutils!")
+
+        return
+    end
+
+    for line in pipe:lines() do
+        local cmd = line:match("^%s*(.-)%s*$")
+
+        if cmd ~= "" and cmd ~= nil then
+            if cmd ~= "coreutils" then
+                os.setalias(cmd, "coreutils " .. cmd .. " $*")
+            end
+        end
+    end
+
+    pipe:close()
+end
+
 function welcome_message()
     local handle = io.popen("hostname")
     local hostname = handle:read("*a")
@@ -13,8 +35,11 @@ function welcome_message()
     print("  \\(__)|\n")
 end
 
+-- initialize coreutils
+init_coreutils()
+
 -- starship path
-os.setenv("STARSHIP_CONFIG", "%USERPROFILE%\\.config\\starship.toml")
+os.setenv("STARSHIP_CONFIG", os.getenv("USERPROFILE") .. "\\.config\\starship.toml")
 
 -- load starship
 load(io.popen('starship init cmd'):read("*a"))()

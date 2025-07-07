@@ -16,3 +16,11 @@ if errorlevel 1 (
     echo Installing starship...
     winget install --id Starship.Starship
 )
+
+REM install coreutils
+where coreutils >nul 2>&1
+
+if errorlevel 1 (
+    echo Installing coreutils...
+    winget install uutils.coreutils
+)

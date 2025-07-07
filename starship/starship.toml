@@ -18,6 +18,7 @@ format = '[$user](blue)'
 format = '[\[](yellow)[$path](blue)[\]](yellow)'
 truncation_length = 3
 truncation_symbol = "…/"
+truncate_to_repo = false
 
 [git_branch]
 format = " [$branch](teal)"
