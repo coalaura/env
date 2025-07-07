@@ -24,3 +24,19 @@ if errorlevel 1 (
     echo Installing coreutils...
     winget install uutils.coreutils
 )
+
+REM install ripgrep
+where rg >nul 2>&1
+
+if errorlevel 1 (
+    echo Installing ripgrep...
+    winget install BurntSushi.ripgrep.MSVC
+)
+
+REM install xh
+where xh >nul 2>&1
+
+if errorlevel 1 (
+    echo Installing xh...
+    winget install ducaale.xh
+)

@@ -35,11 +35,14 @@ function welcome_message()
     print("  \\(__)|\n")
 end
 
+-- starship path
+os.setenv("STARSHIP_CONFIG", os.getenv("USERPROFILE") .. "\\.config\\starship.toml")
+
 -- initialize coreutils
 init_coreutils()
 
--- starship path
-os.setenv("STARSHIP_CONFIG", os.getenv("USERPROFILE") .. "\\.config\\starship.toml")
+-- initialize other aliases
+os.setalias("grep", "rg $*")
 
 -- load starship
 load(io.popen('starship init cmd'):read("*a"))()

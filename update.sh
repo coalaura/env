@@ -17,3 +17,21 @@ if ! grep -q 'starship init bash' ~/.bashrc; then
     echo "Adding starship init..."
     echo 'eval "$(starship init bash)"' >> ~/.bashrc
 fi
+
+# install ripgrep
+if ! command -v rg >/dev/null 2>&1; then
+    echo "Installing ripgrep..."
+    sudo apt-get install ripgrep
+fi
+
+# init ripgrep
+if ! grep -q 'alias grep' ~/.bashrc; then
+    echo "Adding ripgrep alias..."
+    echo 'alias grep="rg"' >> ~/.bashrc
+fi
+
+# install xh
+if ! command -v xh >/dev/null 2>&1; then
+    echo "Installing xh..."
+    curl -sfL https://raw.githubusercontent.com/ducaale/xh/master/install.sh | sh
+fi
