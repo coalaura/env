@@ -21,7 +21,7 @@ fi
 # install ripgrep
 if ! command -v rg >/dev/null 2>&1; then
     echo "Installing ripgrep..."
-    sudo apt-get install ripgrep
+    sudo apt-get install ripgrep -y
 fi
 
 # init ripgrep
@@ -40,4 +40,10 @@ fi
 if ! grep -q 'alias http' ~/.bashrc; then
     echo "Adding xh alias..."
     echo 'alias http="xh"' >> ~/.bashrc
+fi
+
+# install neofetch
+if ! command -v neofetch >/dev/null 2>&1; then
+    echo "Installing neofetch..."
+    sudo apt install neofetch -y
 fi

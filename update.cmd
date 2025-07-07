@@ -40,3 +40,11 @@ if errorlevel 1 (
     echo Installing xh...
     winget install ducaale.xh
 )
+
+REM install neofetch
+where neofetch >nul 2>&1
+
+if errorlevel 1 (
+    echo Installing neofetch...
+    winget install neofetch
+)
