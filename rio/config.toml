@@ -29,25 +29,25 @@ size = 15
 use-drawable-chars = true
 
 [fonts.regular]
-family = "Comic Code"
+family = "ComicCode Nerd Font"
 style = "Normal"
 width = "Normal"
 weight = 500
 
 [fonts.bold]
-family = "Comic Code"
+family = "ComicCode Nerd Font"
 style = "Normal"
 width = "Normal"
 weight = 800
 
 [fonts.italic]
-family = "Comic Code"
+family = "ComicCode Nerd Font"
 style = "Italic"
 width = "Normal"
 weight = 500
 
 [fonts.bold-italic]
-family = "Comic Code"
+family = "ComicCode Nerd Font"
 style = "Italic"
 width = "Normal"
 weight = 800
