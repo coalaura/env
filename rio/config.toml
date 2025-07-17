@@ -16,13 +16,14 @@ mode = "windowed"
 windows-corner-preference = "RoundSmall"
 
 [title]
-content = "{{ TITLE || PROGRAM }}"
+content = "rio"
 placeholder = "rio"
 
 [renderer]
 performance = "high"
-backend = "automatic"
+backend = "Automatic"
 target-fps = 30
+disable-occluded-render = true
 
 [fonts]
 size = 15
@@ -60,7 +61,7 @@ divider = 1.0
 mode = "Plain"
 clickable = true
 hide-if-single = true
-use-current-path = true
+current-working-directory = true
 use-split = false
 
 [shell]
@@ -68,7 +69,10 @@ program = "bash"
 
 [bindings]
 keys = [
-	{ key = "w", with = "super", action = "Quit" }
+	{ key = "v", with = "control", action = "none" },
+	{ key = "w", with = "control", action = "CloseTab" },
+	{ key = "q", with = "control", action = "Quit" },
+	{ key = "n", with = "control", action = "CreateWindow" }
 ]
 
 [platform]
