@@ -3,7 +3,7 @@ padding-x = 2
 confirm-before-quit = false
 
 [cursor]
-shape = "underline"
+shape = "block"
 blinking = false
 
 [editor]
@@ -14,6 +14,9 @@ width = 1000
 height = 540
 mode = "windowed"
 windows-corner-preference = "RoundSmall"
+opacity = 0.5
+decorations = "enabled"
+blur = true
 
 [title]
 content = "rio"
