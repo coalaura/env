@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # rio config
-cp -r rio ~/.config/rio
+mkdir -p ~/.config/rio/themes
+
+cp rio/config.toml ~/.config/rio/config.toml
+cp rio/themes/catppuccin-macchiato.toml ~/.config/rio/themes/catppuccin-macchiato.toml
 
 # starship config
 cp -r starship/starship.toml ~/.config/starship.toml
@@ -18,18 +21,6 @@ if ! grep -q 'starship init bash' ~/.bashrc; then
     echo 'eval "$(starship init bash)"' >> ~/.bashrc
 fi
 
-# install ripgrep
-if ! command -v rg >/dev/null 2>&1; then
-    echo "Installing ripgrep..."
-    sudo apt-get install ripgrep -y
-fi
-
-# init ripgrep
-if ! grep -q 'alias grep' ~/.bashrc; then
-    echo "Adding ripgrep alias..."
-    echo 'alias grep="rg"' >> ~/.bashrc
-fi
-
 # install xh
 if ! command -v xh >/dev/null 2>&1; then
     echo "Installing xh..."
@@ -42,8 +33,20 @@ if ! grep -q 'alias http' ~/.bashrc; then
     echo 'alias http="xh"' >> ~/.bashrc
 fi
 
+# install ripgrep
+if ! command -v rg >/dev/null 2>&1; then
+    echo "Installing ripgrep..."
+    sudo pacman -Sy ripgrep
+fi
+
+# init ripgrep
+if ! grep -q 'alias grep' ~/.bashrc; then
+    echo "Adding ripgrep alias..."
+    echo 'alias grep="rg"' >> ~/.bashrc
+fi
+
 # install neofetch
 if ! command -v neofetch >/dev/null 2>&1; then
     echo "Installing neofetch..."
-    sudo apt install neofetch -y
+    sudo pacman -Sy neofetch
 fi
