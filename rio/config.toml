@@ -31,6 +31,8 @@ disable-occluded-render = true
 [fonts]
 size = 15
 use-drawable-chars = true
+disable-warnings-not-found = true
+extras = [{ family = "Comic Code" }]
 
 [fonts.regular]
 family = "ComicCode Nerd Font"

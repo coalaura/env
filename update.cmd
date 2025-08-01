@@ -33,18 +33,4 @@ if errorlevel 1 (
     winget install BurntSushi.ripgrep.MSVC
 )
 
-REM install xh
-where xh >nul 2>&1
-
-if errorlevel 1 (
-    echo Installing xh...
-    winget install ducaale.xh
-)
-
-REM install neofetch
-where neofetch >nul 2>&1
-
-if errorlevel 1 (
-    echo Installing neofetch...
-    winget install neofetch
-)
+pause

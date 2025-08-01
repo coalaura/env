@@ -21,18 +21,6 @@ if ! grep -q 'starship init bash' ~/.bashrc; then
     echo 'eval "$(starship init bash)"' >> ~/.bashrc
 fi
 
-# install xh
-if ! command -v xh >/dev/null 2>&1; then
-    echo "Installing xh..."
-    curl -sfL https://raw.githubusercontent.com/ducaale/xh/master/install.sh | sh
-fi
-
-# init xh
-if ! grep -q 'alias http' ~/.bashrc; then
-    echo "Adding xh alias..."
-    echo 'alias http="xh"' >> ~/.bashrc
-fi
-
 # install ripgrep
 if ! command -v rg >/dev/null 2>&1; then
     echo "Installing ripgrep..."
@@ -43,10 +31,4 @@ fi
 if ! grep -q 'alias grep' ~/.bashrc; then
     echo "Adding ripgrep alias..."
     echo 'alias grep="rg"' >> ~/.bashrc
-fi
-
-# install neofetch
-if ! command -v neofetch >/dev/null 2>&1; then
-    echo "Installing neofetch..."
-    sudo pacman -Sy neofetch
 fi
