@@ -8,7 +8,7 @@ local function clean(str)
 	local index = string.find(full, home)
 
 	if index then
-		full = "~" .. full:sub(index + 1)
+		full = "~" .. full:sub(index + #home + 1)
 	end
 
     return full
