@@ -1,17 +1,11 @@
 -- helper functions
 
-local home = os.getenv("HOME")
+local home = os.getenv("USERPROFILE") or os.getenv("HOME") or ""
 
 local function clean(str)
     local full = os.getfullpathname(str) or path.normalize(str)
 
-    local from, to = string.find(full, home)
-
-    if from then
-        full = "~" .. full:sub(to + 1)
-    end
-
-    return full
+    return rl.collapsetilde(full)
 end
 
 local function logf(format, ...)
@@ -142,6 +136,17 @@ local function welcome_message()
     print(" (  /  )   " .. current_time)
     print("  \\(__)|\n")
 end
+
+-- replace ~ with home directory
+clink.onfilterinput(function(text)
+    local index = string.find(text, " ~")
+
+    if not index then
+        return
+    end
+
+    return text:sub(1, index) .. home .. text:sub(index + 2)
+end)
 
 -- starship path
 os.setenv("STARSHIP_CONFIG", os.getenv("USERPROFILE") .. "\\.config\\starship.toml")
