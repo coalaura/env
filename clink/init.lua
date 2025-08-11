@@ -141,7 +141,7 @@ end
 clink.onfilterinput(function(text)
     local index = string.find(text, " ~")
 
-    if not index then
+    if not index and index < 5 then
         return
     end
 
