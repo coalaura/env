@@ -1,17 +1,3 @@
--- helpers / utils
-
-local function exists(path)
-    local handle = io.open(path, "r")
-
-    if not handle then
-        return false
-    end
-
-    handle:close()
-
-    return true
-end
-
 -- custom commands
 
 local function push_command(args)
@@ -20,11 +6,11 @@ local function push_command(args)
     local target_dir = original_dir
 
     if #args > 0 then
-        target_dir = args[1]
+        target_dir = args
     end
 
-    if not exists(target_dir .. "\\.git") then
-        print("not a valid git repository")
+    if not os.isdir(target_dir .. "\\.git") then
+        print("error: not a valid git repository")
 
         return
     end
@@ -38,8 +24,37 @@ local function push_command(args)
     os.chdir(original_dir)
 end
 
-clink.register_command("push", push_command)
 clink.argmatcher("push"):addarg(clink.dirmatches)
+
+local commands = {
+    ["push"] = push_command
+}
+
+clink.onfilterinput(function(text)
+    if not text then
+        return
+    end
+
+    local command = text
+    local arguments = ""
+
+    local index = text:find(" ")
+
+    if index then
+        command = text:sub(1, index-1)
+        arguments = text:sub(index+1)
+    end
+
+    local func = commands[command]
+
+    if not func then
+        return
+    end
+
+    func(arguments)
+
+    return ""
+end)
 
 -- core functions
 
