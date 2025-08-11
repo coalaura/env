@@ -1,9 +1,17 @@
 -- helper functions
 
+local home = os.getenv("USERPROFILE") or os.getenv("HOME") or ""
+
 local function clean(str)
     local full = os.getfullpathname(str) or path.normalize(str)
 
-    return rl.collapsetilde(full)
+	local index = string.find(full, home)
+
+	if index then
+		full = "~" .. full:sub(index + 1)
+	end
+
+    return full
 end
 
 local function logf(format, ...)
