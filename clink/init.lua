@@ -1,4 +1,48 @@
+-- helper functions
+
+local home = os.getenv("HOME")
+
+local function clean(str)
+    local full = os.getfullpathname(str) or path.normalize(str)
+
+    local from, to = string.find(full, home)
+
+    if from then
+        full = "~" .. full:sub(to + 1)
+    end
+
+    return full
+end
+
+local function logf(format, ...)
+    print(string.format(format, ...))
+end
+
 -- custom commands
+
+local function pull_command(args)
+    local original_dir = os.getcwd()
+
+    local target_dir = original_dir
+
+    if #args > 0 then
+        target_dir = args
+    end
+
+    if not os.isdir(path.join(target_dir, ".git")) then
+        print("error: not a valid git repository")
+
+        return
+    end
+
+    logf("pulling: %s", clean(target_dir))
+
+    os.chdir(target_dir)
+
+    os.execute("git pull --rebase")
+
+    os.chdir(original_dir)
+end
 
 local function push_command(args)
     local original_dir = os.getcwd()
@@ -9,11 +53,13 @@ local function push_command(args)
         target_dir = args
     end
 
-    if not os.isdir(target_dir .. "\\.git") then
+    if not os.isdir(path.join(target_dir, ".git")) then
         print("error: not a valid git repository")
 
         return
     end
+
+    logf("pushing: %s", clean(target_dir))
 
     os.chdir(target_dir)
 
@@ -24,9 +70,11 @@ local function push_command(args)
     os.chdir(original_dir)
 end
 
+clink.argmatcher("pull"):addarg(clink.dirmatches)
 clink.argmatcher("push"):addarg(clink.dirmatches)
 
 local commands = {
+    ["pull"] = pull_command,
     ["push"] = push_command
 }
 
