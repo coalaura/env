@@ -59,6 +59,8 @@ init_coreutils()
 -- initialize other aliases
 os.setalias("grep", "rg $*")
 os.setalias("clear", "cls")
+os.setalias("ll", "ls -l $*")
+os.setalias("la", "ls -a $*")
 
 -- load starship
 load(io.popen('starship init cmd'):read("*a"))()
