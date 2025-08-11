@@ -1,3 +1,48 @@
+-- helpers / utils
+
+local function exists(path)
+    local handle = io.open(path, "r")
+
+    if not handle then
+        return false
+    end
+
+    handle:close()
+
+    return true
+end
+
+-- custom commands
+
+local function push_command(args)
+    local original_dir = os.getcwd()
+
+    local target_dir = original_dir
+
+    if #args > 0 then
+        target_dir = args[1]
+    end
+
+    if not exists(target_dir .. "\\.git") then
+        print("not a valid git repository")
+
+        return
+    end
+
+    os.chdir(target_dir)
+
+    os.execute("git add -A")
+    os.execute("git commit -am \"update\"")
+    os.execute("git push")
+
+    os.chdir(original_dir)
+end
+
+clink.register_command("push", push_command)
+clink.argmatcher("push"):addarg(clink.dirmatches)
+
+-- core functions
+
 local function init_coreutils()
     local pipe = io.popen("coreutils --list")
 
@@ -20,7 +65,7 @@ local function init_coreutils()
     pipe:close()
 end
 
-function welcome_message()
+local function welcome_message()
     local handle = io.popen("hostname")
     local hostname = handle:read("*a")
     handle:close()
@@ -43,7 +88,6 @@ init_coreutils()
 
 -- initialize other aliases
 os.setalias("grep", "rg $*")
-os.setalias("http", "xh $*")
 os.setalias("clear", "cls")
 
 -- load starship
