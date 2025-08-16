@@ -34,12 +34,11 @@ disabled = false
 
 [os.symbols]
 Windows = ""
-Void = ""
+Arch = "󰣇"
 Ubuntu = ''
 Debian = ''
 Kali = ''
 Linux = ''
-Pop = ''
 Macos = ''
 
 [palettes.catppuccin_macchiato]
