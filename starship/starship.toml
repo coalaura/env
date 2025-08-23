@@ -35,6 +35,7 @@ disabled = false
 [os.symbols]
 Windows = ""
 Arch = "󰣇"
+CachyOS = "󰣇"
 Ubuntu = ''
 Debian = ''
 Kali = ''
