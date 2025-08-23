@@ -21,4 +21,11 @@ if [ -f ~/biome.json ]; then
 	cp ~/biome.json biome/biome.json
 fi
 
+# .bashrc
+echo "Retrieving .bashrc..."
+
+if [ -f ~/.bashrc ]; then
+	cp ~/.bashrc bash/.bashrc
+fi
+
 echo "Done."

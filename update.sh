@@ -18,6 +18,13 @@ echo "Copying biome config..."
 
 cp biome/biome.json ~/biome.json
 
+# .bashrc
+echo "Copying .bashrc..."
+
+cp bash/.bashrc ~/.bashrc
+
+source ~/.bashrc
+
 # dependencies
 echo "Checking dependencies..."
 
@@ -27,22 +34,10 @@ if ! command -v starship >/dev/null 2>&1; then
     curl -sS https://starship.rs/install.sh | sh
 fi
 
-# init starship
-if ! grep -q 'starship init bash' ~/.bashrc; then
-    echo "Adding starship init..."
-    echo 'eval "$(starship init bash)"' >> ~/.bashrc
-fi
-
 # install ripgrep
 if ! command -v rg >/dev/null 2>&1; then
     echo "Installing ripgrep..."
     sudo pacman -Sy ripgrep
-fi
-
-# init ripgrep
-if ! grep -q 'alias grep' ~/.bashrc; then
-    echo "Adding ripgrep alias..."
-    echo 'alias grep="rg"' >> ~/.bashrc
 fi
 
 echo "Done."
