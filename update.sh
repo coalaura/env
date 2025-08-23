@@ -1,13 +1,25 @@
 #!/bin/bash
 
 # rio config
+echo "Copying rio config..."
+
 mkdir -p ~/.config/rio/themes
 
 cp rio/config.toml ~/.config/rio/config.toml
 cp rio/themes/catppuccin-macchiato.toml ~/.config/rio/themes/catppuccin-macchiato.toml
 
 # starship config
-cp -r starship/starship.toml ~/.config/starship.toml
+echo "Copying starship config..."
+
+cp starship/starship.toml ~/.config/starship.toml
+
+# biome config
+echo "Copying biome config..."
+
+cp biome/biome.json ~/biome.json
+
+# dependencies
+echo "Checking dependencies..."
 
 # install starship
 if ! command -v starship >/dev/null 2>&1; then
@@ -32,3 +44,5 @@ if ! grep -q 'alias grep' ~/.bashrc; then
     echo "Adding ripgrep alias..."
     echo 'alias grep="rg"' >> ~/.bashrc
 fi
+
+echo "Done."
