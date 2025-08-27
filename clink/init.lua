@@ -24,6 +24,25 @@ local function init_coreutils()
     pipe:close()
 end
 
+local function init_openssh()
+    os.execute("sc start ssh-agent >nul 2>&1")
+
+    local keys = {
+        home .. "\\.ssh\\keys\\github"
+    }
+
+    for _, key in ipairs(keys) do
+        local file = io.open(key, "r")
+
+        if file ~= nil then
+            file:close()
+
+            os.execute("ssh-add \"" .. key .. "\" >nul 2>&1")
+        end
+    end
+
+end
+
 local function welcome_message()
     local handle = io.popen("hostname")
     local hostname = handle:read("*a")
@@ -55,6 +74,9 @@ os.setenv("STARSHIP_CONFIG", os.getenv("USERPROFILE") .. "\\.config\\starship.to
 
 -- initialize coreutils
 init_coreutils()
+
+-- initialize openssh
+init_openssh()
 
 -- initialize other aliases
 os.setalias("grep", "rg $*")

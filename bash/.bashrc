@@ -130,5 +130,19 @@ export HISTFILESIZE=100000
 # path additions
 export PATH="$PATH:~/.bun/bin"
 
+# ensure github ssh key is loaded
+if [ -f ~/.ssh/keys/github ]; then
+	ssh-add ~/.ssh/keys/github
+fi
+
+# print welcome message
+local hostname=$(hostname | tr -d '[:space:]')
+local current_time=$(date +"%A, %d %b %Y, %I:%M %p")
+
+echo " \\    /\\ "
+echo "  )  ( ')  \033[0;32m${hostname}\033[0m"
+echo " (  /  )   ${current_time}"
+echo "  \\(__)|\n"
+
 # init starship
 eval "$(starship init bash)"
