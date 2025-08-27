@@ -139,10 +139,10 @@ fi
 local hostname=$(hostname | tr -d '[:space:]')
 local current_time=$(date +"%A, %d %b %Y, %I:%M %p")
 
-echo " \\    /\\ "
-echo "  )  ( ')  \033[0;32m${hostname}\033[0m"
-echo " (  /  )   ${current_time}"
-echo "  \\(__)|\n"
+printf " \\    /\\ \n"
+printf "  )  ( ')  \033[0;32m${hostname}\033[0m\n"
+printf " (  /  )   ${current_time}\n"
+printf "  \\(__)|\n\n"
 
 # init starship
 eval "$(starship init bash)"
