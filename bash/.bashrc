@@ -68,6 +68,8 @@ function push() {
 		return 0
 	fi
 
+	git -C $target status -sb
+
 	local msg=""
 
 	read -rp "message: " msg
@@ -124,8 +126,8 @@ function origin() {
 complete -d cd
 
 # various aliases
-alias ls='ls --color=auto'
 alias grep='grep --color=auto'
+alias ls='ls --color=auto'
 alias ll='ls -l'
 alias la='ls -la'
 alias ..='cd ..'

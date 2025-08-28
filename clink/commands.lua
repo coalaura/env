@@ -41,6 +41,8 @@ commands["push"] = function(args)
         return
     end
 
+    os.execute(string.format("git -C %s status -sb", target_dir))
+
     local msg = utils.read_line("message: ", "update")
 
     msg = utils.escape(msg)

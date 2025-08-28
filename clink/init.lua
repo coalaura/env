@@ -58,8 +58,13 @@ init_coreutils()
 init_openssh()
 
 -- initialize other aliases
-os.setalias("grep", "rg $*")
 os.setalias("clear", "cls")
+
+os.setalias("grep", "grep --color=auto $*")
+os.setalias("ls", "ls --color=auto $*")
+os.setalias("ll", "ls --color=auto -l $*")
+os.setalias("la", "ls --color=auto -la $*")
+os.setalias("..", "cd ..")
 
 -- print welcome message
 print(" \\    /\\ ")
