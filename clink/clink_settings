@@ -24,3 +24,6 @@ match.substring = True
 
 # Hide the logo
 clink.logo = none
+
+# Add package path
+lua.path = C:\Users\Laura\AppData\Local\clink\?.lua

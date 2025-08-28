@@ -4,20 +4,6 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# Show disk usage of current directory
-function usage() {
-    du -sh "${1:-.}" | sort -hr
-}
-
-# Find files/directories quickly
-function ff() {
-	find . -name "*$1*" -type f
-}
-
-function fd() {
-	find . -name "*$1*" -type d
-}
-
 # perform maintenance and updates
 function update() {
 	(
@@ -55,13 +41,15 @@ function update() {
 
 # pull a given repo
 function pull() {
-	local target="$1"
+	local target="${1:-.}"
 
-	if [ -n "$target" ]; then
-		(cd "$target" && git pull --rebase)
-	else
-		git pull --rebase
+	if [ ! -d "$target/.git" ]; then
+		echo "$target is not a git repository"
+
+		return 1
 	fi
+
+	git -C $target pull --rebase
 }
 
 # add, commit and push a given repo
@@ -69,22 +57,67 @@ function push() {
 	local target="${1:-.}"
 
 	if [ ! -d "$target/.git" ]; then
-		echo "$target is not a git repository."
+		printf "\033[33merror: $target is not a git repository\n"
 
 		return 1
 	fi
 
-	(
-		cd "$target" || return 1
-		git add -A
-		git commit -am "update"
-		git push
-	)
+	if git -C "$target" diff-index --quiet HEAD --; then
+		printf "\033[33merror: nothing to commit\n"
+
+		return 0
+	fi
+
+	local msg=""
+
+	read -rp "message: " msg
+
+	msg="$(echo "$msg" | xargs)"
+
+	if [[ -z "$msg" ]]; then
+		msg="update"
+	fi
+
+	git -C $target add -A
+	git -C $target commit -am "$msg"
+	git -C $target push
 }
 
-# Convert https to ssh git repo
+# convert https to ssh git repo
 function git-ssh() {
-	git remote set-url origin "$(git remote get-url origin | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#')"
+	local target="${1:-.}"
+
+	if [ ! -d "$target/.git" ]; then
+		printf "\033[33merror: $target is not a git repository\n"
+
+		return 1
+	fi
+
+	local url=$(git -C $target remote get-url origin)
+	local ssh=$(echo $url | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#'))
+
+	if [ $url -eq $ssh]; then
+		printf "\033[33merror: already an ssh remote\n"
+
+		return 1
+	fi
+
+	git -C $target remote set-url origin "$ssh"
+
+	printf "\033[32msuccess: set remote to $ssh\n"
+}
+
+# print git remote origin
+function origin() {
+	local target="${1:-.}"
+
+	if [ ! -d "$target/.git" ]; then
+		printf "\033[33merror: $target is not a git repository\n"
+
+		return 1
+	fi
+
+	echo "origin: $(git -C $target remote get-url origin)"
 }
 
 # Only show directories for cd completion
@@ -124,6 +157,7 @@ bind '"\e[B": history-search-forward'
 
 # Better history
 export HISTCONTROL=ignoreboth:erasedups
+export HISTIGNORE="ssh-add *:password *:secret *"
 export HISTSIZE=50000
 export HISTFILESIZE=100000
 
@@ -136,12 +170,9 @@ if [ -f ~/.ssh/keys/github ]; then
 fi
 
 # print welcome message
-local hostname=$(hostname | tr -d '[:space:]')
-local current_time=$(date +"%A, %d %b %Y, %I:%M %p")
-
 printf " \\    /\\ \n"
-printf "  )  ( ')  \033[0;32m${hostname}\033[0m\n"
-printf " (  /  )   ${current_time}\n"
+printf "  )  ( ')  \033[0;32m$(hostname | tr -d '[:space:]')\033[0m\n"
+printf " (  /  )   \033[0;35m$(date +"%A, %d %b %Y, %I:%M %p")\033[0m\n"
 printf "  \\(__)|\n\n"
 
 # init starship

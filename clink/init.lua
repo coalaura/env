@@ -1,4 +1,4 @@
-local home = os.getenv("USERPROFILE") or os.getenv("HOME") or ""
+local utils = require("utils")
 
 -- core functions
 
@@ -6,7 +6,7 @@ local function init_coreutils()
     local pipe = io.popen("coreutils --list")
 
     if not pipe then
-        print("\x1b[0;31mFailed to initialize coreutils!")
+        utils.errorf("failed to initialize coreutils")
 
         return
     end
@@ -14,10 +14,8 @@ local function init_coreutils()
     for line in pipe:lines() do
         local cmd = line:match("^%s*(.-)%s*$")
 
-        if cmd ~= "" and cmd ~= nil then
-            if cmd ~= "coreutils" then
-                os.setalias(cmd, "coreutils " .. cmd .. " $*")
-            end
+        if cmd and cmd ~= "" and cmd ~= "coreutils" then
+            os.setalias(cmd, string.format("coreutils %s $*", cmd))
         end
     end
 
@@ -28,34 +26,15 @@ local function init_openssh()
     os.execute("sc start ssh-agent >nul 2>&1")
 
     local keys = {
-        home .. "\\.ssh\\keys\\github"
+        path.join(utils.home(), ".ssh\\keys\\github")
     }
 
     for _, key in ipairs(keys) do
-        local file = io.open(key, "r")
-
-        if file ~= nil then
-            file:close()
-
-            os.execute("ssh-add \"" .. key .. "\" >nul 2>&1")
+        if utils.exists(key) then
+            os.execute(string.format("ssh-add \"%s\" >nul 2>&1", key))
         end
     end
 
-end
-
-local function welcome_message()
-    local handle = io.popen("hostname")
-    local hostname = handle:read("*a")
-    handle:close()
-
-    hostname = hostname:gsub("%s+", "")
-
-    local current_time = os.date("%A, %d %b %Y, %I:%M %p")
-
-    print(" \\    /\\ ")
-    print("  )  ( ')  \x1b[0;32m" .. hostname .. "\x1b[m")
-    print(" (  /  )   " .. current_time)
-    print("  \\(__)|\n")
 end
 
 -- replace ~ with home directory
@@ -66,11 +45,11 @@ clink.onfilterinput(function(text)
         return
     end
 
-    return text:sub(1, index) .. home .. text:sub(index + 2)
+    return text:sub(1, index) .. utils.home() .. text:sub(index + 2)
 end)
 
 -- starship path
-os.setenv("STARSHIP_CONFIG", os.getenv("USERPROFILE") .. "\\.config\\starship.toml")
+os.setenv("STARSHIP_CONFIG", path.join(utils.home(), ".config\\starship.toml"))
 
 -- initialize coreutils
 init_coreutils()
@@ -82,8 +61,11 @@ init_openssh()
 os.setalias("grep", "rg $*")
 os.setalias("clear", "cls")
 
--- load starship
-load(io.popen('starship init cmd'):read("*a"))()
+-- print welcome message
+print(" \\    /\\ ")
+print("  )  ( ')  \x1b[0;32m" .. utils.hostname() .. "\x1b[0m")
+print(" (  /  )   \x1b[0;35m" .. os.date("%A, %d %b %Y, %I:%M %p") .. "\x1b[0m")
+print("  \\(__)|\n")
 
--- welcome :)
-welcome_message()
+-- load starship
+load(io.popen("starship init cmd"):read("*a"))()

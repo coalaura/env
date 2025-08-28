@@ -1,80 +1,122 @@
--- helper functions
-
-local home = os.getenv("USERPROFILE") or os.getenv("HOME") or ""
-
-local function clean(str)
-    local full = os.getfullpathname(str) or path.normalize(str)
-
-	local index = string.find(full, home)
-
-	if index then
-		full = "~" .. full:sub(index + #home)
-	end
-
-    return full
-end
-
-local function logf(format, ...)
-    print(string.format(format, ...))
-end
+local utils = require("utils")
 
 -- custom commands
 
 local commands = {}
 
 commands["pull"] = function(args)
-    local original_dir = os.getcwd()
-
-    local target_dir = original_dir
+    local target_dir = os.getcwd()
 
     if #args > 0 then
         target_dir = args
     end
 
-    if not os.isdir(path.join(target_dir, ".git")) then
-        print("error: not a valid git repository")
+    if not utils.is_git(target_dir) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
 
         return
     end
 
-    logf("pulling: %s", clean(target_dir))
-
-    os.chdir(target_dir)
-
-    os.execute("git pull --rebase")
-
-    os.chdir(original_dir)
+    os.execute(string.format("git -C %s pull --rebase", target_dir))
 end
 
 clink.argmatcher("pull"):addarg(clink.dirmatches)
 
 commands["push"] = function(args)
-    local original_dir = os.getcwd()
-
-    local target_dir = original_dir
+    local target_dir = os.getcwd()
 
     if #args > 0 then
         target_dir = args
     end
 
-    if not os.isdir(path.join(target_dir, ".git")) then
-        print("error: not a valid git repository")
+    if not utils.is_git(target_dir) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
 
         return
     end
 
-    logf("pushing: %s", clean(target_dir))
+    if os.execute(string.format("git -C %s diff-index --quiet HEAD --", target_dir)) then
+        utils.errorf("nothing to commit")
 
-    os.chdir(target_dir)
+        return
+    end
 
-    os.execute("git add -A")
-    os.execute("git commit -am \"update\"")
-    os.execute("git push")
+    local msg = utils.read_line("message: ", "update")
 
-    os.chdir(original_dir)
+    msg = utils.escape(msg)
+
+    os.execute(string.format("git -C %s add -A", target_dir))
+    os.execute(string.format("git -C %s commit -am \"%s\"", target_dir, msg))
+    os.execute(string.format("git -C %s push", target_dir))
 end
 
 clink.argmatcher("push"):addarg(clink.dirmatches)
+
+commands["origin"] = function(args)
+    local target_dir = os.getcwd()
+
+    if #args > 0 then
+        target_dir = args
+    end
+
+    if not utils.is_git(target_dir) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
+
+        return
+    end
+
+    local url = utils.git_remote(target_dir)
+
+    if not url then
+        utils.errorf("failed to get remote")
+
+        return
+    end
+
+    utils.printf("origin: %s", url)
+end
+
+clink.argmatcher("origin"):addarg(clink.dirmatches)
+
+commands["git-ssh"] = function(args)
+    local target_dir = os.getcwd()
+
+    if #args > 0 then
+        target_dir = args
+    end
+
+    if not utils.is_git(target_dir) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
+
+        return
+    end
+
+    local url = utils.git_remote(target_dir)
+
+    if not url then
+        utils.errorf("failed to get remote")
+
+        return
+    end
+
+    if not url:match("%.git$") then
+        url = url .. ".git"
+    end
+
+    local ssh = url:gsub("^https://github.com/([^/]+)/(.+)%.git", "git@github.com:%1/%2.git")
+
+    if ssh == url then
+        utils.errorf("already an ssh remote")
+
+        return
+    end
+
+    os.execute(string.format("git -C %s remote set-url origin %s", target_dir, ssh))
+
+    utils.successf("set remote to %s", ssh)
+end
+
+clink.argmatcher("git-ssh"):addarg(clink.dirmatches)
 
 -- command handler
 
