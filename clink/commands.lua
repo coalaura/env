@@ -80,7 +80,7 @@ end
 
 clink.argmatcher("origin"):addarg(clink.dirmatches)
 
-commands["git-ssh"] = function(args)
+commands["git_ssh"] = function(args)
     local target_dir = os.getcwd()
 
     if #args > 0 then
@@ -118,7 +118,7 @@ commands["git-ssh"] = function(args)
     utils.successf("set remote to %s", ssh)
 end
 
-clink.argmatcher("git-ssh"):addarg(clink.dirmatches)
+clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
 -- command handler
 

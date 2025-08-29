@@ -1,3 +1,4 @@
+#!/bin/bash
 # ~/.bashrc
 # by coalaura
 
@@ -49,7 +50,7 @@ function pull() {
 		return 1
 	fi
 
-	git -C $target pull --rebase
+	git -C "$target" pull --rebase
 }
 
 # add, commit and push a given repo
@@ -57,7 +58,7 @@ function push() {
 	local target="${1:-.}"
 
 	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: $target is not a git repository\n"
+		printf "\033[33merror: %s is not a git repository\n" "$target"
 
 		return 1
 	fi
@@ -68,9 +69,9 @@ function push() {
 		return 0
 	fi
 
-	git -C $target status -sb
+	git -C "$target" status -sb
 
-	local msg=""
+	local msg
 
 	read -rp "message: " msg
 
@@ -80,33 +81,36 @@ function push() {
 		msg="update"
 	fi
 
-	git -C $target add -A
-	git -C $target commit -am "$msg"
-	git -C $target push
+	git -C "$target" add -A
+	git -C "$target" commit -am "$msg"
+	git -C "$target" push
 }
 
 # convert https to ssh git repo
-function git-ssh() {
+function git_ssh() {
 	local target="${1:-.}"
 
 	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: $target is not a git repository\n"
+		printf "\033[33merror: %s is not a git repository\n" "$target"
 
 		return 1
 	fi
 
-	local url=$(git -C $target remote get-url origin)
-	local ssh=$(echo $url | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#'))
+	local http
+	local ssh
 
-	if [ $url -eq $ssh]; then
+	http=$(git -C "$target" remote get-url origin)
+	ssh=$(echo "$http" | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#')
+
+	if [[ "$http" == "$ssh" ]]; then
 		printf "\033[33merror: already an ssh remote\n"
 
 		return 1
 	fi
 
-	git -C $target remote set-url origin "$ssh"
+	git -C "$target" remote set-url origin "$ssh"
 
-	printf "\033[32msuccess: set remote to $ssh\n"
+	printf "\033[32msuccess: set remote to %s\n" "$ssh"
 }
 
 # print git remote origin
@@ -114,12 +118,12 @@ function origin() {
 	local target="${1:-.}"
 
 	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: $target is not a git repository\n"
+		printf "\033[33merror: %s is not a git repository\n" "$target"
 
 		return 1
 	fi
 
-	echo "origin: $(git -C $target remote get-url origin)"
+	echo "origin: $(git -C "$target" remote get-url origin)"
 }
 
 # Only show directories for cd completion
@@ -166,15 +170,28 @@ export HISTFILESIZE=100000
 # path additions
 export PATH="$PATH:~/.bun/bin"
 
+# ensure ssh-agent is running
+if [ -f ~/.ssh/agent ]; then
+	source ~/.ssh/agent
+fi
+
+if ! ssh-add -l >/dev/null 2>&1; then
+	umask 077
+
+	ssh-agent -s | sed 's/^echo.*$//' > ~/.ssh/agent
+
+	source ~/.ssh/agent
+fi
+
 # ensure github ssh key is loaded
 if [ -f ~/.ssh/keys/github ]; then
-	ssh-add ~/.ssh/keys/github
+	ssh-add ~/.ssh/keys/github > /dev/null 2>&1
 fi
 
 # print welcome message
 printf " \\    /\\ \n"
-printf "  )  ( ')  \033[0;32m$(hostname | tr -d '[:space:]')\033[0m\n"
-printf " (  /  )   \033[0;35m$(date +"%A, %d %b %Y, %I:%M %p")\033[0m\n"
+printf "  )  ( ')  \033[0;32m%s\033[0m\n" "$(hostname | tr -d '[:space:]')"
+printf " (  /  )   \033[0;35m%s\033[0m\n" "$(date +"%A, %d %b %Y, %I:%M %p")"
 printf "  \\(__)|\n\n"
 
 # init starship

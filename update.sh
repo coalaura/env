@@ -23,8 +23,6 @@ echo "Copying .bashrc..."
 
 cp bash/.bashrc ~/.bashrc
 
-source ~/.bashrc
-
 # dependencies
 echo "Checking dependencies..."
 
