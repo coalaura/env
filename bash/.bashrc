@@ -86,6 +86,19 @@ function push() {
 	git -C "$target" push
 }
 
+# print git remote origin
+function origin() {
+	local target="${1:-.}"
+
+	if [ ! -d "$target/.git" ]; then
+		printf "\033[33merror: %s is not a git repository\n" "$target"
+
+		return 1
+	fi
+
+	echo "origin: $(git -C "$target" remote get-url origin)"
+}
+
 # convert https to ssh git repo
 function git_ssh() {
 	local target="${1:-.}"
@@ -113,17 +126,19 @@ function git_ssh() {
 	printf "\033[32msuccess: set remote to %s\n" "$ssh"
 }
 
-# print git remote origin
-function origin() {
+# go run a project
+function run() {
 	local target="${1:-.}"
 
-	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: %s is not a git repository\n" "$target"
+	if [ ! -f "$target/go.mod" ]; then
+		printf "\033[33merror: %s is not a go project\n" "$target"
 
 		return 1
 	fi
 
-	echo "origin: $(git -C "$target" remote get-url origin)"
+	cd "$target"
+
+	go run .
 }
 
 # Only show directories for cd completion

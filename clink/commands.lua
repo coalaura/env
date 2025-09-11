@@ -120,6 +120,26 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
+commands["run"] = function(args)
+    local target_dir = os.getcwd()
+
+    if #args > 0 then
+        target_dir = args
+    end
+
+    if not utils.is_go(target_dir) then
+        utils.errorf("%s is not a go project.", utils.clean_path(target_dir))
+
+        return
+    end
+
+    os.chdir(target_dir)
+
+    os.execute("go run .")
+end
+
+clink.argmatcher("run"):addarg(clink.dirmatches)
+
 -- command handler
 
 clink.onfilterinput(function(text)

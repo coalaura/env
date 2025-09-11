@@ -19,6 +19,10 @@ function _M.is_git(dir)
     return os.isdir(path.join(dir, ".git"))
 end
 
+function _M.is_go(dir)
+    return os.isfile(path.join(dir, "go.mod"))
+end
+
 function _M.git_remote(dir)
     local handle = io.popen(string.format("git -C %s remote get-url origin", dir))
 
