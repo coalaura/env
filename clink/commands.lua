@@ -133,9 +133,7 @@ commands["run"] = function(args)
         return
     end
 
-    os.chdir(target_dir)
-
-    os.execute("go run .")
+    return string.format("cd %s && go run .", target_dir)
 end
 
 clink.argmatcher("run"):addarg(clink.dirmatches)
@@ -163,7 +161,5 @@ clink.onfilterinput(function(text)
         return
     end
 
-    func(arguments)
-
-    return ""
+    return func(arguments) or ""
 end)
