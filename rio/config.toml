@@ -22,7 +22,7 @@ placeholder = "rio"
 
 [renderer]
 performance = "high"
-backend = "Automatic"
+backend = "GL"
 target-fps = 30
 disable-occluded-render = true
 
