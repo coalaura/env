@@ -23,8 +23,26 @@ function _M.is_go(dir)
     return os.isfile(path.join(dir, "go.mod"))
 end
 
+function _M.git_root(dir)
+    local handle = io.popen(string.format("git -C \"%s\" rev-parse --show-toplevel 2>nul", dir))
+
+    if not handle then
+        return dir
+    end
+
+    local target = handle:read("*l")
+
+    handle:close()
+
+    if not target or target == "" then
+        return dir
+    end
+
+    return target
+end
+
 function _M.git_remote(dir)
-    local handle = io.popen(string.format("git -C %s remote get-url origin", dir))
+    local handle = io.popen(string.format("git -C \"%s\" remote get-url origin 2>nul", dir))
 
     if not handle then
         return false
@@ -34,6 +52,10 @@ function _M.git_remote(dir)
 
     handle:close()
 
+    if not url or url == "" then
+        return false
+    end
+
     return url
 end
 
@@ -42,11 +64,11 @@ function _M.clean_path(path)
 end
 
 function _M.trim(str)
-    return str:gsub("^%s+", ""):gsub("%s+$", "")
+    return (str or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
 function _M.escape(str)
-    return str:gsub("\"", "\\\"")
+    return (str or ""):gsub('"', '\\"')
 end
 
 function _M.read_line(prompt, default)

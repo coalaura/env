@@ -4,70 +4,74 @@ local utils = require("utils")
 
 local commands = {}
 
+commands["git_root"] = function(args)
+    local target_dir = tostring(args or os.getcwd())
+
+    local root = utils.git_root(target_dir)
+
+    utils.printf("%s", root)
+end
+
+clink.argmatcher("git_root"):addarg(clink.dirmatches)
+
 commands["pull"] = function(args)
-    local target_dir = os.getcwd()
+    local target_dir = tostring(args or os.getcwd())
 
-    if #args > 0 then
-        target_dir = args
-    end
+    local root = utils.git_root(target_dir)
 
-    if not utils.is_git(target_dir) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
+    if not utils.is_git(root) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(root))
 
         return
     end
 
-    os.execute(string.format("git -C %s pull --rebase", target_dir))
+    os.execute(string.format("git -C \"%s\" pull --rebase", root))
 end
 
 clink.argmatcher("pull"):addarg(clink.dirmatches)
 
 commands["push"] = function(args)
-    local target_dir = os.getcwd()
+    local target_dir = tostring(args or os.getcwd())
 
-    if #args > 0 then
-        target_dir = args
-    end
+    local root = utils.git_root(target_dir)
 
-    if not utils.is_git(target_dir) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
+    if not utils.is_git(root) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(root))
 
         return
     end
 
-    if os.execute(string.format("git -C %s diff-index --quiet HEAD --", target_dir)) then
+    if os.execute(string.format("git -C \"%s\" diff-index --quiet HEAD --", root)) then
         utils.errorf("nothing to commit")
 
         return
     end
 
-    os.execute(string.format("git -C %s status -sb", target_dir))
+    os.execute(string.format("git -C %s status -sb", root))
 
     local msg = utils.read_line("message: ", "update")
 
     msg = utils.escape(msg)
 
-    os.execute(string.format("git -C %s add -A", target_dir))
-    os.execute(string.format("git -C %s commit -am \"%s\"", target_dir, msg))
-    os.execute(string.format("git -C %s push", target_dir))
+    os.execute(string.format("git -C \"%s\" add -A", root))
+    os.execute(string.format("git -C \"%s\" commit -am \"%s\"", root, msg))
+    os.execute(string.format("git -C \"%s\" push", root))
 end
 
 clink.argmatcher("push"):addarg(clink.dirmatches)
 
 commands["origin"] = function(args)
-    local target_dir = os.getcwd()
+    local target_dir = tostring(args or os.getcwd())
 
-    if #args > 0 then
-        target_dir = args
-    end
+    local root = utils.git_root(target_dir)
 
-    if not utils.is_git(target_dir) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
+    if not utils.is_git(root) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(root))
 
         return
     end
 
-    local url = utils.git_remote(target_dir)
+    local url = utils.git_remote(root)
 
     if not url then
         utils.errorf("failed to get remote")
@@ -81,19 +85,17 @@ end
 clink.argmatcher("origin"):addarg(clink.dirmatches)
 
 commands["git_ssh"] = function(args)
-    local target_dir = os.getcwd()
+    local target_dir = tostring(args or os.getcwd())
 
-    if #args > 0 then
-        target_dir = args
-    end
+    local root = utils.git_root(target_dir)
 
-    if not utils.is_git(target_dir) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(target_dir))
+    if not utils.is_git(root) then
+        utils.errorf("%s is not a git repository.", utils.clean_path(root))
 
         return
     end
 
-    local url = utils.git_remote(target_dir)
+    local url = utils.git_remote(root)
 
     if not url then
         utils.errorf("failed to get remote")
@@ -113,7 +115,7 @@ commands["git_ssh"] = function(args)
         return
     end
 
-    os.execute(string.format("git -C %s remote set-url origin %s", target_dir, ssh))
+    os.execute(string.format("git -C \"%s\" remote set-url origin \"%s\"", root, ssh))
 
     utils.successf("set remote to %s", ssh)
 end
@@ -121,11 +123,7 @@ end
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
 commands["run"] = function(args)
-    local target_dir = os.getcwd()
-
-    if #args > 0 then
-        target_dir = args
-    end
+    local target_dir = tostring(args or os.getcwd())
 
     if not utils.is_go(target_dir) then
         utils.errorf("%s is not a go project.", utils.clean_path(target_dir))
@@ -133,10 +131,48 @@ commands["run"] = function(args)
         return
     end
 
-    return string.format("cd %s && go run .", target_dir)
+    return string.format("go run \"%s\"", target_dir)
 end
 
 clink.argmatcher("run"):addarg(clink.dirmatches)
+
+commands["goup"] = function(args)
+    local target_dir = tostring(args or os.getcwd())
+
+    if not utils.is_go(target_dir) then
+        utils.errorf("%s is not a go project.", utils.clean_path(target_dir))
+
+        return
+    end
+
+    local gov = false
+
+    local handle = io.popen("go version")
+
+    if handle then
+        local version = handle:read("*l") or ""
+
+        handle:close()
+
+        gov = version:match("go([%d%.]+)") or ""
+    end
+
+    if gov == "" then
+        utils.errorf("failed to detect go version.")
+
+        return
+    end
+
+    os.execute(string.format("cmd /c \"(cd /d \"%s\" && go mod edit -go %s)\"", target_dir, gov))
+
+    utils.successf("set go version to %s", gov)
+
+    os.execute(string.format("cmd /c \"(cd /d \"%s\" && go get -u ./... && go mod tidy)\"", target_dir))
+
+    utils.successf("updated packages")
+end
+
+clink.argmatcher("goup"):addarg(clink.dirmatches)
 
 -- command handler
 
@@ -151,8 +187,14 @@ clink.onfilterinput(function(text)
     local index = text:find(" ")
 
     if index then
-        command = text:sub(1, index-1)
-        arguments = text:sub(index+1)
+        command = text:sub(1, index - 1)
+
+        arguments = text:sub(index + 1)
+        arguments = utils.trim(arguments)
+    end
+
+    if arguments == "" then
+        arguments = false
     end
 
     local func = commands[command]

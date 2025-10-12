@@ -5,36 +5,45 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
+# git root detector
+function git_root() {
+	local path="${1:-.}"
+
+	git -C "$path" rev-parse --show-toplevel 2>/dev/null || echo "$path"
+}
+
 # perform maintenance and updates
 function update() {
 	(
+		set -euo pipefail
+
 		function print_time() {
 			echo "[$(date '+%H:%M:%S')] - $1"
 		}
 
 		print_time "pacman -Syu"
-        sudo pacman -Syu --noconfirm > /dev/null
+		sudo pacman -Syu --noconfirm > /dev/null
 
 		print_time "paru -Syu"
 		paru -Syu --noconfirm > /dev/null
 
-        print_time "pacman -Sc"
-        sudo pacman -Sc --noconfirm > /dev/null
+		print_time "pacman -Sc"
+		sudo pacman -Sc --noconfirm > /dev/null
 
-        print_time "pacman -Rns $(pacman -Qtdq)"
-        readarray -t orphans < <(pacman -Qtdq 2>/dev/null)
+		print_time "pacman -Rns (orphans)"
+		readarray -t orphans < <(pacman -Qtdq 2>/dev/null)
 		if (( ${#orphans[@]} )); then
 			sudo pacman -Rns --noconfirm "${orphans[@]}" > /dev/null
 		fi
 
 		print_time "clean old logs"
-		sudo find /var/log -type f -name "*.log" -mtime +14 -delete > /dev/null
+		sudo find /var/log -type f -name "*.log" -mtime +14 -delete > /dev/null 2>&1 || true
 
-		print_time "clean olg /tmp"
-		sudo find /tmp -type f -atime +7 -delete > /dev/null
+		print_time "clean old /tmp"
+		sudo find /tmp -type f -atime +7 -delete > /dev/null 2>&1 || true
 
-		print_time "clean olg /var/tmp"
-		sudo find /var/tmp -type f -atime +7 -delete > /dev/null
+		print_time "clean old /var/tmp"
+		sudo find /var/tmp -type f -atime +7 -delete > /dev/null 2>&1 || true
 
 		print_time "completed"
 	)
@@ -42,103 +51,151 @@ function update() {
 
 # pull a given repo
 function pull() {
-	local target="${1:-.}"
+	(
+		set -euo pipefail
 
-	if [ ! -d "$target/.git" ]; then
-		echo "$target is not a git repository"
+		local target=$(git_root "${1:-.}")
 
-		return 1
-	fi
+		if [ ! -d "$target/.git" ]; then
+			echo "$target is not a git repository"
 
-	git -C "$target" pull --rebase
+			return 1
+		fi
+
+		git -C "$target" pull --rebase
+	)
 }
 
 # add, commit and push a given repo
 function push() {
-	local target="${1:-.}"
+	(
+		set -euo pipefail
 
-	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: %s is not a git repository\n" "$target"
+		local target=$(git_root "${1:-.}")
 
-		return 1
-	fi
+		if [ ! -d "$target/.git" ]; then
+			printf "\033[33merror: %s is not a git repository\n" "$target"
 
-	if git -C "$target" diff-index --quiet HEAD --; then
-		printf "\033[33merror: nothing to commit\n"
+			return 1
+		fi
 
-		return 0
-	fi
+		if git -C "$target" diff-index --quiet HEAD --; then
+			printf "\033[33merror: nothing to commit\n"
 
-	git -C "$target" status -sb
+			return 0
+		fi
 
-	local msg
+		git -C "$target" status -sb
 
-	read -rp "message: " msg
+		local msg
 
-	msg="$(echo "$msg" | xargs)"
+		read -rp "message: " msg
 
-	if [[ -z "$msg" ]]; then
-		msg="update"
-	fi
+		msg="$(echo "$msg" | xargs)"
 
-	git -C "$target" add -A
-	git -C "$target" commit -am "$msg"
-	git -C "$target" push
+		if [[ -z "$msg" ]]; then
+			msg="update"
+		fi
+
+		git -C "$target" add -A
+		git -C "$target" commit -m "$msg"
+		git -C "$target" push
+	)
 }
 
 # print git remote origin
 function origin() {
-	local target="${1:-.}"
+	(
+		set -euo pipefail
 
-	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: %s is not a git repository\n" "$target"
+		local target=$(git_root "${1:-.}")
 
-		return 1
-	fi
+		if [ ! -d "$target/.git" ]; then
+			printf "\033[33merror: %s is not a git repository\n" "$target"
 
-	echo "origin: $(git -C "$target" remote get-url origin)"
+			return 1
+		fi
+
+		local url=$(git -C "$target" remote get-url origin)
+
+		printf "\033[32morigin: %s\n" "$url"
+	)
 }
 
 # convert https to ssh git repo
 function git_ssh() {
-	local target="${1:-.}"
+	(
+		set -euo pipefail
 
-	if [ ! -d "$target/.git" ]; then
-		printf "\033[33merror: %s is not a git repository\n" "$target"
+		local target=$(git_root "${1:-.}")
 
-		return 1
-	fi
+		if [ ! -d "$target/.git" ]; then
+			printf "\033[33merror: %s is not a git repository\n" "$target"
 
-	local http
-	local ssh
+			return 1
+		fi
 
-	http=$(git -C "$target" remote get-url origin)
-	ssh=$(echo "$http" | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#')
+		local http=$(git -C "$target" remote get-url origin)
+		local ssh=$(echo "$http" | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#')
 
-	if [[ "$http" == "$ssh" ]]; then
-		printf "\033[33merror: already an ssh remote\n"
+		if [[ "$http" == "$ssh" ]]; then
+			printf "\033[33merror: already an ssh remote\n"
 
-		return 1
-	fi
+			return 1
+		fi
 
-	git -C "$target" remote set-url origin "$ssh"
+		git -C "$target" remote set-url origin "$ssh"
 
-	printf "\033[32msuccess: set remote to %s\n" "$ssh"
+		printf "\033[32msuccess: set remote to %s\n" "$ssh"
+	)
 }
 
 # go run a project
 function run() {
-	local target="${1:-.}"
+	(
+		set -euo pipefail
 
-	if [ ! -f "$target/go.mod" ]; then
-		printf "\033[33merror: %s is not a go project\n" "$target"
+		local target="${1:-.}"
 
-		return 1
-	fi
+		if [ ! -f "$target/go.mod" ]; then
+			printf "\033[33merror: %s is not a go project\n" "$target"
 
-	cd "$target"
+			return 1
+		fi
 
-	go run .
+		cd "$target"
+
+		go run .
+	)
+}
+
+# update a go project
+function goup() {
+	(
+		set -euo pipefail
+
+		local target="${1:-.}"
+
+		if [ ! -f "$target/go.mod" ]; then
+			printf "\033[33merror: %s is not a go project\n" "$target"
+
+			return 1
+		fi
+
+		cd "$target"
+
+		local gv=$(go version | awk '{print $3}' | sed 's/^go//')
+
+		go mod edit -go "$gv"
+
+		printf "\033[32msuccess: set go version to %s\n" "$gv"
+
+		go get -u ./...
+
+		go mod tidy
+
+		printf "\033[32msuccess: updated packages\n"
+	)
 }
 
 # Only show directories for cd completion
@@ -183,24 +240,24 @@ export HISTSIZE=50000
 export HISTFILESIZE=100000
 
 # path additions
-export PATH="$PATH:~/.bun/bin"
+export PATH="$PATH:$HOME/.bun/bin"
 
 # ensure ssh-agent is running
-if [ -f ~/.ssh/agent ]; then
-	source ~/.ssh/agent
+if [ -f "$HOME/.ssh/agent" ]; then
+	source "$HOME/.ssh/agent"
 fi
 
 if ! ssh-add -l >/dev/null 2>&1; then
 	umask 077
 
-	ssh-agent -s | sed 's/^echo.*$//' > ~/.ssh/agent
+	ssh-agent -s | sed 's/^echo.*$//' > "$HOME/.ssh/agent"
 
-	source ~/.ssh/agent
+	source "$HOME/.ssh/agent"
 fi
 
 # ensure github ssh key is loaded
-if [ -f ~/.ssh/keys/github ]; then
-	ssh-add ~/.ssh/keys/github > /dev/null 2>&1
+if [ -f "$HOME/.ssh/keys/github" ]; then
+	ssh-add "$HOME/.ssh/keys/github" > /dev/null 2>&1
 fi
 
 # print welcome message
