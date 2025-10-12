@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # rio config
 echo "Retrieving rio config..."
 

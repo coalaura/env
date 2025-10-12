@@ -1,5 +1,7 @@
 @echo off
 
+setlocal enabledelayedexpansion
+
 :: rio config
 echo Retrieving rio config...
 
@@ -31,6 +33,8 @@ if exist "%USERPROFILE%\biome.json" (
 )
 
 echo Done.
+
+endlocal
 
 if %0 == "%~0" (
     pause >nul
