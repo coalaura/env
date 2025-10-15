@@ -272,7 +272,6 @@ fi
 # sign pushes, commits and tags
 git config --global gpg.format ssh
 git config --global user.signingkey "$HOME/.ssh/keys/github"
-git config --global push.gpgSign true
 git config --global commit.gpgSign true
 git config --global tag.gpgSign true
 
