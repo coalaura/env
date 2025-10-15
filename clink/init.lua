@@ -67,10 +67,10 @@ os.setalias("la", "ls --color=auto -la $*")
 os.setalias("..", "cd ..")
 
 -- sign pushes, commits and tags
-os.execute("git config --global gpg.format ssh")
-os.execute(string.format("git config --global user.signingkey \"%s\"", path.join(utils.home(), ".ssh\\keys\\github")))
-os.execute("git config --global commit.gpgSign true")
-os.execute("git config --global tag.gpgSign true")
+os.execute("git.exe config --global gpg.format ssh")
+os.execute(string.format("git.exe config --global user.signingkey \"%s\"", path.join(utils.home(), ".ssh\\keys\\github")))
+os.execute("git.exe config --global commit.gpgSign true")
+os.execute("git.exe config --global tag.gpgSign true")
 
 -- print welcome message
 print(" \\    /\\ ")

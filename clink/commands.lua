@@ -19,13 +19,15 @@ commands["pull"] = function(args)
 
     local root = utils.git_root(target_dir)
 
-    if not utils.is_git(root) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(root))
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
 
         return
     end
 
-    os.execute(string.format("git -C \"%s\" pull --rebase", root))
+    os.execute(string.format("git.exe -C \"%s\" pull --rebase", root))
 end
 
 clink.argmatcher("pull"):addarg(clink.dirmatches)
@@ -35,27 +37,29 @@ commands["push"] = function(args)
 
     local root = utils.git_root(target_dir)
 
-    if not utils.is_git(root) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(root))
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
 
         return
     end
 
-    if os.execute(string.format("git -C \"%s\" diff-index --quiet HEAD --", root)) then
+    if os.execute(string.format("git.exe -C \"%s\" diff-index --quiet HEAD --", root)) then
         utils.errorf("nothing to commit")
 
         return
     end
 
-    os.execute(string.format("git -C %s status -sb", root))
+    os.execute(string.format("git.exe -C %s status -sb", root))
 
     local msg = utils.read_line("message: ", "update")
 
     msg = utils.escape(msg)
 
-    os.execute(string.format("git -C \"%s\" add -A", root))
-    os.execute(string.format("git -C \"%s\" commit -am \"%s\"", root, msg))
-    os.execute(string.format("git -C \"%s\" push", root))
+    os.execute(string.format("git.exe -C \"%s\" add -A", root))
+    os.execute(string.format("git.exe -C \"%s\" commit -am \"%s\"", root, msg))
+    os.execute(string.format("git.exe -C \"%s\" push", root))
 end
 
 clink.argmatcher("push"):addarg(clink.dirmatches)
@@ -65,8 +69,10 @@ commands["origin"] = function(args)
 
     local root = utils.git_root(target_dir)
 
-    if not utils.is_git(root) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(root))
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
 
         return
     end
@@ -89,8 +95,10 @@ commands["git_ssh"] = function(args)
 
     local root = utils.git_root(target_dir)
 
-    if not utils.is_git(root) then
-        utils.errorf("%s is not a git repository.", utils.clean_path(root))
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
 
         return
     end
@@ -115,7 +123,7 @@ commands["git_ssh"] = function(args)
         return
     end
 
-    os.execute(string.format("git -C \"%s\" remote set-url origin \"%s\"", root, ssh))
+    os.execute(string.format("git.exe -C \"%s\" remote set-url origin \"%s\"", root, ssh))
 
     utils.successf("set remote to %s", ssh)
 end

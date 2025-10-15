@@ -16,7 +16,27 @@ function _M.exists(path)
 end
 
 function _M.is_git(dir)
-    return os.isdir(path.join(dir, ".git"))
+    local git_dir = path.join(dir, ".git")
+
+    if not os.isdir(git_dir) then
+        return false, "not a git repository"
+    end
+
+    local handle = io.popen(string.format("cmd /c git.exe -C \"%s\" status -s 1>nul 2>&1", dir))
+
+    if not handle then
+        return false, "failed to run git"
+    end
+
+    local out = handle:read("*a") or ""
+
+    if not handle:close() then
+        local msg = out:match("fatal:.-\r?\n") or out:match("fatal:.*$")
+
+        return false, _M.trim(msg or "git error")
+    end
+
+    return true, false
 end
 
 function _M.is_go(dir)
@@ -24,7 +44,7 @@ function _M.is_go(dir)
 end
 
 function _M.git_root(dir)
-    local handle = io.popen(string.format("git -C \"%s\" rev-parse --show-toplevel 2>nul", dir))
+    local handle = io.popen(string.format("git.exe -C \"%s\" rev-parse --show-toplevel 2>nul", dir))
 
     if not handle then
         return dir
@@ -42,7 +62,7 @@ function _M.git_root(dir)
 end
 
 function _M.git_remote(dir)
-    local handle = io.popen(string.format("git -C \"%s\" remote get-url origin 2>nul", dir))
+    local handle = io.popen(string.format("git.exe -C \"%s\" remote get-url origin 2>nul", dir))
 
     if not handle then
         return false
