@@ -182,8 +182,10 @@ end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
 
-commands["bio"] = function(args)
-    os.execute("biome check --write --reporter=summary --no-errors-on-unmatched")
+commands["bio"] = function()
+    local config = path.join(utils.home(), "biome.json")
+
+    os.execute(string.format("biome check --write --reporter=summary --no-errors-on-unmatched --config-path=\"%s\"", config))
 
     utils.successf("ran biome check")
 end

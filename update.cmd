@@ -46,6 +46,7 @@ if not exist "%USERPROFILE%\.bin" (
 echo "Copying biome config..."
 
 copy "biome\biome.json" "%USERPROFILE%\biome.json"
+copy "biome\biome.json" "D:\biome.json"
 
 :: dependencies
 echo Checking dependencies...

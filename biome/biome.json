@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
 	"formatter": {
 		"enabled": true,
 		"lineWidth": 180,
@@ -14,11 +14,27 @@
 			"**/*.cjs",
 			"**/*.jsx",
 			"**/*.ts",
-			"**/*.tsx"
+			"**/*.tsx",
+			"**/*.json",
+			"**/*.css",
+			"**/*.scss",
+			"**/*.pcss"
 		]
 	},
 	"linter": {
 		"enabled": true,
+		"includes": [
+			"**/*.js",
+			"**/*.mjs",
+			"**/*.cjs",
+			"**/*.jsx",
+			"**/*.ts",
+			"**/*.tsx",
+			"**/*.json",
+			"**/*.css",
+			"**/*.scss",
+			"**/*.pcss"
+		],
 		"rules": {
 			"style": {
 				"useSingleVarDeclarator": "off",
@@ -37,7 +53,8 @@
 			"complexity": {
 				"useLiteralKeys": "off",
 				"noForEach": "off",
-				"noStaticOnlyClass": "off"
+				"noStaticOnlyClass": "off",
+				"noImportantStyles": "info"
 			},
 			"performance": {
 				"noDelete": "info"
@@ -75,14 +92,6 @@
 		}
 	},
 	"assist": {
-		"includes": [
-			"**/*.js",
-			"**/*.mjs",
-			"**/*.cjs",
-			"**/*.jsx",
-			"**/*.ts",
-			"**/*.tsx"
-		],
 		"actions": {
 			"source": {
 				"organizeImports": "on",
