@@ -36,6 +36,9 @@ function update() {
 			sudo pacman -Rns --noconfirm "${orphans[@]}" > /dev/null
 		fi
 
+		print_time "remove old package caches"
+		sudo paccache -rk2 -ruk0 >/dev/null 2>&1 || true
+
 		print_time "clean old logs"
 		sudo find /var/log -type f -name "*.log" -mtime +14 -delete > /dev/null 2>&1 || true
 
@@ -198,8 +201,10 @@ function goup() {
 	)
 }
 
-# Only show directories for cd completion
+# Only show directories for certain completions
 complete -d cd
+
+complete -o dirnames -A directory pull push git_ssh origin run goup
 
 # various aliases
 alias grep='grep --color=auto'
@@ -224,10 +229,14 @@ shopt -s histappend
 shopt -s cmdhist
 
 # Better completion
+bind 'TAB:menu-complete'
+
 bind 'set completion-ignore-case on'
 bind 'set show-all-if-ambiguous on'
 bind 'set colored-stats on'
 bind 'set colored-completion-prefix on'
+bind 'set menu-complete-display-prefix on'
+bind 'set mark-symlinked-directories on'
 
 # History search with arrow keys
 bind '"\e[A": history-search-backward'
@@ -259,6 +268,13 @@ fi
 if [ -f "$HOME/.ssh/keys/github" ]; then
 	ssh-add "$HOME/.ssh/keys/github" > /dev/null 2>&1
 fi
+
+# sign pushes, commits and tags
+git config --global gpg.format ssh
+git config --global user.signingkey "$HOME/.ssh/keys/github"
+git config --global push.gpgSign true
+git config --global commit.gpgSign true
+git config --global tag.gpgSign true
 
 # print welcome message
 printf " \\    /\\ \n"
