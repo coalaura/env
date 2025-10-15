@@ -201,6 +201,15 @@ function goup() {
 	)
 }
 
+# run biome check
+function bio() {
+	(
+		set -euo pipefail
+
+		biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="~/biome.json"
+	)
+}
+
 # Only show directories for certain completions
 complete -d cd
 

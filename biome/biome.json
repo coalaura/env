@@ -1,40 +1,33 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
+	"files": {
+		"includes": [
+			"**/*.js",
+			"**/*.mjs",
+			"**/*.cjs",
+			"**/*.jsx",
+			"**/*.ts",
+			"**/*.tsx",
+			"**/*.css",
+			"**/*.scss",
+			"**/*.pcss",
+
+			"!**/lib",
+			"!**/*.min.js",
+      		"!**/*.min.css"
+		]
+	},
 	"formatter": {
 		"enabled": true,
 		"lineWidth": 180,
 		"indentStyle": "tab",
 		"indentWidth": 4,
 		"lineEnding": "lf",
-		"expand": "never",
-		"formatWithErrors": true,
-		"includes": [
-			"**/*.js",
-			"**/*.mjs",
-			"**/*.cjs",
-			"**/*.jsx",
-			"**/*.ts",
-			"**/*.tsx",
-			"**/*.json",
-			"**/*.css",
-			"**/*.scss",
-			"**/*.pcss"
-		]
+		"expand": "auto",
+		"formatWithErrors": true
 	},
 	"linter": {
 		"enabled": true,
-		"includes": [
-			"**/*.js",
-			"**/*.mjs",
-			"**/*.cjs",
-			"**/*.jsx",
-			"**/*.ts",
-			"**/*.tsx",
-			"**/*.json",
-			"**/*.css",
-			"**/*.scss",
-			"**/*.pcss"
-		],
 		"rules": {
 			"style": {
 				"useSingleVarDeclarator": "off",
@@ -60,7 +53,8 @@
 				"noDelete": "info"
 			},
 			"correctness": {
-				"noPrecisionLoss": "off"
+				"noPrecisionLoss": "off",
+				"noInnerDeclarations": "off"
 			}
 		}
 	},
@@ -94,8 +88,7 @@
 	"assist": {
 		"actions": {
 			"source": {
-				"organizeImports": "on",
-				"useSortedProperties": "on"
+				"organizeImports": "on"
 			}
 		}
 	}
