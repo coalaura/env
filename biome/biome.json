@@ -46,10 +46,20 @@
 		}
 	},
 	"javascript": {
-		"globals": [ "$", "_" ],
+		"globals": [
+			"$",
+			"_"
+		],
 		"formatter": {
 			"trailingCommas": "es5",
 			"arrowParentheses": "asNeeded"
+		}
+	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
 		}
 	}
 }
