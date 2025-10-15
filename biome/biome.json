@@ -5,6 +5,8 @@
 		"lineWidth": 180,
 		"indentStyle": "tab",
 		"indentWidth": 4,
+		"lineEnding": "lf",
+		"expand": "never",
 		"formatWithErrors": true,
 		"includes": [
 			"**/*.js",
@@ -55,10 +57,36 @@
 			"arrowParentheses": "asNeeded"
 		}
 	},
+	"json": {
+		"parser": {
+			"allowComments": false,
+			"allowTrailingCommas": false
+		}
+	},
+	"css": {
+		"formatter": {
+			"enabled": true
+		}
+	},
+	"html": {
+		"formatter": {
+			"enabled": true,
+			"selfCloseVoidElements": "always"
+		}
+	},
 	"assist": {
+		"includes": [
+			"**/*.js",
+			"**/*.mjs",
+			"**/*.cjs",
+			"**/*.jsx",
+			"**/*.ts",
+			"**/*.tsx"
+		],
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": "on",
+				"useSortedProperties": "on"
 			}
 		}
 	}
