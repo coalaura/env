@@ -143,11 +143,9 @@ commands["run"] = function(args)
         return
     end
 
-    local normalized = path.normalise(target_dir)
+    utils.printf("running %s", utils.clean_path(target_dir))
 
-    utils.printf("running %s", utils.clean_path(normalized))
-
-    return string.format("go run -C %s .", utils.escape_path(normalized))
+    return string.format("go run -C %s .", utils.escape_path(target_dir))
 end
 
 clink.argmatcher("run"):addarg(clink.dirmatches)

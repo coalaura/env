@@ -60,10 +60,12 @@ function pull() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			echo "$target is not a git repository"
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
 
 			return 1
 		fi
+
+		printf "\033[37mpulling %s\033[0m\n" "$target"
 
 		git -C "$target" pull --rebase
 	)
@@ -77,13 +79,15 @@ function push() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\n" "$target"
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		if git -C "$target" diff-index --quiet HEAD --; then
-			printf "\033[33merror: nothing to commit\n"
+		printf "\033[37mchecking %s\033[0m\n" "$target"
+
+		if git -C "$target" diff-index --quiet HEAD -- 2>/dev/null; then
+			printf "\033[33merror: nothing to commit\033[0m\n"
 
 			return 0
 		fi
@@ -100,6 +104,8 @@ function push() {
 			msg="update"
 		fi
 
+		printf "\033[37mpushing %s\033[0m\n" "$target"
+
 		git -C "$target" add -A
 		git -C "$target" commit -m "$msg"
 		git -C "$target" push
@@ -114,14 +120,20 @@ function origin() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\n" "$target"
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		local url=$(git -C "$target" remote get-url origin)
+		local url=$(git -C "$target" remote get-url origin 2>/dev/null)
 
-		printf "\033[32morigin: %s\n" "$url"
+		if [[ -z "$url" ]]; then
+			printf "\033[33merror: failed to get remote\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[37morigin: %s\033[0m\n" "$url"
 	)
 }
 
@@ -133,23 +145,34 @@ function git_ssh() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\n" "$target"
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		local http=$(git -C "$target" remote get-url origin)
-		local ssh=$(echo "$http" | sed -E 's#https://github.com/([^/]+)/([^\.]+)(\.git)?#git@github.com:\1/\2.git#')
+		local http=$(git -C "$target" remote get-url origin 2>/dev/null)
+
+		if [[ -z "$http" ]]; then
+			printf "\033[33merror: failed to get remote\033[0m\n"
+
+			return 1
+		fi
+
+		if [[ ! "$http" =~ \.git$ ]]; then
+			http="${http}.git"
+		fi
+
+		local ssh=$(echo "$http" | sed -E 's#^https://github\.com/([^/]+)/(.+)\.git#git@github.com:\1/\2.git#')
 
 		if [[ "$http" == "$ssh" ]]; then
-			printf "\033[33merror: already an ssh remote\n"
+			printf "\033[33merror: already an ssh remote\033[0m\n"
 
 			return 1
 		fi
 
 		git -C "$target" remote set-url origin "$ssh"
 
-		printf "\033[32msuccess: set remote to %s\n" "$ssh"
+		printf "\033[32msuccess: set remote to %s\033[0m\n" "$ssh"
 	)
 }
 
@@ -160,15 +183,17 @@ function run() {
 
 		local target="${1:-.}"
 
+		target=$(realpath "$target")
+
 		if [ ! -f "$target/go.mod" ]; then
-			printf "\033[33merror: %s is not a go project\n" "$target"
+			printf "\033[33merror: %s is not a go project\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		cd "$target"
+		printf "\033[37mrunning %s\033[0m\n" "$target"
 
-		go run .
+		go run -C "$target" .
 	)
 }
 
@@ -179,25 +204,25 @@ function goup() {
 
 		local target="${1:-.}"
 
+		target=$(realpath "$target")
+
 		if [ ! -f "$target/go.mod" ]; then
-			printf "\033[33merror: %s is not a go project\n" "$target"
+			printf "\033[33merror: %s is not a go project\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		cd "$target"
-
 		local gv=$(go version | awk '{print $3}' | sed 's/^go//')
 
-		go mod edit -go "$gv"
+		go -C "$target" mod edit -go "$gv"
 
 		printf "\033[32msuccess: set go version to %s\n" "$gv"
 
-		go get -u ./...
+		go -C "$target" get -u ./...
 
-		go mod tidy
+		go -C "$target" mod tidy
 
-		printf "\033[32msuccess: updated packages\n"
+		printf "\033[32msuccess: updated packages\033[0m\n"
 	)
 }
 
@@ -206,7 +231,7 @@ function bio() {
 	(
 		set -euo pipefail
 
-		biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="~/biome.json"
+		biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
 	)
 }
 

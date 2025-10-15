@@ -75,8 +75,10 @@ function _M.git_remote(dir)
     return url ~= "" and url or false
 end
 
-function _M.clean_path(p)
-    return rl.collapsetilde(p, true)
+function _M.clean_path(pt)
+    pt = path.normalise(pt)
+
+    return rl.collapsetilde(pt, true)
 end
 
 function _M.trim(str)
