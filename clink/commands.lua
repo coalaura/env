@@ -182,6 +182,14 @@ end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
 
+commands["bio"] = function(args)
+    os.execute("biome check --write --reporter=summary --no-errors-on-unmatched")
+
+    utils.successf("ran biome check")
+end
+
+clink.argmatcher("bio"):addarg(clink.dirmatches)
+
 -- command handler
 
 clink.onfilterinput(function(text)
