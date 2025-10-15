@@ -22,7 +22,7 @@ function _M.is_git(dir)
         return false, "not a git repository"
     end
 
-    local handle = io.popen(string.format("cmd /c git.exe -C \"%s\" status -s 1>nul 2>&1", dir))
+    local handle = io.popen(string.format("cmd /c git.exe -C \"%s\" status -s 1>nul 2>&1", git_dir))
 
     if not handle then
         return false, "failed to run git"
