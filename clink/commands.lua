@@ -1,21 +1,19 @@
 local utils = require("utils")
 
--- custom commands
-
 local commands = {}
 
 commands["git_root"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     local root = utils.git_root(target_dir)
 
-    utils.printf("%s", root)
+    utils.printf("%s", utils.clean_path(root))
 end
 
 clink.argmatcher("git_root"):addarg(clink.dirmatches)
 
 commands["pull"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     local root = utils.git_root(target_dir)
 
@@ -27,13 +25,15 @@ commands["pull"] = function(args)
         return
     end
 
-    os.execute(string.format("git.exe -C \"%s\" pull --rebase", root))
+    utils.printf("pulling %s", utils.clean_path(root))
+
+    return string.format("git.exe -C %s pull --rebase", utils.escape_path(root))
 end
 
 clink.argmatcher("pull"):addarg(clink.dirmatches)
 
 commands["push"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     local root = utils.git_root(target_dir)
 
@@ -45,27 +45,31 @@ commands["push"] = function(args)
         return
     end
 
-    if os.execute(string.format("git.exe -C \"%s\" diff-index --quiet HEAD --", root)) then
+    local escaped_root = utils.escape_path(root)
+
+    utils.printf("checking %s", utils.clean_path(root))
+
+    if os.execute(string.format("git.exe -C %s diff-index --quiet HEAD -- 2>nul", escaped_root)) then
         utils.errorf("nothing to commit")
 
         return
     end
 
-    os.execute(string.format("git.exe -C %s status -sb", root))
+    os.execute(string.format("git.exe -C %s status -sb", escaped_root))
 
     local msg = utils.read_line("message: ", "update")
 
-    msg = utils.escape(msg)
+    utils.printf("pushing %s", utils.clean_path(root))
 
-    os.execute(string.format("git.exe -C \"%s\" add -A", root))
-    os.execute(string.format("git.exe -C \"%s\" commit -am \"%s\"", root, msg))
-    os.execute(string.format("git.exe -C \"%s\" push", root))
+    os.execute(string.format("git.exe -C %s add -A", escaped_root))
+    os.execute(string.format("git.exe -C %s commit -am \"%s\"", escaped_root, utils.escape_input(msg)))
+    os.execute(string.format("git.exe -C %s push", escaped_root))
 end
 
 clink.argmatcher("push"):addarg(clink.dirmatches)
 
 commands["origin"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     local root = utils.git_root(target_dir)
 
@@ -91,7 +95,7 @@ end
 clink.argmatcher("origin"):addarg(clink.dirmatches)
 
 commands["git_ssh"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     local root = utils.git_root(target_dir)
 
@@ -115,7 +119,7 @@ commands["git_ssh"] = function(args)
         url = url .. ".git"
     end
 
-    local ssh = url:gsub("^https://github.com/([^/]+)/(.+)%.git", "git@github.com:%1/%2.git")
+    local ssh = url:gsub("^https://github%.com/([^/]+)/(.+)%.git", "git@github.com:%1/%2.git")
 
     if ssh == url then
         utils.errorf("already an ssh remote")
@@ -123,7 +127,7 @@ commands["git_ssh"] = function(args)
         return
     end
 
-    os.execute(string.format("git.exe -C \"%s\" remote set-url origin \"%s\"", root, ssh))
+    os.execute(string.format("git.exe -C %s remote set-url origin \"%s\"", utils.escape_path(root), ssh))
 
     utils.successf("set remote to %s", ssh)
 end
@@ -131,7 +135,7 @@ end
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
 commands["run"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     if not utils.is_go(target_dir) then
         utils.errorf("%s is not a go project.", utils.clean_path(target_dir))
@@ -139,13 +143,17 @@ commands["run"] = function(args)
         return
     end
 
-    return string.format("go run \"%s\"", target_dir)
+    local normalized = path.normalise(target_dir)
+
+    utils.printf("running %s", utils.clean_path(normalized))
+
+    return string.format("go run -C %s .", utils.escape_path(normalized))
 end
 
 clink.argmatcher("run"):addarg(clink.dirmatches)
 
 commands["goup"] = function(args)
-    local target_dir = tostring(args or os.getcwd())
+    local target_dir = args or os.getcwd()
 
     if not utils.is_go(target_dir) then
         utils.errorf("%s is not a go project.", utils.clean_path(target_dir))
@@ -153,29 +161,34 @@ commands["goup"] = function(args)
         return
     end
 
-    local gov = false
+    local handle = io.popen("go version 2>nul")
 
-    local handle = io.popen("go version")
-
-    if handle then
-        local version = handle:read("*l") or ""
-
-        handle:close()
-
-        gov = version:match("go([%d%.]+)") or ""
-    end
-
-    if gov == "" then
+    if not handle then
         utils.errorf("failed to detect go version.")
 
         return
     end
 
-    os.execute(string.format("cmd /c \"(cd /d \"%s\" && go mod edit -go %s)\"", target_dir, gov))
+    local version_line = handle:read("*l") or ""
+
+    handle:close()
+
+    local gov = version_line:match("go([%d%.]+)")
+
+    if not gov then
+        utils.errorf("failed to detect go version.")
+
+        return
+    end
+
+    local escaped_dir = utils.escape_path(target_dir)
+
+    os.execute(string.format("go -C %s mod edit -go %s", escaped_dir, gov))
 
     utils.successf("set go version to %s", gov)
 
-    os.execute(string.format("cmd /c \"(cd /d \"%s\" && go get -u ./... && go mod tidy)\"", target_dir))
+    os.execute(string.format("go -C %s get -u ./...", escaped_dir))
+    os.execute(string.format("go -C %s mod tidy", escaped_dir))
 
     utils.successf("updated packages")
 end
@@ -185,32 +198,27 @@ clink.argmatcher("goup"):addarg(clink.dirmatches)
 commands["bio"] = function()
     local config = path.join(utils.home(), "biome.json")
 
-    return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=\"%s\"", config)
+    return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
 end
 
 clink.argmatcher("bio"):addarg(clink.dirmatches)
 
--- command handler
-
+-- Command handler
 clink.onfilterinput(function(text)
     if not text then
         return
     end
 
-    local command = text
-    local arguments = ""
+    local command, arguments = text:match("^(%S+)%s*(.*)$")
 
-    local index = text:find(" ")
-
-    if index then
-        command = text:sub(1, index - 1)
-
-        arguments = text:sub(index + 1)
-        arguments = utils.trim(arguments)
+    if not command then
+        return
     end
 
+    arguments = utils.trim(arguments)
+
     if arguments == "" then
-        arguments = false
+        arguments = nil
     end
 
     local func = commands[command]

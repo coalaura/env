@@ -19,10 +19,10 @@ function _M.is_git(dir)
     local git_dir = path.join(dir, ".git")
 
     if not os.isdir(git_dir) then
-        return false, "not a git repository"
+        return false, string.format("%s is not a git repository", _M.clean_path(dir))
     end
 
-    local handle = io.popen(string.format("cmd /c git.exe -C \"%s\" status -s 1>nul 2>&1", git_dir))
+    local handle = io.popen(string.format("git.exe -C %s status -s 2>&1", _M.escape_path(dir)))
 
     if not handle then
         return false, "failed to run git"
@@ -31,12 +31,12 @@ function _M.is_git(dir)
     local out = handle:read("*a") or ""
 
     if not handle:close() then
-        local msg = out:match("fatal:.-\r?\n") or out:match("fatal:.*$")
+        local msg = out:match("fatal: [^\r\n]+")
 
-        return false, _M.trim(msg or "git error")
+        return false, msg or "git error"
     end
 
-    return true, false
+    return true
 end
 
 function _M.is_go(dir)
@@ -44,7 +44,7 @@ function _M.is_go(dir)
 end
 
 function _M.git_root(dir)
-    local handle = io.popen(string.format("git.exe -C \"%s\" rev-parse --show-toplevel 2>nul", dir))
+    local handle = io.popen(string.format("git.exe -C %s rev-parse --show-toplevel 2>nul", _M.escape_path(dir)))
 
     if not handle then
         return dir
@@ -62,7 +62,7 @@ function _M.git_root(dir)
 end
 
 function _M.git_remote(dir)
-    local handle = io.popen(string.format("git.exe -C \"%s\" remote get-url origin 2>nul", dir))
+    local handle = io.popen(string.format("git.exe -C %s remote get-url origin 2>nul", _M.escape_path(dir)))
 
     if not handle then
         return false
@@ -72,36 +72,43 @@ function _M.git_remote(dir)
 
     handle:close()
 
-    if not url or url == "" then
-        return false
-    end
-
-    return url
+    return url ~= "" and url or false
 end
 
-function _M.clean_path(path)
-    return rl.collapsetilde(path, true)
+function _M.clean_path(p)
+    return rl.collapsetilde(p, true)
 end
 
 function _M.trim(str)
     return (str or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
-function _M.escape(str)
-    return (str or ""):gsub('"', '\\"')
+function _M.escape_path(pt)
+    pt = path.normalise(pt)
+
+    pt = pt:gsub("[/\\]+$", "")
+    pt = pt:gsub("\"", "\"\"")
+
+    return string.format("\"%s\"", pt)
+end
+
+function _M.escape_input(str)
+    if not str then
+        return ""
+    end
+
+    str = str:gsub('"', '""')
+
+    return str
 end
 
 function _M.read_line(prompt, default)
     io.write(prompt)
     io.flush()
 
-    local msg = _M.trim(io.read("*l") or "")
+    local input = _M.trim(io.read("*l") or "")
 
-    if msg == "" then
-        return default
-    end
-
-    return msg
+    return input ~= "" and input or default
 end
 
 function _M.printf(format, ...)

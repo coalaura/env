@@ -31,7 +31,7 @@ local function init_openssh()
 
     for _, key in ipairs(keys) do
         if utils.exists(key) then
-            os.execute(string.format("ssh-add \"%s\" >nul 2>&1", key))
+            os.execute(string.format("ssh-add %s >nul 2>&1", utils.escape_path(key)))
         end
     end
 
@@ -67,8 +67,10 @@ os.setalias("la", "ls --color=auto -la $*")
 os.setalias("..", "cd ..")
 
 -- sign pushes, commits and tags
+local key_file = path.join(utils.home(), ".ssh\\keys\\github")
+
 os.execute("git.exe config --global gpg.format ssh")
-os.execute(string.format("git.exe config --global user.signingkey \"%s\"", path.join(utils.home(), ".ssh\\keys\\github")))
+os.execute(string.format("git.exe config --global user.signingkey %s", utils.escape_path(key_file)))
 os.execute("git.exe config --global commit.gpgSign true")
 os.execute("git.exe config --global tag.gpgSign true")
 
