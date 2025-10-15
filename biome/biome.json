@@ -13,8 +13,11 @@
 			"**/*.pcss",
 
 			"!**/lib",
+			"!**/dist",
+			"!**/build",
+			"!**/*.bundle.js",
 			"!**/*.min.js",
-      		"!**/*.min.css"
+			"!**/*.min.css"
 		]
 	},
 	"formatter": {
