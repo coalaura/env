@@ -52,11 +52,11 @@ fi
 	# get latest version
 	echo "Checking latest biome version..."
 
-	B_LATEST="$(curl -s -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/biomejs/biome/releases/latest" | awk -F'"' '/"tag_name":/ {print $4; exit}')"
-	B_LATEST="${B_LATEST#@biomejs/biome@}"
+	B_URL="$(curl -fsSL -o /dev/null -w '%{url_effective}' 'https://github.com/biomejs/biome/releases/latest')"
+	B_LATEST="${B_URL##*@}"
 
-	if [[ -z "$B_LATEST" ]]; then
-		echo "Unable to retrieve latest biome version." >&2
+	if [[ -z "$B_LATEST" || ! "$B_LATEST" =~ ^[0-9]+(\.[0-9]+){1,2}(-[0-9A-Za-z.-]+)?$ ]]; then
+		echo "Unable to retrieve latest biome version."
 
 		exit 0
 	fi
@@ -73,7 +73,13 @@ fi
 		echo "Installing biome ${B_LATEST}..."
 	fi
 
-	sudo curl -Ls "https://github.com/biomejs/biome/releases/download/@biomejs/biome@$B_NEW/biome-linux-x64" -o /usr/local/bin/biome
+	if pgrep -x biome >/dev/null 2>&1; then
+		echo "Biome is currently running, skipping download..."
+
+		exit 0
+	fi
+
+	sudo curl -fsSL "https://github.com/biomejs/biome/releases/download/@biomejs/biome@$B_LATEST/biome-linux-x64" -o /usr/local/bin/biome
 	sudo chmod +x /usr/local/bin/biome
 )
 
