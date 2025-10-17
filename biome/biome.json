@@ -87,5 +87,12 @@
 			"enabled": true,
 			"selfCloseVoidElements": "always"
 		}
+	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "off"
+			}
+		}
 	}
 }
