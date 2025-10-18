@@ -44,7 +44,8 @@
 				"noControlCharactersInRegex": "off",
 				"noAssignInExpressions": "info",
 				"noAsyncPromiseExecutor": "off",
-				"noApproximativeNumericConstant": "off"
+				"noApproximativeNumericConstant": "off",
+				"noSparseArray": "warn"
 			},
 			"complexity": {
 				"useLiteralKeys": "off",
