@@ -10,14 +10,14 @@ blinking = false
 program = "code"
 
 [window]
-width = 1000
-height = 540
+width = 1100
+height = 620
 mode = "windowed"
 windows-corner-preference = "RoundSmall"
 decorations = "enabled"
 
 [title]
-content = "rio"
+content = "{{ title || program }}"
 placeholder = "rio"
 
 [renderer]
