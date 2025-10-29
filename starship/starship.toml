@@ -4,7 +4,7 @@ add_newline = false
 palette = "catppuccin_macchiato"
 
 format = """$os $username@$directory $character"""
-right_format = """$git_branch $git_metrics"""
+right_format = ""
 
 [character]
 success_symbol = "[❯❯](bold green)"
@@ -21,13 +21,10 @@ truncation_symbol = "…/"
 truncate_to_repo = false
 
 [git_branch]
-format = " [$branch](teal)"
+disabled = true
 
 [git_metrics]
-disabled = false
-added_style = "bold green"
-deleted_style = "bold red"
-format = '\[[+$added]($added_style)/[-$deleted]($deleted_style)\]'
+disabled = true
 
 [os]
 disabled = false
