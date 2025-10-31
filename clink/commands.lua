@@ -2,7 +2,6 @@ local utils = require("utils")
 
 local commands = {}
 
---
 commands["git_root"] = function(args)
     local target_dir = args or os.getcwd()
 
