@@ -228,20 +228,17 @@ function goup() {
 
 # run biome check
 function bio() {
-	(
-		set -euo pipefail
-
-		biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
-	)
+	biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
 }
 
 # download and run vencord installer
 function vencord() {
-	(
-		set -euo pipefail
+	sh -c "$(curl -sS https://vencord.dev/install.sh)"
+}
 
-		sh -c "$(curl -sS https://vencord.dev/install.sh)"
-	)
+# trigger terminal bell
+function beep() {
+	printf '\a'
 }
 
 # Only show directories for certain completions

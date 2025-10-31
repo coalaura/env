@@ -238,6 +238,11 @@ commands["vencord"] = function()
     os.remove(out)
 end
 
+-- trigger terminal bell
+commands["beep"] = function()
+    print("\7")
+end
+
 -- Command handler
 clink.onfilterinput(function(text)
     if not text then
