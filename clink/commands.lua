@@ -2,6 +2,7 @@ local utils = require("utils")
 
 local commands = {}
 
+--
 commands["git_root"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -12,6 +13,7 @@ end
 
 clink.argmatcher("git_root"):addarg(clink.dirmatches)
 
+-- pull a given repo
 commands["pull"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -32,6 +34,7 @@ end
 
 clink.argmatcher("pull"):addarg(clink.dirmatches)
 
+-- add, commit and push a given repo
 commands["push"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -68,6 +71,7 @@ end
 
 clink.argmatcher("push"):addarg(clink.dirmatches)
 
+-- print git remote origin
 commands["origin"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -94,6 +98,7 @@ end
 
 clink.argmatcher("origin"):addarg(clink.dirmatches)
 
+-- convert https to ssh git repo
 commands["git_ssh"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -134,6 +139,7 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
+-- go run a project
 commands["run"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -150,6 +156,7 @@ end
 
 clink.argmatcher("run"):addarg(clink.dirmatches)
 
+-- update a go project
 commands["goup"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -193,6 +200,7 @@ end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
 
+-- run biome check
 commands["bio"] = function()
     local config = path.join(utils.home(), "biome.json")
 
@@ -200,6 +208,36 @@ commands["bio"] = function()
 end
 
 clink.argmatcher("bio"):addarg(clink.dirmatches)
+
+-- download and run vencord installer
+commands["vencord"] = function()
+    local tmp = os.getenv("TMP") or os.getenv("TEMP") or utils.home()
+
+    local out = path.join(tmp, "VencordInstallerCli.exe")
+
+    os.remove(out)
+
+    utils.printf("downloading installer")
+
+    local ok = os.execute(string.format(
+        "curl -L -f --silent --show-error -o %s \"https://github.com/Vencord/Installer/releases/latest/download/VencordInstallerCli.exe\" 2>nul",
+        utils.escape_path(out)
+    ))
+
+    if not ok then
+        utils.errorf("failed to download installer")
+
+        os.remove(out)
+
+        return
+    end
+
+    utils.printf("running installer")
+
+    os.execute(utils.escape_path(out))
+
+    os.remove(out)
+end
 
 -- Command handler
 clink.onfilterinput(function(text)

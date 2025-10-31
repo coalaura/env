@@ -235,6 +235,15 @@ function bio() {
 	)
 }
 
+# download and run vencord installer
+function vencord() {
+	(
+		set -euo pipefail
+
+		sh -c "$(curl -sS https://vencord.dev/install.sh)"
+	)
+}
+
 # Only show directories for certain completions
 complete -d cd
 
