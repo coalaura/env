@@ -40,4 +40,16 @@ if ! command -v rg >/dev/null 2>&1; then
 	sudo pacman -Sy ripgrep
 fi
 
+# install bun
+if ! command -v bun >/dev/null 2>&1; then
+	echo "Installing bun..."
+	curl -fsSL https://bun.com/install | bash
+fi
+
+# install biome
+if ! command -v biome >/dev/null 2>&1; then
+	echo "Installing biome..."
+	sudo curl -fsSL "https://github.com/biomejs/biome/releases/latest/download/biome-linux-x64" -o /usr/local/bin/biome
+fi
+
 echo "Done."

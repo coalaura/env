@@ -55,7 +55,7 @@ echo Checking dependencies...
 :: install starship
 where starship >nul 2>&1
 
-if errorlevel 1 (
+if not %errorlevel%==0 (
     echo Installing starship...
     winget install --id Starship.Starship
 )
@@ -63,7 +63,7 @@ if errorlevel 1 (
 :: install coreutils
 where coreutils >nul 2>&1
 
-if errorlevel 1 (
+if not %errorlevel%==0 (
     echo Installing coreutils...
     winget install uutils.coreutils
 )
@@ -71,9 +71,25 @@ if errorlevel 1 (
 :: install ripgrep
 where rg >nul 2>&1
 
-if errorlevel 1 (
+if not %errorlevel%==0 (
     echo Installing ripgrep...
     winget install BurntSushi.ripgrep.MSVC
+)
+
+:: install bun
+where bun >nul 2>&1
+
+if not %errorlevel%==0 (
+    echo Installing bun...
+    powershell -c "irm bun.sh/install.ps1|iex"
+)
+
+:: install biome
+where biome >nul 2>&1
+
+if not %errorlevel%==0 (
+    echo Installing biome...
+    curl -Ls https://github.com/biomejs/biome/releases/latest/download/biome-win32-x64.exe -o "%USERPROFILE%\.bin\biome.exe"
 )
 
 endlocal

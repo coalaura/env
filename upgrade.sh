@@ -2,14 +2,30 @@
 
 set -euo pipefail
 
+# update bun
+(
+	if ! command -v bun >/dev/null 2>&1; then
+		echo Bun is not installed, skipping...
+
+		exit 0
+	fi
+
+	echo "Updating bun..."
+
+	bun upgrade
+)
+
 # install/update biome
 (
-	# get current version
-	B_CURR=""
 
-	if command -v biome >/dev/null 2>&1; then
-		B_CURR="$(biome version | awk '/^CLI:/ {print $2}')"
+	if ! command -v biome >/dev/null 2>&1; then
+		echo Biome is not installed, skipping...
+
+		exit 0
 	fi
+
+	# get current version
+	B_CURR="$(biome version | awk '/^CLI:/ {print $2}')"
 
 	# get latest version
 	echo "Checking latest biome version..."
@@ -29,11 +45,7 @@ set -euo pipefail
 		exit 0
 	fi
 
-	if [[ -n "$B_CURR" ]]; then
-		echo "Updating biome from ${B_CURR} to ${B_LATEST}..."
-	else
-		echo "Installing biome ${B_LATEST}..."
-	fi
+	echo "Updating biome from ${B_CURR} to ${B_LATEST}..."
 
 	if pgrep -x biome >/dev/null 2>&1; then
 		echo "Biome is currently running, skipping download..."

@@ -2,14 +2,33 @@
 
 setlocal enabledelayedexpansion
 
-:: install/update biome
+:: update bun
+where bun >nul 2>&1
+
+if not %errorlevel%==0 (
+	echo Bun is not installed, skipping...
+
+	goto :BUN_DONE
+)
+
+echo Updating bun...
+
+bun upgrade
+
+:BUN_DONE
+
+:: update biome
 where biome >nul 2>&1
 
+if not %errorlevel%==0 (
+	echo Biome is not installed, skipping...
+
+	goto :BIOME_DONE
+)
+
 :: get current version
-if %errorlevel%==0 (
-    for /f "tokens=2" %%A in ('biome version ^| findstr /b "CLI:"') do (
-        set B_CURR=%%A
-    )
+for /f "tokens=2" %%A in ('biome version ^| findstr /b "CLI:"') do (
+	set B_CURR=%%A
 )
 
 :: get latest version
@@ -35,11 +54,7 @@ if /i "%B_CURR%"=="%B_NEW%" (
     goto :BIOME_DONE
 )
 
-if defined B_CURR (
-    echo Updating biome from %B_CURR% to %B_NEW%...
-) else (
-    echo Installing biome %B_NEW%...
-)
+echo Updating biome from %B_CURR% to %B_NEW%...
 
 curl -Ls https://github.com/biomejs/biome/releases/download/@biomejs/biome@%B_NEW%/biome-win32-x64.exe -o "%USERPROFILE%\.bin\biome.exe" >nul
 
