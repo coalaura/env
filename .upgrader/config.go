@@ -13,7 +13,7 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallGo,
 		},
 
-		// Biome JS
+		// Biome
 		{
 			Repository: "biomejs/biome",
 			Prefix:     "@biomejs/biome@",

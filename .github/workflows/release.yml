@@ -48,3 +48,30 @@ jobs:
           name: upgrader_${{ matrix.goos }}
           path: build/*
           if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./public
+      - name: Flatten artifacts
+        run: |
+          shopt -s globstar nullglob
+          mkdir -p site
+          cp public/**/upgrader_linux site/ || true
+          cp public/**/upgrader_windows.exe site/ || true
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
