@@ -245,7 +245,7 @@ commands["build"] = function(args)
     utils.errorf("%s is not a recognized project")
 end
 
-clink.argmatcher("build"):addarg(clink.dirmatches)
+clink.argmatcher("build"):addarg(clink.dirmatches):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
 
 -- update a go project
 commands["goup"] = function(args)

@@ -329,6 +329,28 @@ function build() (
 	)
 )
 
+__build_complete() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+
+    COMPREPLY=()
+
+    if (( COMP_CWORD == 1 )); then
+        compopt -o dirnames
+
+        COMPREPLY=( $(compgen -d -- "$cur") )
+
+        return 0
+    fi
+
+    local -a os_tokens=(win windows lin linux dar darwin)
+
+    local t
+
+    for t in "${os_tokens[@]}"; do
+        [[ $t == "$cur"* ]] && COMPREPLY+=( "$t" )
+    done
+}
+
 # update a go project
 function goup() {
 	(
@@ -376,7 +398,8 @@ function beep() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push git_ssh origin run build goup
+complete -o dirnames -A directory pull push git_ssh origin run goup
+complete -F __build_complete build
 
 # various aliases
 alias grep='grep --color=auto'
