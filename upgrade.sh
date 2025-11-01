@@ -2,58 +2,34 @@
 
 set -euo pipefail
 
-# update bun
+# update pacman packages
 (
-	if ! command -v bun >/dev/null 2>&1; then
-		echo Bun is not installed, skipping...
+	echo "Updating starship/ripgrep..."
 
-		exit 0
-	fi
-
-	echo "Updating bun..."
-
-	bun upgrade
+	sudo pacman -Sy starship ripgrep
 )
 
-# update biome
+# run upgrader
 (
-	if ! command -v biome >/dev/null 2>&1; then
-		echo Biome is not installed, skipping...
+	echo "Loading upgrader..."
 
-		exit 0
+	curl -fsSL -o /tmp/env_upgrader_linux "https://coalaura.github.io/env/upgrader_linux"
+
+	if [ ! -s "/tmp/env_upgrader_linux" ] || [ "$(stat -c%s "/tmp/env_upgrader_linux")" -lt 256 ]; then
+		echo "Failed to download upgrader" >&2
+
+		rm -f "/tmp/env_upgrader_linux"
+
+		exit 1
 	fi
 
-	# get current version
-	B_CURR="$(biome version | awk '/^CLI:/ {print $2}')"
+	echo "Running upgrader..."
 
-	# get latest version
-	echo "Checking latest biome version..."
+	chmod +x /tmp/env_upgrader_linux
 
-	B_URL="$(curl -fsSL -o /dev/null -w '%{url_effective}' 'https://github.com/biomejs/biome/releases/latest')"
-	B_LATEST="${B_URL##*@}"
+	/tmp/env_upgrader_linux
 
-	if [[ -z "$B_LATEST" || ! "$B_LATEST" =~ ^[0-9]+(\.[0-9]+){1,2}(-[0-9A-Za-z.-]+)?$ ]]; then
-		echo "Unable to retrieve latest biome version."
-
-		exit 0
-	fi
-
-	if [[ "$B_CURR" == "$B_LATEST" ]]; then
-		echo "Biome ${B_CURR} is up to date."
-
-		exit 0
-	fi
-
-	echo "Updating biome from ${B_CURR} to ${B_LATEST}..."
-
-	if pgrep -x biome >/dev/null 2>&1; then
-		echo "Biome is currently running, skipping download..."
-
-		exit 0
-	fi
-
-	sudo curl -fsSL "https://github.com/biomejs/biome/releases/download/@biomejs/biome@$B_LATEST/biome-linux-x64" -o /usr/local/bin/biome
-	sudo chmod +x /usr/local/bin/biome
+	rm -f /tmp/env_upgrader_linux
 )
 
 echo "Done."
