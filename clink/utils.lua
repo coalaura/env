@@ -128,7 +128,7 @@ function _M.basename(pt)
     pt = path.normalise(pt)
 
     pt = pt:gsub("[/\\]+$", "")
-    pt = pt:gsub("\"", "\"\"")
+    pt = pt:gsub("[^%w/\\-]+", "")
 
     local base = path.getbasename(pt)
 
