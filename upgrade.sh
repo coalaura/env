@@ -15,9 +15,8 @@ set -euo pipefail
 	bun upgrade
 )
 
-# install/update biome
+# update biome
 (
-
 	if ! command -v biome >/dev/null 2>&1; then
 		echo Biome is not installed, skipping...
 
