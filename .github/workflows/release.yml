@@ -1,0 +1,52 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".upgrader/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [windows, linux]
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ".upgrader/go.mod"
+
+      - name: Build ${{ matrix.goos }}
+        shell: bash
+        run: |
+          mkdir -p build
+          [[ "${{ matrix.goos }}" == "windows" ]] && EXT=".exe" || EXT=""
+
+          cd .upgrader
+
+          OUT="../build/upgrader_${{ matrix.goos }}${EXT}"
+
+          GOOS=${{ matrix.goos }} \
+          GOARCH=amd64 \
+          CGO_ENABLED=0 \
+          go build \
+            -trimpath \
+            -buildvcs=false \
+            -o "$OUT" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: upgrader_${{ matrix.goos }}
+          path: build/*
+          if-no-files-found: error
