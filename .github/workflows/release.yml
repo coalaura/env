@@ -2,6 +2,8 @@ name: Build
 
 on:
   push:
+    branches:
+      - master
     paths:
       - ".upgrader/**"
 
@@ -29,18 +31,10 @@ jobs:
         run: |
           mkdir -p build
           [[ "${{ matrix.goos }}" == "windows" ]] && EXT=".exe" || EXT=""
-
           cd .upgrader
-
           OUT="../build/upgrader_${{ matrix.goos }}${EXT}"
-
-          GOOS=${{ matrix.goos }} \
-          GOARCH=amd64 \
-          CGO_ENABLED=0 \
-          go build \
-            -trimpath \
-            -buildvcs=false \
-            -o "$OUT" .
+          GOOS=${{ matrix.goos }} GOARCH=amd64 CGO_ENABLED=0 \
+          go build -trimpath -buildvcs=false -o "$OUT" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -50,28 +44,44 @@ jobs:
           if-no-files-found: error
 
   publish:
+    name: Publish to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
           path: ./public
-      - name: Flatten artifacts
+
+      - name: Prepare site
+        shell: bash
         run: |
+          set -euo pipefail
           shopt -s globstar nullglob
           mkdir -p site
+          # Copy the binaries to stable names at the site root
           cp public/**/upgrader_linux site/ || true
           cp public/**/upgrader_windows.exe site/ || true
+          ls -lah site
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
