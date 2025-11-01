@@ -65,6 +65,8 @@ os.setalias("ls", "ls --color=auto $*")
 os.setalias("ll", "ls --color=auto -l $*")
 os.setalias("la", "ls --color=auto -la $*")
 os.setalias("..", "cd ..")
+os.setalias("...", "cd ..\\..")
+os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
 
 -- sign pushes, commits and tags
 local key_file = path.join(utils.home(), ".ssh\\keys\\github")

@@ -407,6 +407,8 @@ alias ls='ls --color=auto'
 alias ll='ls -l'
 alias la='ls -la'
 alias ..='cd ..'
+alias ...='cd ../..'
+alias home='cd ~'
 
 # Auto-correct cd typos
 shopt -s cdspell
