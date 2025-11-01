@@ -26,6 +26,7 @@ if not exist "%LOCALAPPDATA%\clink" (
 copy "clink\clink_settings" "%LOCALAPPDATA%\clink\clink_settings"
 copy "clink\commands.lua" "%LOCALAPPDATA%\clink\commands.lua"
 copy "clink\init.lua" "%LOCALAPPDATA%\clink\init.lua"
+copy "clink\json.lua" "%LOCALAPPDATA%\clink\json.lua"
 copy "clink\utils.lua" "%LOCALAPPDATA%\clink\utils.lua"
 
 :: starship config

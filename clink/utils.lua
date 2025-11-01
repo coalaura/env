@@ -1,3 +1,5 @@
+local json = require("json")
+
 local _M = {}
 
 local home = os.getenv("USERPROFILE") or os.getenv("HOME") or ""
@@ -11,8 +13,22 @@ function _M.hostname()
     return host
 end
 
-function _M.exists(path)
-    return os.isdir(path) or os.isfile(path)
+function _M.exists(pt)
+    return os.isdir(pt) or os.isfile(pt)
+end
+
+function _M.read_file(pt)
+    local file = io.open(pt, "rb")
+
+    if not file then
+        return nil
+    end
+
+    local content = file:read("*a")
+
+    file:close()
+
+    return content
 end
 
 function _M.is_git(dir)
@@ -41,6 +57,10 @@ end
 
 function _M.is_go(dir)
     return os.isfile(path.join(dir, "go.mod"))
+end
+
+function _M.is_node(dir)
+    return os.isfile(path.join(dir, "package.json"))
 end
 
 function _M.git_root(dir)
@@ -102,6 +122,91 @@ function _M.escape_input(str)
     str = str:gsub('"', '""')
 
     return str
+end
+
+function _M.basename(pt)
+    pt = path.normalise(pt)
+
+    pt = pt:gsub("[/\\]+$", "")
+    pt = pt:gsub("\"", "\"\"")
+
+    local base = path.getbasename(pt)
+
+    base = base:gsub("[ \t\\/]", "")
+
+    if base == "" then
+        return false
+    end
+
+    return base
+end
+
+function _M.parse_target_os(args)
+    args = _M.trim(args or "")
+
+    local words = {}
+
+    for word in args:gmatch("%S+") do
+        table.insert(words, word)
+    end
+
+    if #words == 0 then
+        return "linux", false
+    end
+
+    local target = false
+
+    local last = words[#words]:lower()
+
+    if last == "win" or last == "windows" then
+        target = "windows"
+    elseif last == "lin" or last == "linux" then
+        target = "linux"
+    elseif last == "dar" or last == "darwin" then
+        target = "darwin"
+    end
+
+    if not target then
+        if args == "" then
+            args = false
+        end
+
+        return "linux", args
+    end
+
+    table.remove(words, #words)
+
+    if #words > 0 then
+        args = table.concat(words, " ")
+    else
+        args = false
+    end
+
+    return target, args
+end
+
+function _M.get_package_json_script(pt, allowed)
+    local body = _M.read_file(pt)
+
+    local data = body and json.decode(body)
+
+    if not data then
+        return false
+    end
+
+    local scripts = data.scripts
+
+    if not scripts or type(scripts) ~= "table" then
+        return false
+    end
+
+    for id, script in ipairs(allowed) do
+        if scripts[script] then
+            return script
+        end
+    end
+
+    return false
 end
 
 function _M.read_line(prompt, default)

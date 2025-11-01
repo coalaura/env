@@ -138,22 +138,114 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
--- go run a project
+-- run a project
 commands["run"] = function(args)
     local target_dir = args or os.getcwd()
 
-    if not utils.is_go(target_dir) then
-        utils.errorf("%s is not a go project.", utils.clean_path(target_dir))
+    -- handle run script
+    local run_cmd = path.join(target_dir, "run.cmd")
 
-        return
+    if os.isfile(run_cmd) then
+        utils.printf("[run.cmd] running %s", utils.clean_path(target_dir))
+
+        return string.format(
+            "pushd %s && call %s && popd",
+            utils.escape_path(target_dir),
+            utils.escape_path(run_cmd)
+        )
     end
 
-    utils.printf("running %s", utils.clean_path(target_dir))
+    -- handle go project
+    if utils.is_go(target_dir) then
+        utils.printf("[go] running %s", utils.clean_path(target_dir))
 
-    return string.format("go run -C %s .", utils.escape_path(target_dir))
+        return string.format("go run -C %s .", utils.escape_path(target_dir))
+    end
+
+    -- handle node project
+    if utils.is_node(target_dir) then
+        local package = path.join(target_dir, "package.json")
+
+        local script = utils.get_package_json_script(package, {"dev", "watch", "start", "test"})
+
+        if not script then
+            utils.errorf("no script found in package.json")
+
+            return
+        end
+
+        utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
+
+        return string.format("bun run --cwd %s %s", utils.escape_path(target_dir), script)
+    end
+
+    utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
 end
 
 clink.argmatcher("run"):addarg(clink.dirmatches)
+
+-- build a project
+commands["build"] = function(args)
+    local target_os, args = utils.parse_target_os(args)
+
+    local target_dir = args or os.getcwd()
+
+    -- handle build script
+    local build_cmd = path.join(target_dir, "build.cmd")
+
+    if os.isfile(build_cmd) then
+        utils.printf("[build.cmd] building %s", utils.clean_path(target_dir))
+
+        return string.format(
+            "pushd %s && call %s && popd",
+            utils.escape_path(target_dir),
+            utils.escape_path(build_cmd)
+        )
+    end
+
+    -- handle go project
+    if utils.is_go(target_dir) then
+        local base = utils.basename(target_dir) or "app"
+
+        utils.printf("[go/%s/%s] building %s", target_os, base, utils.clean_path(target_dir))
+
+        if target_os == "windows" then
+            base = base .. ".exe"
+        end
+
+        return string.format(
+            "set \"GOOS=%s\" && (go build -C %s -o %s && set \"GOOS=windows\") || set \"GOOS=windows\"",
+            target_os,
+            utils.escape_path(target_dir),
+            base
+        )
+    end
+
+    -- handle node project
+    if utils.is_node(target_dir) then
+        local package = path.join(target_dir, "package.json")
+
+        local script = utils.get_package_json_script(package, {"build", "prod"})
+
+        if not script then
+            utils.errorf("no script found in package.json")
+
+            return
+        end
+
+        utils.printf("[bun/%s] building %s", script, utils.clean_path(target_dir))
+
+        return string.format(
+            "bun run --cwd %s %s",
+            utils.escape_path(target_dir),
+            script
+        )
+    end
+
+    utils.errorf("%s is not a recognized project")
+end
+
+clink.argmatcher("build"):addarg(clink.dirmatches)
 
 -- update a go project
 commands["goup"] = function(args)

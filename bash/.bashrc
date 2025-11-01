@@ -176,26 +176,158 @@ function git_ssh() {
 	)
 }
 
-# go run a project
-function run() {
+# run a project
+function run() (
 	(
 		set -euo pipefail
 
 		local target="${1:-.}"
 
-		target=$(realpath "$target")
+		target="$(realpath "$target")"
 
-		if [ ! -f "$target/go.mod" ]; then
-			printf "\033[33merror: %s is not a go project\033[0m\n" "$target"
+		# handle run script
+		if [[ -f "$target/run.sh" ]]; then
+			printf "\033[37m[run.sh] running %s\033[0m\n" "$target"
 
-			return 1
+			cd "$target"
+
+			chmod +x ./run.sh 2>/dev/null
+			./run.sh
+
+			return
 		fi
 
-		printf "\033[37mrunning %s\033[0m\n" "$target"
+		# handle go project
+		if [[ -f "$target/go.mod" ]]; then
+			printf "\033[37m[go] running %s\033[0m\n" "$target"
 
-		go run -C "$target" .
+			go run -C "$target" .
+
+			return
+		fi
+
+		# handle node project
+		if [[ -f "$target/package.json" ]]; then
+			local script=""
+
+			while IFS= read -r line; do
+				case "$line" in
+					*\"dev\"*:*)   script="${script:-dev}" ;;
+					*\"watch\"*:*) script="${script:-watch}" ;;
+					*\"start\"*:*) script="${script:-start}" ;;
+					*\"test\"*:*) script="${script:-test}" ;;
+				esac
+			done < "$target/package.json"
+
+			if [[ -z "$script" ]]; then
+				printf "\033[33merror: no script found in package.json\033[0m\n" "$target"
+
+				return
+			fi
+
+			printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
+
+			bun run --cwd "$target" "$script"
+
+			return
+		fi
+
+		printf "\033[33merror: %s is not a recognized project\033[0m\n" "$target"
 	)
-}
+)
+
+# build a project
+function build() (
+	(
+		set -euo pipefail
+
+		local target_os="linux"
+		local target="."
+
+		local -a argv=("$@")
+
+		if ((${#argv[@]} > 0)); then
+			local last="${argv[${#argv[@]}-1]}"
+
+			local lower="${last,,}"
+
+			case "$lower" in
+				win|windows)
+					target_os="windows"
+					unset 'argv[${#argv[@]}-1]'
+					;;
+				lin|linux)
+					target_os="linux"
+					unset 'argv[${#argv[@]}-1]'
+					;;
+				dar|darwin)
+					target_os="darwin"
+					unset 'argv[${#argv[@]}-1]'
+					;;
+			esac
+
+			printf -v target "%s" "${argv[*]}"
+		fi
+
+		target="$(realpath "$target")"
+
+		# handle build script
+		if [[ -f "$target/build.sh" ]]; then
+			printf "\033[37m[build.sh] building %s\033[0m\n" "$target"
+
+			cd "$target"
+
+			chmod +x ./build.sh 2>/dev/null
+			./build.sh
+
+			return
+		fi
+
+		# handle go project
+		if [[ -f "$target/go.mod" ]]; then
+			local base
+
+			base="$(basename "$target")"
+			base="${base//[[:space:]]/}"
+
+			printf "\033[37m[go/%s] building %s\033[0m\n" "$base" "$target"
+
+			if [[ "$target_os" == "windows" ]]; then
+				base="$base.exe"
+			fi
+
+			GOOS="$target_os" go build -C "$target" -o "$base"
+
+			return
+		fi
+
+		# handle node project
+		if [[ -f "$target/package.json" ]]; then
+			local script=""
+
+			while IFS= read -r line; do
+				case "$line" in
+					*\"build\"*:*) script="${script:-build}" ;;
+					*\"prod\"*:*)  script="${script:-prod}"  ;;
+				esac
+			done < "$target/package.json"
+
+			if [[ -z "$script" ]]; then
+				printf "\033[33merror: no script found in package.json\033[0m\n"
+
+				return
+			fi
+
+			printf "\033[37m[bun/%s] building %s\033[0m\n" "$script" "$target"
+
+			bun run --cwd "$target" "$script"
+
+			return
+		fi
+
+		printf "\033[33merror: %s is not a recognized project\033[0m\n" "$target"
+	)
+)
 
 # update a go project
 function goup() {
@@ -244,7 +376,7 @@ function beep() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push git_ssh origin run goup
+complete -o dirnames -A directory pull push git_ssh origin run build goup
 
 # various aliases
 alias grep='grep --color=auto'
