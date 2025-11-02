@@ -451,16 +451,19 @@ export PATH="$PATH:$HOME/.bun/bin"
 export PATH="$PATH:/usr/local/go/bin"
 
 # ensure ssh-agent is running
-if [ -f "$HOME/.ssh/agent" ]; then
-	source "$HOME/.ssh/agent"
+SSH_AGENT_FILE="$HOME/.ssh/.agent-env"
+
+if [ -f "$SSH_AGENT_FILE" ]; then
+	source "$SSH_AGENT_FILE" > /dev/null 2>&1
 fi
 
 if ! ssh-add -l >/dev/null 2>&1; then
-	umask 077
+	eval "$(ssh-agent -s)" > "$SSH_AGENT_FILE"
+fi
 
-	ssh-agent -s | sed 's/^echo.*$//' > "$HOME/.ssh/agent"
-
-	source "$HOME/.ssh/agent"
+# ensure github ssh key is loaded
+if [ -f "$HOME/.ssh/keys/github" ]; then
+	ssh-add "$HOME/.ssh/keys/github" > /dev/null 2>&1
 fi
 
 # ensure github ssh key is loaded
