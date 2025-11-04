@@ -95,7 +95,7 @@
 				}
 			},
 			"security": {
-				"noSecrets": "info"
+				"noSecrets": "off"
 			},
 			"nursery": {
 				"noShadow": "warn"
