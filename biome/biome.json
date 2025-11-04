@@ -78,7 +78,7 @@
 					"fix": "safe",
 					"options": {}
 				},
-				"useSimplifiedLogicExpression": "warn"
+				"useSimplifiedLogicExpression": "off"
 			},
 			"performance": {
 				"noDelete": "off",
