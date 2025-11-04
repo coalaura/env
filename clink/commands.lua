@@ -292,10 +292,10 @@ end
 clink.argmatcher("goup"):addarg(clink.dirmatches)
 
 -- run biome check
-commands["bio"] = function()
+commands["bio"] = function(args)
     local config = path.join(utils.home(), "biome.json")
 
-    return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+    return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s %s", utils.escape_path(config), args or "")
 end
 
 clink.argmatcher("bio"):addarg(clink.dirmatches)
