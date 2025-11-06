@@ -219,18 +219,25 @@ function run() (
 				esac
 			done < "$target/package.json"
 
-			if [[ -z "$script" ]]; then
-				printf "\033[33merror: no script found in package.json\033[0m\n" "$target"
+			if [[ -n "$script" ]]; then
+				printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
+
+				bun run --cwd "$target" "$script"
 
 				return
 			fi
-
-			printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
-
-			bun run --cwd "$target" "$script"
-
-			return
 		fi
+
+		# handle single node files
+		for file in "index.js" "main.js" "app.js"; do
+			if [[ -f "$target/$file" ]]; then
+				printf "\033[37m[bun/%s] running %s\033[0m\n" "$file" "$target"
+
+				bun --cwd "$target" "$file"
+
+				return
+			fi
+		done
 
 		printf "\033[33merror: %s is not a recognized project\033[0m\n" "$target"
 	)

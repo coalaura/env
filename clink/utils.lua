@@ -209,6 +209,18 @@ function _M.get_package_json_script(pt, allowed)
     return false
 end
 
+function _M.get_first_existing_file(dir, allowed)
+    for id, file in ipairs(allowed) do
+        local pt = path.join(dir, file)
+
+        if os.isfile(pt) then
+            return file
+        end
+    end
+
+    return false
+end
+
 function _M.read_line(prompt, default)
     io.write(prompt)
     io.flush()

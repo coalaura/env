@@ -168,15 +168,20 @@ commands["run"] = function(args)
 
         local script = utils.get_package_json_script(package, {"dev", "watch", "start", "test"})
 
-        if not script then
-            utils.errorf("no script found in package.json")
+        if script then
+            utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
-            return
+            return string.format("bun run --cwd %s %s", utils.escape_path(target_dir), script)
         end
+    end
 
+    -- handle single node files
+    local script = utils.get_first_existing_file(target_dir, {"index.js", "main.js", "app.js"})
+
+    if script then
         utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
-        return string.format("bun run --cwd %s %s", utils.escape_path(target_dir), script)
+        return string.format("bun --cwd %s %s", utils.escape_path(target_dir), script)
     end
 
     utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
