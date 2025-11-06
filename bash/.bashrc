@@ -382,7 +382,7 @@ function goup() {
 
 # run biome check
 function bio() {
-	biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" "$@"
+	biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" $@
 }
 
 # download and run vencord installer
