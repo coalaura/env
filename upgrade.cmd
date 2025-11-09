@@ -2,6 +2,16 @@
 
 setlocal enabledelayedexpansion
 
+net session >nul 2>&1
+
+if not %errorlevel%==0 (
+	echo Upgrade requires admin privileges, relaunching...
+
+	sudo rio -e "upgrade.cmd"
+
+	goto :END
+)
+
 :: update bun
 where bun >nul 2>&1
 
@@ -84,8 +94,8 @@ rm "%TEMP%\env_upgrader.exe" 2>nul
 
 echo Done.
 
-endlocal
+pause >nul
 
-if %0 == "%~0" (
-    pause >nul
-)
+:END
+
+endlocal

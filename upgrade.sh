@@ -2,6 +2,13 @@
 
 set -euo pipefail
 
+if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+	echo "This script must be run as root (sudo)."
+	echo "Try: sudo $0 $*"
+
+	exit 1
+fi
+
 # update pacman packages
 (
 	echo "Updating starship/ripgrep..."
@@ -27,7 +34,7 @@ set -euo pipefail
 
 	chmod +x /tmp/env_upgrader_linux
 
-	/tmp/env_upgrader_linux
+	sudo /tmp/env_upgrader_linux
 
 	rm -f /tmp/env_upgrader_linux
 )
