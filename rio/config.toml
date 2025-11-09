@@ -75,8 +75,8 @@ program = "bash"
 [bindings]
 keys = [
 	{ key = "v", with = "control", action = "none" },
-	{ key = "w", with = "control", action = "CloseTab" },
-	{ key = "q", with = "control", action = "Quit" },
+	{ key = "w", with = "control", esc = "exit\r\n" },
+	{ key = "q", with = "control", esc = "exit\r\n" },
 	{ key = "n", with = "control", action = "CreateWindow" }
 ]
 
