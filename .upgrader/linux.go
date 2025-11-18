@@ -5,7 +5,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 func InstallGo(ver *SemVer) error {
@@ -27,18 +26,12 @@ func InstallGo(ver *SemVer) error {
 }
 
 func InstallBiome(ver *SemVer) error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-
 	uri := fmt.Sprintf("https://github.com/biomejs/biome/releases/download/%%40biomejs%%2Fbiome%%40%s/biome-linux-x64", ver.String())
-	path := filepath.Join(home, ".bin", "biome")
 
-	err = DownloadFileTo(uri, path)
+	err := DownloadFileTo(uri, "/usr/local/bin/biome")
 	if err != nil {
 		return err
 	}
 
-	return os.Chmod(path, 0755)
+	return os.Chmod("/usr/local/bin/biome", 0755)
 }

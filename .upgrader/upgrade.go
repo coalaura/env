@@ -53,5 +53,7 @@ func (u *UpgradeConfig) Upgrade() error {
 		return errors.New("upgrade failed")
 	}
 
+	log.Println("upgrade okay")
+
 	return nil
 }
