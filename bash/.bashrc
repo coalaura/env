@@ -417,6 +417,7 @@ alias tidy='go mod tidy'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias home='cd ~'
+alias cls='clear'
 
 # Auto-correct cd typos
 shopt -s cdspell
