@@ -28,6 +28,8 @@ chown -R [name]:[name] "[path]"
 find "[path]" -type d -exec chmod 755 {} +
 find "[path]" -type f -exec chmod 644 {} +
 
+chmod +x "[path]/[name]"
+
 echo "Setup complete, starting service..."
 
 service [name] start
