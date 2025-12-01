@@ -397,6 +397,8 @@ commands["mkconf"] = function(args)
 
         handleIn:close()
 
+        content = content:gsub("\r", "")
+
         content = content:gsub("%[Name%]", nameUc)
         content = content:gsub("%[name%]", name)
         content = content:gsub("%[path%]", clean_path)

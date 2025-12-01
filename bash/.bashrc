@@ -442,7 +442,7 @@ function mkconf() {
 				return 1
 			fi
 
-			sed -e "s#\[Name\]#$name_uc#g" -e "s#\[name\]#$name_lower#g" -e "s#\[path\]#$clean_path#g" "$src_path" > "$dst_path"
+			sed -e "s#\[Name\]#$name_uc#g" -e "s#\[name\]#$name_lower#g" -e "s#\[path\]#$clean_path#g" "$src_path" | tr -d '\r' > "$dst_path"
 
 			printf "\033[37mcreated %s\033[0m\n" "$dst"
 		done
