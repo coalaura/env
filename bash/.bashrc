@@ -457,6 +457,9 @@ export HISTFILESIZE=100000
 export PATH="$PATH:$HOME/.bun/bin"
 export PATH="$PATH:/usr/local/go/bin"
 
+# so ssh/etc properly detect the terminal
+export TERM=xterm-256color
+
 # ensure ssh-agent is running
 SSH_AGENT_FILE="$HOME/.ssh/.agent-env"
 
