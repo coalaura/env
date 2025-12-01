@@ -57,6 +57,11 @@ init_coreutils()
 -- initialize openssh
 init_openssh()
 
+-- initialized environment variables
+os.setenv("CC", "zig cc")
+os.setenv("CXX", "zig c++")
+os.setenv("CGO_ENABLED", "1")
+
 -- initialize other aliases
 os.setalias("clear", "cls")
 
