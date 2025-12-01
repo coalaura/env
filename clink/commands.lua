@@ -335,6 +335,91 @@ commands["vencord"] = function()
     os.remove(out)
 end
 
+-- create service configuration from templates
+commands["mkconf"] = function(args)
+    if not args then
+        utils.errorf("usage: mkconf <path> <name>")
+
+        return
+    end
+
+    local arg_path, arg_name = args:match("^(%S+)%s+(%S+)$")
+
+    if not arg_path or not arg_name then
+        utils.errorf("usage: mkconf <path> <name>")
+
+        return
+    end
+
+    if arg_path:sub(1, 1) ~= "/" then
+        utils.errorf("path must start with / (e.g. /opt/myapp)")
+
+        return
+    end
+
+    local name = arg_name:lower()
+    local nameUc = arg_name:gsub("^%l", string.upper)
+    local clean_path = arg_path:gsub("[\\/]+$", "")
+
+    local tpl_dir = path.join(utils.home(), "env/.templates/conf")
+    local target_dir = path.join(os.getcwd(), "conf")
+
+    os.execute(string.format("mkdir %s 2>nul", utils.escape_path(target_dir)))
+
+    local files = {
+        {
+            src = "service.service",
+            dst = string.format("%s.service", name)
+        },
+        {
+            src = "user.conf",
+            dst = string.format("%s.conf", name)
+        },
+        {
+            src = "setup.sh",
+            dst = "setup.sh"
+        }
+    }
+
+    for id, file in ipairs(files) do
+        local src_path = path.join(tpl_dir, file.src)
+        local dst_path = path.join(target_dir, file.dst)
+
+        local handleIn = io.open(src_path, "r")
+
+        if not handleIn then
+            utils.errorf("template not found: %s", file.src)
+
+            return
+        end
+
+        local content = handleIn:read("*a")
+
+        handleIn:close()
+
+        content = content:gsub("%[Name%]", nameUc)
+        content = content:gsub("%[name%]", name)
+        content = content:gsub("%[path%]", clean_path)
+
+        local handleOut = io.open(dst_path, "w")
+
+        if not handleOut then
+            utils.errorf("failed to write: %s", file.src)
+
+            return
+        end
+
+        handleOut:write(content)
+        handleOut:close()
+
+        utils.printf("created %s", file.dst)
+    end
+
+    utils.successf("config created")
+end
+
+clink.argmatcher("mkconf"):addarg(clink.dirmatches)
+
 -- trigger terminal bell
 commands["beep"] = function()
     print("\7")

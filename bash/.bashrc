@@ -397,6 +397,60 @@ function vencord() {
 	sh -c "$(curl -sS https://vencord.dev/install.sh)"
 }
 
+# create service configuration from templates
+function mkconf() {
+	(
+		set -euo pipefail
+
+		local path="${1:-}"
+		local name="${2:-}"
+
+		if [[ -z "$path" || -z "$name" ]]; then
+			printf "\033[33musage: mkconf <path> <name>\033[0m\n"
+
+			return 1
+		fi
+
+		if [[ "$path" != /* ]]; then
+			printf "\033[33merror: path must start with / (e.g. /opt/myapp)\033[0m\n"
+
+			return 1
+		fi
+
+		local name_lower="${name,,}"
+		local name_uc="${name^}"
+		local clean_path="${path%/}"
+
+		local tpl_dir="$HOME/env/.templates/conf"
+		local target_dir="$PWD/conf"
+
+		mkdir -p "$target_dir"
+
+		local srcs=("service.service" "user.conf" "setup.sh")
+		local dsts=("${name_lower}.service" "${name_lower}.conf" "setup.sh")
+
+		for i in "${!srcs[@]}"; do
+			local src="${srcs[$i]}"
+			local dst="${dsts[$i]}"
+
+			local src_path="$tpl_dir/$src"
+			local dst_path="$target_dir/$dst"
+
+			if [[ ! -f "$src_path" ]]; then
+				printf "\033[33merror: template not found: %s\033[0m\n" "$src"
+
+				return 1
+			fi
+
+			sed -e "s#\[Name\]#$name_uc#g" -e "s#\[name\]#$name_lower#g" -e "s#\[path\]#$clean_path#g" "$src_path" > "$dst_path"
+
+			printf "\033[37mcreated %s\033[0m\n" "$dst"
+		done
+
+		printf "\033[32msuccess: config created\033[0m\n"
+	)
+}
+
 # trigger terminal bell
 function beep() {
 	printf '\a'
