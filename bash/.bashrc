@@ -418,8 +418,10 @@ function mkconf() {
 		fi
 
 		local name_lower="${name,,}"
-		local name_uc="${name^}"
 		local clean_path="${path%/}"
+
+		local -a name_parts=($clean_name)
+		local name_uc="${name_parts[@]^}"
 
 		local tpl_dir="$HOME/env/.templates/conf"
 		local target_dir="$PWD/conf"

@@ -358,8 +358,11 @@ commands["mkconf"] = function(args)
     end
 
     local name = arg_name:lower()
-    local nameUc = arg_name:gsub("^%l", string.upper)
     local clean_path = arg_path:gsub("[\\/]+$", "")
+
+    local nameUc = arg_name:gsub("[-_]", " "):gsub("(%w)(%w*)", function(first, rest)
+        return first:upper() .. rest
+    end)
 
     local tpl_dir = path.join(utils.home(), "env/.templates/conf")
     local target_dir = path.join(os.getcwd(), "conf")
