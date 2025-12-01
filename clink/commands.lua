@@ -385,7 +385,7 @@ commands["mkconf"] = function(args)
         local src_path = path.join(tpl_dir, file.src)
         local dst_path = path.join(target_dir, file.dst)
 
-        local handleIn = io.open(src_path, "r")
+        local handleIn = io.open(src_path, "rb")
 
         if not handleIn then
             utils.errorf("template not found: %s", file.src)
@@ -403,7 +403,7 @@ commands["mkconf"] = function(args)
         content = content:gsub("%[name%]", name)
         content = content:gsub("%[path%]", clean_path)
 
-        local handleOut = io.open(dst_path, "w")
+        local handleOut = io.open(dst_path, "wb")
 
         if not handleOut then
             utils.errorf("failed to write: %s", file.src)
