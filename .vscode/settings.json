@@ -1,9 +1,0 @@
-{
-	"Lua.diagnostics.globals": [
-		"exports",
-		"source",
-		"clink",
-		"path",
-		"rl"
-	]
-}
