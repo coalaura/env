@@ -64,14 +64,26 @@ os.setenv("CXX", "zig c++")
 -- initialize other aliases
 os.setalias("clear", "cls")
 
-os.setalias("grep", "grep --color=auto $*")
-os.setalias("ls", "ls --color=auto $*")
-os.setalias("ll", "ls --color=auto -l $*")
-os.setalias("la", "ls --color=auto -la $*")
+os.setalias("ls", "coreutils ls --color=auto $*")
+os.setalias("ll", "coreutils ls --color=auto -l $*")
+os.setalias("la", "coreutils ls --color=auto -la $*")
 os.setalias("tidy", "go mod tidy")
 os.setalias("..", "cd ..")
 os.setalias("...", "cd ..\\..")
 os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
+
+-- handle ..\ or ...\
+clink.onfilterinput(function(text)
+    if text:match("^%s*%.%.\\") then
+        return text:gsub("^(%s*)%.%.\\", "%1cd ..\\")
+    end
+end)
+
+clink.onfilterinput(function(text)
+    if text:match("^%s*%.%.%.\\") then
+        return text:gsub("^(%s*)%.%.%.\\", "%1cd ..\\..\\")
+    end
+end)
 
 -- sign pushes, commits and tags
 local key_file = path.join(utils.home(), ".ssh\\keys\\github")
