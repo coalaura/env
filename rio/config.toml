@@ -81,4 +81,4 @@ keys = [
 ]
 
 [platform]
-windows.shell.program = "cmd"
+# windows.shell.program = "cmd"

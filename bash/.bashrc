@@ -489,7 +489,7 @@ git config --global commit.gpgSign true
 git config --global tag.gpgSign true
 
 # print welcome message
-printf " \\    /\\ \n"
+printf "\n \\    /\\ \n"
 printf "  )  ( ')  \033[0;32m%s\033[0m\n" "$(hostname | tr -d '[:space:]')"
 printf " (  /  )   \033[0;35m%s\033[0m\n" "$(date +"%A, %d %b %Y, %I:%M %p")"
 printf "  \\(__)|\n\n"
