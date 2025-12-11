@@ -53,6 +53,11 @@
 						"syntax": "explicit"
 					}
 				},
+				"useTemplate": {
+					"level": "warn",
+					"fix": "safe",
+					"options": {}
+				},
 				"useForOf": "warn"
 			},
 			"suspicious": {
@@ -61,7 +66,12 @@
 				"noAssignInExpressions": "info",
 				"noAsyncPromiseExecutor": "off",
 				"noApproximativeNumericConstant": "off",
-				"noSparseArray": "warn"
+				"noSparseArray": "warn",
+				"noDoubleEquals": {
+					"level": "error",
+					"fix": "safe",
+					"options": {}
+				}
 			},
 			"complexity": {
 				"useLiteralKeys": "off",
