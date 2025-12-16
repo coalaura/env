@@ -111,7 +111,7 @@ commands["trash"] = function(args)
         return
     end
 
-    local msg = utils.read_line("trash everything? [y/N]", "n")
+    local msg = utils.read_line("trash everything? [y/N] ", "n")
 
     if msg ~= "y" and msg ~= "Y" then
         utils.errorf("aborted")
