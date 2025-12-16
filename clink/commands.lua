@@ -121,7 +121,7 @@ commands["trash"] = function(args)
 
     local escaped_root = utils.escape_path(root)
 
-    utils.printf("resetting %s", utils.clean_path(root))
+    utils.printf("resetting...")
 
     if not os.execute(string.format("git.exe -C %s reset --hard", escaped_root)) then
         utils.errorf("failed")
@@ -129,7 +129,7 @@ commands["trash"] = function(args)
         return
     end
 
-    utils.printf("cleaning %s", utils.clean_path(root))
+    utils.printf("cleaning...")
 
     if not os.execute(string.format("git.exe -C %s clean -fd", escaped_root)) then
         utils.errorf("failed")

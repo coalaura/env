@@ -161,11 +161,11 @@ function trash() {
 			return 1
 		fi
 
-		printf "\033[37mresetting %s\033[0m\n" "$target"
+		printf "\033[37mresetting...\033[0m\n"
 
 		git -C "$target" reset --hard
 
-		printf "\033[37mcleaning %s\033[0m\n" "$target"
+		printf "\033[37mcleaning...\033[0m\n"
 
 		git -C "$target" clean -fd
 
