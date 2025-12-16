@@ -97,6 +97,51 @@ end
 
 clink.argmatcher("origin"):addarg(clink.dirmatches)
 
+-- reset and clean git repo
+commands["trash"] = function(args)
+    local target_dir = args or os.getcwd()
+
+    local root = utils.git_root(target_dir)
+
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
+
+        return
+    end
+
+    local msg = utils.read_line("trash everything? [y/N]", "n")
+
+    if msg ~= "y" and msg ~= "Y" then
+        utils.errorf("aborted")
+
+        return
+    end
+
+    local escaped_root = utils.escape_path(root)
+
+    utils.printf("resetting %s", utils.clean_path(root))
+
+    if not os.execute(string.format("git.exe -C %s reset --hard", escaped_root)) then
+        utils.errorf("failed")
+
+        return
+    end
+
+    utils.printf("cleaning %s", utils.clean_path(root))
+
+    if not os.execute(string.format("git.exe -C %s clean -fd", escaped_root)) then
+        utils.errorf("failed")
+
+        return
+    end
+
+    utils.successf("cleaned")
+end
+
+clink.argmatcher("trash"):addarg(clink.dirmatches)
+
 -- convert https to ssh git repo
 commands["git_ssh"] = function(args)
     local target_dir = args or os.getcwd()

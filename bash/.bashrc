@@ -137,6 +137,42 @@ function origin() {
 	)
 }
 
+# discard all changes in a git repo
+function trash() {
+	(
+		set -euo pipefail
+
+		local target=$(git_root "${1:-.}")
+
+		if [ ! -d "$target/.git" ]; then
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+
+			return 1
+		fi
+
+		local confirm
+
+		# Explicitly prompt about the target so you don't trash the wrong repo
+		read -rp "trash everything in $(basename "$target")? [y/N] " confirm
+
+		if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+			printf "\033[33maborted\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[37mresetting %s\033[0m\n" "$target"
+
+		git -C "$target" reset --hard
+
+		printf "\033[37mcleaning %s\033[0m\n" "$target"
+
+		git -C "$target" clean -fd
+
+		printf "\033[32msuccess: cleaned\033[0m\n"
+	)
+}
+
 # convert https to ssh git repo
 function git_ssh() {
 	(
@@ -405,7 +441,7 @@ function beep() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push git_ssh origin run goup
+complete -o dirnames -A directory pull push git_ssh origin trash run goup
 complete -F __build_complete build
 
 # various aliases
