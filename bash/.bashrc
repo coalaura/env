@@ -339,7 +339,7 @@ function build() (
 				base="$base.exe"
 			fi
 
-			GOOS="$target_os" go build -C "$target" -o "$base"
+			GOOS="$target_os" go build -C "$target" -trimpath -buildvcs=false -o "$base"
 
 			return
 		fi

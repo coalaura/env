@@ -264,7 +264,7 @@ commands["build"] = function(args)
         end
 
         return string.format(
-            "set \"GOOS=%s\" && (go build -C %s -o %s && set \"GOOS=windows\") || set \"GOOS=windows\"",
+            "set \"GOOS=%s\" && (go build -C %s -trimpath -buildvcs=false -o %s && set \"GOOS=windows\") || set \"GOOS=windows\"",
             target_os,
             utils.escape_path(target_dir),
             base
