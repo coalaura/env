@@ -31,6 +31,20 @@ function _M.read_file(pt)
     return content
 end
 
+function _M.read_line(pt)
+    local file = io.open(pt, "rb")
+
+    if not file then
+        return nil
+    end
+
+    local line = file:read("*l")
+
+    file:close()
+
+    return line
+end
+
 function _M.is_git(dir)
     local git_dir = path.join(dir, ".git")
 
@@ -139,6 +153,12 @@ function _M.basename(pt)
     end
 
     return base
+end
+
+function _M.background(commands)
+    local sub = table.concat(commands, " && "):gsub("\"", "^\"")
+
+    os.execute(string.format("start /b cmd /c \"%s\"", sub))
 end
 
 function _M.parse_target_os(args)

@@ -1,6 +1,8 @@
 local utils = require("utils")
 
--- core functions
+--
+-- Helper functions
+--
 
 local function init_coreutils()
     local pipe = io.popen("coreutils --list")
@@ -23,19 +25,17 @@ local function init_coreutils()
 end
 
 local function init_openssh()
-    os.execute("sc start ssh-agent >nul 2>&1")
+    local key = utils.escape_path(path.join(utils.home(), ".ssh\\keys\\github"))
 
-    local keys = {
-        path.join(utils.home(), ".ssh\\keys\\github")
-    }
-
-    for _, key in ipairs(keys) do
-        if utils.exists(key) then
-            os.execute(string.format("ssh-add %s >nul 2>&1", utils.escape_path(key)))
-        end
-    end
-
+    utils.background({
+        "sc start ssh-agent >nul 2>&1",
+        string.format("if exist %s ssh-add %s >nul 2>&1", key, key)
+    })
 end
+
+--
+-- Shell settings
+--
 
 -- replace ~ with home directory
 clink.onfilterinput(function(text)
@@ -85,19 +85,58 @@ clink.onfilterinput(function(text)
     end
 end)
 
--- sign pushes, commits and tags
+--
+-- Git settings
+--
+
 local key_file = path.join(utils.home(), ".ssh\\keys\\github")
 
-os.execute("git.exe config --global gpg.format ssh")
 os.execute(string.format("git.exe config --global user.signingkey %s", utils.escape_path(key_file)))
-os.execute("git.exe config --global commit.gpgSign true")
-os.execute("git.exe config --global tag.gpgSign true")
+
+utils.background({
+    -- sign pushes, commits and tags
+    "git.exe config --global gpg.format ssh",
+
+    -- sign all commits by default
+    "git.exe config --global commit.gpgSign true",
+    -- sign all tags by default
+    "git.exe config --global tag.gpgSign true",
+
+    -- other git settings
+    "git.exe config --global user.name Laura",
+    "git.exe config --global user.email laura@wiese2.org",
+    "git.exe config --global core.longpaths true",
+    "git.exe config --global pull.rebase true",
+    "git.exe config --global core.editor nano",
+    "git.exe config --global color.ui auto",
+
+    -- speed up status via disk cache
+    "git.exe config --global core.untrackedCache true",
+    -- use OS file watcher for speed
+    "git.exe config --global core.fsmonitor true",
+    -- properly detect moved/renamed files
+    "git.exe config --global diff.renames true",
+    -- tracking branch created on push
+    "git.exe config --global push.autoSetupRemote true",
+    -- delete dead remote branches
+    "git.exe config --global fetch.prune true",
+    -- more accurate/readable diffs
+    "git.exe config --global diff.algorithm histogram",
+    -- show newest branches first
+    "git.exe config --global branch.sort -authordate",
+    -- force LF in repo
+    "git.exe config --global core.autocrlf true"
+})
+
+--
+-- Startup
+--
 
 -- print welcome message
 print(" \\    /\\ ")
-print("  )  ( ')  \x1b[0;32m" .. utils.hostname() .. "\x1b[0m")
-print(" (  /  )   \x1b[0;35m" .. os.date("%A, %d %b %Y, %I:%M %p") .. "\x1b[0m")
+print(string.format("  )  ( ')  \x1b[0;32m%s\x1b[0m", utils.hostname()))
+print(string.format(" (  /  )   \x1b[0;35m%s\x1b[0m", os.date("%A, %d %b %Y, %I:%M %p")))
 print("  \\(__)|\n")
 
--- load starship
+-- init starship
 load(io.popen("starship init cmd"):read("*a"))()
