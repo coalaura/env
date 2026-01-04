@@ -1,0 +1,52 @@
+[user]
+    name = Laura
+    email = laura@wiese2.org
+    signingkey = ~/.ssh/keys/github
+
+[gpg]
+	# sign using ssh key
+    format = ssh
+
+[commit]
+    # sign all commits by default
+    gpgSign = true
+
+[tag]
+    # sign all tags by default
+    gpgSign = true
+
+[core]
+	# allow paths longer than 260 characters
+    longpaths = true
+	# use nano as commit editor
+    editor = nano
+    # force LF in repo, keep disk as-is
+    autocrlf = input
+    # speed up status via disk cache
+    untrackedCache = true
+    # use OS file watcher for speed
+    fsmonitor = true
+
+[color]
+    ui = auto
+
+[pull]
+    rebase = true
+
+[diff]
+    # properly detect moved/renamed files
+    renames = true
+    # more accurate/readable diffs
+    algorithm = histogram
+
+[push]
+    # tracking branch created on push
+    autoSetupRemote = true
+
+[fetch]
+    # delete dead remote branches
+    prune = true
+
+[branch]
+    # show newest branches first
+    sort = -authordate

@@ -38,6 +38,11 @@ if not exist "%USERPROFILE%\.config" (
 
 copy "starship\starship.toml" "%USERPROFILE%\.config\starship.toml"
 
+:: git config
+echo Copying git config...
+
+copy "git\.gitconfig" "%USERPROFILE%\.config\.gitconfig_env"
+
 :: default binary folder
 if not exist "%USERPROFILE%\.bin" (
     mkdir "%USERPROFILE%\.bin"

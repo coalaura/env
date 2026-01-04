@@ -534,41 +534,7 @@ fi
 # Git settings
 ##
 
-(
-	# sign pushes, commits and tags
-	git config --global gpg.format ssh
-	git config --global user.signingkey "$HOME/.ssh/keys/github"
-
-	# sign all commits by default
-	git config --global commit.gpgSign true
-	# sign all tags by default
-	git config --global tag.gpgSign true
-
-	# other git settings
-	git config --global user.name Laura
-	git config --global user.email laura@wiese2.org
-	git config --global core.longpaths true
-	git config --global pull.rebase true
-	git config --global core.editor "nano"
-	git config --global color.ui auto
-
-	# speed up status via disk cache
-	git config --global core.untrackedCache true
-	# use OS file watcher for speed
-	git config --global core.fsmonitor true
-	# properly detect moved/renamed files
-	git config --global diff.renames true
-	# tracking branch created on push
-	git config --global push.autoSetupRemote true
-	# delete dead remote branches
-	git config --global fetch.prune true
-	# more accurate/readable diffs
-	git config --global diff.algorithm histogram
-	# show newest branches first
-	git config --global branch.sort -authordate
-	# force LF in repo, keep disk as-is
-	git config --global core.autocrlf input
-) &
+git config --global --replace-all include.path "~/.config/.gitconfig_env" "^~/.config/.gitconfig_env$"
 
 ##
 # Startup

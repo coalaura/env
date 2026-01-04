@@ -31,18 +31,15 @@ function _M.read_file(pt)
     return content
 end
 
-function _M.read_line(pt)
-    local file = io.open(pt, "rb")
+function _M.write_file(pt, data)
+    local file = io.open(pt, "w")
 
     if not file then
-        return nil
+        return
     end
 
-    local line = file:read("*l")
-
+    file:write(data)
     file:close()
-
-    return line
 end
 
 function _M.is_git(dir)

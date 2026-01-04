@@ -15,6 +15,11 @@ echo "Copying starship config..."
 
 cp starship/starship.toml ~/.config/starship.toml
 
+# git config
+echo "Copying git config..."
+
+cp git/.gitconfig ~/.config/.gitconfig_env
+
 # biome config
 echo "Copying biome config..."
 
