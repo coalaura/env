@@ -91,11 +91,10 @@ end)
 
 local key_file = path.join(utils.home(), ".ssh\\keys\\github")
 
-os.execute(string.format("git.exe config --global user.signingkey %s", utils.escape_path(key_file)))
-
 utils.background({
     -- sign pushes, commits and tags
     "git.exe config --global gpg.format ssh",
+    string.format("git config --global user.signingkey %s", key_file),
 
     -- sign all commits by default
     "git.exe config --global commit.gpgSign true",
