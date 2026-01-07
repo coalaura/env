@@ -27,6 +27,9 @@
     # use OS file watcher for speed
     fsmonitor = true
 
+[init]
+    defaultBranch = master
+
 [color]
     ui = auto
 
