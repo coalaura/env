@@ -51,6 +51,8 @@ commands["push"] = function(args)
 
     utils.printf("checking %s", utils.clean_path(root))
 
+    os.execute(string.format("git.exe -C %s add *", escaped_root))
+
     if os.execute(string.format("git.exe -C %s diff-index --quiet HEAD -- 2>nul", escaped_root)) then
         utils.errorf("nothing to commit")
 
@@ -63,7 +65,6 @@ commands["push"] = function(args)
 
     utils.printf("pushing %s", utils.clean_path(root))
 
-    os.execute(string.format("git.exe -C %s add -A", escaped_root))
     os.execute(string.format("git.exe -C %s commit -am \"%s\"", escaped_root, utils.escape_input(msg)))
     os.execute(string.format("git.exe -C %s push", escaped_root))
 end

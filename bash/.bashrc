@@ -90,6 +90,8 @@ function push() {
 
 		printf "\033[37mchecking %s\033[0m\n" "$target"
 
+		git -C "$target" add *
+
 		if git -C "$target" diff-index --quiet HEAD -- 2>/dev/null; then
 			printf "\033[33merror: nothing to commit\033[0m\n"
 
@@ -110,7 +112,6 @@ function push() {
 
 		printf "\033[37mpushing %s\033[0m\n" "$target"
 
-		git -C "$target" add -A
 		git -C "$target" commit -m "$msg"
 		git -C "$target" push
 	)
