@@ -222,18 +222,15 @@ function run() (
 	(
 		set -euo pipefail
 
-		local target="${1:-.}"
-
-		target="$(realpath "$target")"
+		local target="$(realpath ".")"
+		local -a extra_args=("$@")
 
 		# handle run script
 		if [[ -f "$target/run.sh" ]]; then
 			printf "\033[37m[run.sh] running %s\033[0m\n" "$target"
 
-			cd "$target"
-
 			chmod +x ./run.sh 2>/dev/null
-			./run.sh
+			./run.sh "${extra_args[@]}"
 
 			return
 		fi
@@ -242,7 +239,7 @@ function run() (
 		if [[ -f "$target/go.mod" ]]; then
 			printf "\033[37m[go] running %s\033[0m\n" "$target"
 
-			go run -C "$target" .
+			go run . "${extra_args[@]}"
 
 			return
 		fi
@@ -263,7 +260,7 @@ function run() (
 			if [[ -n "$script" ]]; then
 				printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
 
-				bun run --cwd "$target" "$script"
+				bun run "$script" "${extra_args[@]}"
 
 				return
 			fi
@@ -274,7 +271,7 @@ function run() (
 			if [[ -f "$target/$file" ]]; then
 				printf "\033[37m[bun/%s] running %s\033[0m\n" "$file" "$target"
 
-				bun --cwd "$target" "$file"
+				bun "$file" "${extra_args[@]}"
 
 				return
 			fi
@@ -450,7 +447,7 @@ function beep() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push git_ssh origin trash run goup
+complete -o dirnames -A directory pull push git_ssh origin trash goup
 complete -F __build_complete build
 
 # various aliases

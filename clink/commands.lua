@@ -186,18 +186,18 @@ clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
 -- run a project
 commands["run"] = function(args)
-    local target_dir = args or os.getcwd()
+    local target_dir = os.getcwd()
 
     -- handle run script
-    local run_cmd = path.join(target_dir, "run.cmd")
+    local run_cmd = path.join("run.cmd")
 
-    if os.isfile(run_cmd) then
+    if os.isfile("run.cmd") then
         utils.printf("[run.cmd] running %s", utils.clean_path(target_dir))
 
         return string.format(
-            "pushd %s && call %s && popd",
-            utils.escape_path(target_dir),
-            utils.escape_path(run_cmd)
+            "call %s %s",
+            utils.escape_path(run_cmd),
+            utils.format_extra_args(args)
         )
     end
 
@@ -205,7 +205,10 @@ commands["run"] = function(args)
     if utils.is_go(target_dir) then
         utils.printf("[go] running %s", utils.clean_path(target_dir))
 
-        return string.format("go run -C %s .", utils.escape_path(target_dir))
+        return string.format(
+            "go run . %s",
+            utils.format_extra_args(args)
+        )
     end
 
     -- handle node project
@@ -217,7 +220,11 @@ commands["run"] = function(args)
         if script then
             utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
-            return string.format("bun run --cwd %s %s", utils.escape_path(target_dir), script)
+            return string.format(
+                "bun run %s %s",
+                script,
+                utils.format_extra_args(args)
+            )
         end
     end
 
@@ -227,7 +234,11 @@ commands["run"] = function(args)
     if script then
         utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
-        return string.format("bun --cwd %s %s", utils.escape_path(target_dir), script)
+        return string.format(
+            "bun --cwd %s %s",
+            script,
+            utils.format_extra_args(args)
+        )
     end
 
     utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))

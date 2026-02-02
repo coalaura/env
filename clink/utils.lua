@@ -158,6 +158,55 @@ function _M.background(commands)
     os.execute(string.format("start /b cmd /c \"%s\"", sub))
 end
 
+-- Parse target directory and extra arguments separated by --
+-- Returns: target_dir (string), extra_args (table)
+function _M.parse_target_and_args(args)
+    if not args or args == "" then
+        return os.getcwd(), {}
+    end
+
+    -- Match everything before and after --
+    local target_part, rest = args:match("^(.-)%s*%-%-%s*(.*)$")
+
+    if not target_part then
+        -- No -- separator found
+        target_part = args
+
+        rest = ""
+    end
+
+    local target = target_part:match("^%s*(.-)%s*$")
+
+    if target == "" then
+        target = os.getcwd()
+    end
+
+    -- Parse remaining arguments into table
+    local extra_args = {}
+
+    if rest and rest ~= "" then
+        for arg in rest:gmatch("%S+") do
+            table.insert(extra_args, arg)
+        end
+    end
+
+    return target, extra_args
+end
+
+function _M.format_extra_args(args)
+    if not args or #args == 0 then
+        return ""
+    end
+
+    local escaped = {}
+
+    for _, arg in ipairs(args) do
+        table.insert(escaped, _M.escape_input(arg))
+    end
+
+    return " " .. table.concat(escaped, " ")
+end
+
 function _M.parse_target_os(args)
     args = _M.trim(args or "")
 
