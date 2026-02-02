@@ -229,6 +229,8 @@ function run() (
 		if [[ -f "$target/run.sh" ]]; then
 			printf "\033[37m[run.sh] running %s\033[0m\n" "$target"
 
+			cd "$target"
+
 			chmod +x ./run.sh 2>/dev/null
 			./run.sh "${extra_args[@]}"
 
@@ -239,7 +241,7 @@ function run() (
 		if [[ -f "$target/go.mod" ]]; then
 			printf "\033[37m[go] running %s\033[0m\n" "$target"
 
-			go run . "${extra_args[@]}"
+			go run -C "$target" . "${extra_args[@]}"
 
 			return
 		fi
@@ -260,7 +262,7 @@ function run() (
 			if [[ -n "$script" ]]; then
 				printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
 
-				bun run "$script" "${extra_args[@]}"
+				bun run --cwd "$target" "$script" "${extra_args[@]}"
 
 				return
 			fi
@@ -271,7 +273,7 @@ function run() (
 			if [[ -f "$target/$file" ]]; then
 				printf "\033[37m[bun/%s] running %s\033[0m\n" "$file" "$target"
 
-				bun "$file" "${extra_args[@]}"
+				bun --cwd "$target" "$file" "${extra_args[@]}"
 
 				return
 			fi
@@ -287,43 +289,37 @@ function build() (
 		set -euo pipefail
 
 		local target_os="linux"
-		local target="."
+		local -a extra_args=("$@")
 
-		local -a argv=("$@")
-
-		if ((${#argv[@]} > 0)); then
-			local last="${argv[${#argv[@]}-1]}"
-
-			local lower="${last,,}"
+		# Check if first arg is a target OS
+		if ((${#extra_args[@]} > 0)); then
+			local first="${extra_args[0]}"
+			local lower="${first,,}"
 
 			case "$lower" in
 				win|windows)
 					target_os="windows"
-					unset 'argv[${#argv[@]}-1]'
+					extra_args=("${extra_args[@]:1}")
 					;;
 				lin|linux)
 					target_os="linux"
-					unset 'argv[${#argv[@]}-1]'
+					extra_args=("${extra_args[@]:1}")
 					;;
 				dar|darwin)
 					target_os="darwin"
-					unset 'argv[${#argv[@]}-1]'
+					extra_args=("${extra_args[@]:1}")
 					;;
 			esac
-
-			printf -v target "%s" "${argv[*]}"
 		fi
 
-		target="$(realpath "$target")"
+		local target="$(realpath ".")"
 
 		# handle build script
 		if [[ -f "$target/build.sh" ]]; then
 			printf "\033[37m[build.sh] building %s\033[0m\n" "$target"
 
-			cd "$target"
-
 			chmod +x ./build.sh 2>/dev/null
-			./build.sh
+			./build.sh "${extra_args[@]}"
 
 			return
 		fi
@@ -341,7 +337,7 @@ function build() (
 				base="$base.exe"
 			fi
 
-			GOOS="$target_os" go build -C "$target" -trimpath -buildvcs=false -o "$base"
+			GOOS="$target_os" go build  -trimpath -buildvcs=false -o "$base" "${extra_args[@]}"
 
 			return
 		fi
@@ -365,7 +361,7 @@ function build() (
 
 			printf "\033[37m[bun/%s] building %s\033[0m\n" "$script" "$target"
 
-			bun run --cwd "$target" "$script"
+			bun run "$script" "${extra_args[@]}"
 
 			return
 		fi
@@ -378,14 +374,6 @@ __build_complete() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
 
     COMPREPLY=()
-
-    if (( COMP_CWORD == 1 )); then
-        compopt -o dirnames
-
-        COMPREPLY=( $(compgen -d -- "$cur") )
-
-        return 0
-    fi
 
     local -a os_tokens=(win windows lin linux dar darwin)
 

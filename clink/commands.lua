@@ -248,9 +248,9 @@ clink.argmatcher("run"):addarg(clink.dirmatches)
 
 -- build a project
 commands["build"] = function(args)
-    local target_os, args = utils.parse_target_os(args)
+    local target_dir = os.getcwd()
 
-    local target_dir = args or os.getcwd()
+    local target_os, args = utils.parse_target_os(args)
 
     -- handle build script
     local build_cmd = path.join(target_dir, "build.cmd")
@@ -259,9 +259,9 @@ commands["build"] = function(args)
         utils.printf("[build.cmd] building %s", utils.clean_path(target_dir))
 
         return string.format(
-            "pushd %s && call %s && popd",
-            utils.escape_path(target_dir),
-            utils.escape_path(build_cmd)
+            "call %s %s",
+            utils.escape_path(build_cmd),
+            utils.format_extra_args(args)
         )
     end
 
@@ -276,9 +276,9 @@ commands["build"] = function(args)
         end
 
         return string.format(
-            "set \"GOOS=%s\" && (go build -C %s -trimpath -buildvcs=false -o %s && set \"GOOS=windows\") || set \"GOOS=windows\"",
+            "set \"GOOS=%s\" && (go build -trimpath -buildvcs=false %s -o %s && set \"GOOS=windows\") || set \"GOOS=windows\"",
             target_os,
-            utils.escape_path(target_dir),
+            utils.format_extra_args(args),
             base
         )
     end
@@ -298,9 +298,9 @@ commands["build"] = function(args)
         utils.printf("[bun/%s] building %s", script, utils.clean_path(target_dir))
 
         return string.format(
-            "bun run --cwd %s %s",
-            utils.escape_path(target_dir),
-            script
+            "bun run %s",
+            script,
+            utils.format_extra_args(args)
         )
     end
 
