@@ -34,6 +34,7 @@
 				"useSingleVarDeclarator": "off",
 				"noParameterAssign": "off",
 				"useNumberNamespace": "off",
+				"noDescendingSpecificity": "off",
 				"noUselessElse": {
 					"level": "warn",
 					"fix": "safe",
