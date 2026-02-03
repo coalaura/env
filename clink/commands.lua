@@ -235,7 +235,7 @@ commands["run"] = function(args)
         utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
         return string.format(
-            "bun --cwd %s %s",
+            "bun %s %s",
             script,
             utils.format_extra_args(args)
         )
