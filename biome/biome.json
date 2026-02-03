@@ -93,7 +93,7 @@
 			"performance": {
 				"noDelete": "off",
 				"useGoogleFontPreconnect": "warn",
-				"useTopLevelRegex": "warn"
+				"useTopLevelRegex": "off"
 			},
 			"correctness": {
 				"noPrecisionLoss": "off",
