@@ -189,7 +189,7 @@ commands["run"] = function(args)
     local target_dir = os.getcwd()
 
     -- handle run script
-    local run_cmd = path.join("run.cmd")
+    local run_cmd = path.join(target_dir, "run.cmd")
 
     if os.isfile("run.cmd") then
         utils.printf("[run.cmd] running %s", utils.clean_path(target_dir))
