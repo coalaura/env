@@ -205,10 +205,34 @@ commands["run"] = function(args)
     if utils.is_go(target_dir) then
         utils.printf("[go] running %s", utils.clean_path(target_dir))
 
-        return string.format(
+        -- original env
+        local env_backup = {
+            CGO_ENABLED = os.getenv("CGO_ENABLED"),
+            CC = os.getenv("CC"),
+            CXX = os.getenv("CXX")
+        }
+
+        -- build env
+        os.setenv("CGO_ENABLED", "1")
+        os.setenv("CC", "zig cc")
+        os.setenv("CXX", "zig c++")
+
+        -- run
+        local ok = os.execute(string.format(
             "go run . %s",
             utils.format_extra_args(args)
-        )
+        ))
+
+        -- restore
+        for name, value in pairs(env_backup) do
+            os.setenv(name, value)
+        end
+
+        if ok then
+            return "exit /b 0"
+        end
+
+        return "exit /b 1"
     end
 
     -- handle node project
@@ -275,12 +299,67 @@ commands["build"] = function(args)
             base = base .. ".exe"
         end
 
-        return string.format(
-            "set \"GOOS=%s\" && (go build -trimpath -buildvcs=false %s -o %s && set \"GOOS=windows\") || set \"GOOS=windows\"",
-            target_os,
+        -- zig target mapping
+        local zig_targets = {
+            ["linux"] = "x86_64-linux-musl",
+            ["windows"] = "x86_64-windows-gnu",
+            ["darwin"] = "x86_64-macos-none"
+        }
+
+        local zig_target = zig_targets[target_os]
+
+        -- linking flags
+        local ldflags = "-s -w -trimpath -buildvcs=false"
+
+        if target_os == "linux" or target_os == "windows" then
+            ldflags = ldflags .. " -linkmode external -extldflags \"-static\""
+        end
+
+        -- original env
+        local env_backup = {
+            GOOS = os.getenv("GOOS"),
+            GOARCH = os.getenv("GOARCH"),
+            CGO_ENABLED = os.getenv("CGO_ENABLED"),
+            CC = os.getenv("CC"),
+            CXX = os.getenv("CXX")
+        }
+
+        -- build env
+        os.setenv("GOOS", target_os)
+        os.setenv("GOARCH", "amd64")
+        os.setenv("CGO_ENABLED", "1")
+
+        if target_os == "windows" then
+            os.setenv("CC", "zig cc")
+            os.setenv("CXX", "zig c++")
+        elseif zig_target then
+            os.setenv("CC", string.format("zig cc -target %s", zig_target))
+            os.setenv("CXX", string.format("zig c++ -target %s", zig_target))
+        else
+            os.setenv("CC", nil)
+            os.setenv("CXX", nil)
+        end
+
+        -- build
+        local build_args = string.format(
+            "go build -ldflags \"%s\" %s -o %s",
+            ldflags,
             utils.format_extra_args(args),
             base
         )
+
+        local ok = os.execute(build_args)
+
+        -- restore
+        for name, value in pairs(env_backup) do
+            os.setenv(name, value)
+        end
+
+        if ok then
+            return "exit /b 0"
+        end
+
+        return "exit /b 1"
     end
 
     -- handle node project

@@ -241,6 +241,11 @@ function run() (
 		if [[ -f "$target/go.mod" ]]; then
 			printf "\033[37m[go] running %s\033[0m\n" "$target"
 
+			# enable CGO with zig
+			export CGO_ENABLED=1
+			export CC="${CC:-zig cc}"
+			export CXX="${CXX:-zig c++}"
+
 			go run -C "$target" . "${extra_args[@]}"
 
 			return
@@ -289,6 +294,8 @@ function build() (
 		set -euo pipefail
 
 		local target_os="linux"
+		local target_arch="amd64"
+
 		local -a extra_args=("$@")
 
 		# Check if first arg is a target OS
@@ -311,6 +318,16 @@ function build() (
 					;;
 			esac
 		fi
+
+		# Detect host arch for native builds
+		local host_arch=$(uname -m)
+
+		target_arch="$host_arch"
+
+		case "$host_arch" in
+			x86_64) host_arch="amd64" ;;
+			aarch64) host_arch="arm64" ;;
+		esac
 
 		local target="$(realpath ".")"
 
@@ -337,7 +354,62 @@ function build() (
 				base="$base.exe"
 			fi
 
-			GOOS="$target_os" go build  -trimpath -buildvcs=false -o "$base" "${extra_args[@]}"
+			# Zig target mapping
+			local zig_target=""
+
+			case "$target_os/$target_arch" in
+				linux/amd64)
+					zig_target="x86_64-linux-musl"
+					;;
+				linux/arm64)
+					zig_target="aarch64-linux-musl"
+					;;
+				windows/amd64)
+					zig_target="x86_64-windows-gnu"
+					;;
+				windows/arm64)
+					zig_target="aarch64-windows-gnu"
+					;;
+				darwin/amd64)
+					zig_target="x86_64-macos-none"
+					;;
+				darwin/arm64)
+					zig_target="aarch64-macos-none"
+					;;
+				*)
+					zig_target=""
+					;;
+			esac
+
+			# Static linking flags
+			local ldflags="-s -w -trimpath -buildvcs=false"
+
+			if [[ "$target_os" == "linux" ]]; then
+				ldflags="$ldflags -linkmode external -extldflags '-static'"
+			elif [[ "$target_os" == "windows" ]]; then
+				ldflags="$ldflags -linkmode external -extldflags '-static'"
+			fi
+
+			# Cross-compilation check: use Zig when target != host
+			local is_cross=false
+
+			if [[ "$target_os" != "linux" ]]; then
+				is_cross=true
+			elif [[ "$target_arch" != "$host_arch" ]]; then
+				is_cross=true
+			fi
+
+			# Set build environment
+			export GOOS="$target_os"
+			export GOARCH="$target_arch"
+			export CGO_ENABLED=1
+
+			if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
+				export CC="zig cc -target $zig_target"
+				export CXX="zig c++ -target $zig_target"
+			fi
+
+			go build -ldflags "$ldflags" -o "$base" "${extra_args[@]}" .
 
 			return
 		fi

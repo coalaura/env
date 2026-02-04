@@ -57,4 +57,10 @@ if ! command -v biome >/dev/null 2>&1; then
 	sudo curl -fsSL "https://github.com/biomejs/biome/releases/latest/download/biome-linux-x64" -o /usr/local/bin/biome
 fi
 
+# install zig
+if ! command -v zig >/dev/null 2>&1; then
+	echo "Installing zig..."
+	sudo pacman -Sy zig
+fi
+
 echo "Done."

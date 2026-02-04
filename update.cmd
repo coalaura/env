@@ -97,6 +97,14 @@ if not %errorlevel%==0 (
     curl -Ls https://github.com/biomejs/biome/releases/latest/download/biome-win32-x64.exe -o "%USERPROFILE%\.bin\biome.exe"
 )
 
+:: install zig
+where zig >nul 2>&1
+
+if not %errorlevel%==0 (
+    echo Installing zig...
+    winget install --id zig.zig
+)
+
 endlocal
 
 if %0 == "%~0" (
