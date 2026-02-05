@@ -217,6 +217,73 @@ function git_ssh() {
 	)
 }
 
+# test a project
+function test() (
+	(
+		set -euo pipefail
+
+		local target="$(realpath ".")"
+		local -a extra_args=("$@")
+
+		# handle test script
+		if [[ -f "$target/test.sh" ]]; then
+			printf "\033[37m[test.sh] testing %s\033[0m\n" "$target"
+
+			chmod +x ./test.sh 2>/dev/null
+
+			./test.sh "${extra_args[@]}"
+
+			return
+		fi
+
+		# handle go project
+		if [[ -f "$target/go.mod" ]]; then
+			printf "\033[37m[go] testing %s\033[0m\n" "$target"
+
+			# enable CGO with zig
+			export CGO_ENABLED=1
+			export CC="${CC:-zig cc}"
+			export CXX="${CXX:-zig c++}"
+
+			go test -v . "${extra_args[@]}"
+
+			return
+		fi
+
+		# handle node project
+		if [[ -f "$target/package.json" ]]; then
+			local script=""
+
+			while IFS= read -r line; do
+				case "$line" in
+					*\"test\"*:*)
+						script="test"
+						;;
+				esac
+			done < "$target/package.json"
+
+			if [[ -n "$script" ]]; then
+				printf "\033[37m[bun/%s] testing %s\033[0m\n" "$script" "$target"
+
+				bun run "$script" "${extra_args[@]}"
+
+				return
+			fi
+
+			# fallback to bun test if test files exist
+			if compgen -G "$target/*.{test,spec}.{js,ts,jsx,tsx}" >/dev/null 2>&1; then
+				printf "\033[37m[bun test] testing %s\033[0m\n" "$target"
+
+				bun test "${extra_args[@]}"
+
+				return
+			fi
+		fi
+
+		printf "\033[33merror: %s is not a recognized test project\033[0m\n" "$target"
+	)
+)
+
 # run a project
 function run() (
 	(

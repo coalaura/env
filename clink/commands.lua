@@ -184,9 +184,93 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
+-- test a project
+commands["test"] = function(args)
+	local target_dir = os.getcwd()
+
+	local extra_args = utils.format_extra_args(args)
+
+	-- handle test script
+	local test_cmd = path.join(target_dir, "test.cmd")
+
+	if os.isfile("test.cmd") then
+		utils.printf("[test.cmd] testing %s", utils.clean_path(target_dir))
+
+		return string.format(
+			"call %s %s",
+			utils.escape_path(test_cmd),
+			extra_args
+		)
+	end
+
+	-- handle go project
+	if utils.is_go(target_dir) then
+		utils.printf("[go] testing %s", utils.clean_path(target_dir))
+
+		local content = table.concat({
+			"setlocal",
+			"set CGO_ENABLED=1",
+			"set CC=zig cc",
+			"set CXX=zig c++",
+			"go test -v . %*",
+			"endlocal"
+		}, "\r\n") .. "\r\n"
+
+		local tmp = utils.create_batch(content)
+		if not tmp then
+			utils.errorf("failed to create temp file")
+			return
+		end
+
+		return string.format("%s %s && del %s || del %s",
+			utils.escape_path(tmp),
+			extra_args,
+			utils.escape_path(tmp),
+			utils.escape_path(tmp)
+		)
+	end
+
+	-- handle node project with test script
+	if utils.is_node(target_dir) then
+		local package = path.join(target_dir, "package.json")
+
+		local script = utils.get_package_json_script(package, {"test"})
+
+		if script then
+			utils.printf("[bun/%s] testing %s", script, utils.clean_path(target_dir))
+
+			return string.format(
+				"bun run %s %s",
+				script,
+				extra_args
+			)
+		end
+
+		-- fallback to bun test if test files exist
+		local patterns = {"index.test.js", "index.test.ts", "index.spec.js", "index.spec.ts", "main.test.js", "main.test.ts"}
+
+		for id, pattern in ipairs(patterns) do
+			if os.isfile(path.join(target_dir, pattern)) then
+				utils.printf("[bun test] testing %s", utils.clean_path(target_dir))
+
+				return string.format(
+					"bun test %s",
+					extra_args
+				)
+			end
+		end
+	end
+
+	utils.errorf("%s is not a recognized test project", utils.clean_path(target_dir))
+end
+
+clink.argmatcher("test"):addarg(clink.dirmatches)
+
 -- run a project
 commands["run"] = function(args)
     local target_dir = os.getcwd()
+
+    local extra_args = utils.format_extra_args(args)
 
     -- handle run script
     local run_cmd = path.join(target_dir, "run.cmd")
@@ -197,7 +281,7 @@ commands["run"] = function(args)
         return string.format(
             "call %s %s",
             utils.escape_path(run_cmd),
-            utils.format_extra_args(args)
+            extra_args
         )
     end
 
@@ -224,7 +308,7 @@ commands["run"] = function(args)
 
 		return string.format("%s %s && del %s || del %s",
 			utils.escape_path(tmp),
-			args or "",
+			extra_args,
 			utils.escape_path(tmp),
 			utils.escape_path(tmp)
 		)
@@ -242,7 +326,7 @@ commands["run"] = function(args)
             return string.format(
                 "bun run %s %s",
                 script,
-                utils.format_extra_args(args)
+                extra_args
             )
         end
     end
@@ -256,7 +340,7 @@ commands["run"] = function(args)
         return string.format(
             "bun %s %s",
             script,
-            utils.format_extra_args(args)
+            extra_args
         )
     end
 
@@ -271,6 +355,8 @@ commands["build"] = function(args)
 
     local target_os, args = utils.parse_target_os(args)
 
+    local extra_args = utils.format_extra_args(args)
+
     -- handle build script
     local build_cmd = path.join(target_dir, "build.cmd")
 
@@ -280,7 +366,7 @@ commands["build"] = function(args)
         return string.format(
             "call %s %s",
             utils.escape_path(build_cmd),
-            utils.format_extra_args(args)
+            extra_args
         )
     end
 
@@ -332,11 +418,13 @@ commands["build"] = function(args)
 
 		local go_line = string.format("go build -ldflags %q %%* -o %q", ldflags, base)
 
-		local content = "@echo off\r\n" ..
-			"setlocal\r\n" ..
-			table.concat(env_setup, "\r\n") .. "\r\n" ..
-			go_line .. "\r\n" ..
-			"endlocal\r\n"
+		local content = table.concat({
+            "@echo off",
+			"setlocal",
+			table.concat(env_setup, "\r\n"),
+			go_line,
+			"endlocal"
+        }, "\r\n") .. "\r\n"
 
 		local tmp = utils.create_batch(content)
 
@@ -348,7 +436,7 @@ commands["build"] = function(args)
 
 		return string.format("%s %s && del %s || del %s",
 			utils.escape_path(tmp),
-			args or "",
+			extra_args,
 			utils.escape_path(tmp),
 			utils.escape_path(tmp)
 		)
@@ -371,7 +459,7 @@ commands["build"] = function(args)
         return string.format(
             "bun run %s",
             script,
-            utils.format_extra_args(args)
+            extra_args
         )
     end
 
