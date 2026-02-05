@@ -217,6 +217,10 @@ function _M.format_extra_args(args)
         return ""
     end
 
+    if type(args) == "string" then
+        return args
+    end
+
     local escaped = {}
 
     for _, arg in ipairs(args) do
