@@ -362,9 +362,8 @@ function run() (
 		if [[ -f "$target/run.sh" ]]; then
 			printf "\033[37m[run.sh] running %s\033[0m\n" "$target"
 
-			cd "$target"
-
 			chmod +x ./run.sh 2>/dev/null
+
 			./run.sh "${extra_args[@]}"
 
 			return
@@ -376,10 +375,10 @@ function run() (
 
 			# enable CGO with zig
 			export CGO_ENABLED=1
-			export CC="${CC:-zig cc}"
-			export CXX="${CXX:-zig c++}"
+			export CC="zig cc"
+			export CXX="zig c++"
 
-			go run -C "$target" . "${extra_args[@]}"
+			go run . "${extra_args[@]}"
 
 			return
 		fi
@@ -400,7 +399,7 @@ function run() (
 			if [[ -n "$script" ]]; then
 				printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
 
-				bun run --cwd "$target" "$script" "${extra_args[@]}"
+				bun run "$script" "${extra_args[@]}"
 
 				return
 			fi
@@ -411,7 +410,7 @@ function run() (
 			if [[ -f "$target/$file" ]]; then
 				printf "\033[37m[bun/%s] running %s\033[0m\n" "$file" "$target"
 
-				bun --cwd "$target" "$file" "${extra_args[@]}"
+				bun "$file" "${extra_args[@]}"
 
 				return
 			fi
@@ -429,6 +428,7 @@ function build() (
 		local target_os="linux"
 		local target_arch="amd64"
 
+		local target="$(realpath ".")"
 		local -a extra_args=("$@")
 
 		# Check if first arg is a target OS
@@ -462,13 +462,12 @@ function build() (
 			aarch64) host_arch="arm64" ;;
 		esac
 
-		local target="$(realpath ".")"
-
 		# handle build script
 		if [[ -f "$target/build.sh" ]]; then
 			printf "\033[37m[build.sh] building %s\033[0m\n" "$target"
 
 			chmod +x ./build.sh 2>/dev/null
+
 			./build.sh "${extra_args[@]}"
 
 			return
@@ -695,6 +694,14 @@ export PATH="$PATH:/usr/local/go/bin"
 
 # so ssh/etc properly detect the terminal
 export TERM=xterm-256color
+
+##
+# CGo settings
+##
+
+export CGO_ENABLED=1
+export CC="zig cc"
+export CXX="zig c++"
 
 ##
 # SSH Agent
