@@ -308,8 +308,8 @@ function test() (
 
 			# enable CGO with zig
 			export CGO_ENABLED=1
-			export CC="${CC:-zig cc}"
-			export CXX="${CXX:-zig c++}"
+			export CC="zig cc"
+			export CXX="zig c++"
 
 			go test -v . "${extra_args[@]}"
 
@@ -539,6 +539,9 @@ function build() (
 			if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
 				export CC="zig cc -target $zig_target"
 				export CXX="zig c++ -target $zig_target"
+			else
+				export CC="zig cc"
+				export CXX="zig c++"
 			fi
 
 			go build -ldflags "$ldflags" -o "$base" "${extra_args[@]}" .
