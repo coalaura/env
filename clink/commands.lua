@@ -205,29 +205,12 @@ commands["test"] = function(args)
 
 	-- handle go project
 	if utils.is_go(target_dir) then
-		utils.printf("[go] testing %s", utils.clean_path(target_dir))
+        utils.printf("[go] testing %s", utils.clean_path(target_dir))
 
-		local content = table.concat({
-			"setlocal",
-			"set CGO_ENABLED=1",
-			"set CC=zig cc",
-			"set CXX=zig c++",
-			"go test -v . %*",
-			"endlocal"
-		}, "\r\n") .. "\r\n"
-
-		local tmp = utils.create_batch(content)
-		if not tmp then
-			utils.errorf("failed to create temp file")
-			return
-		end
-
-		return string.format("%s %s && del %s || del %s",
-			utils.escape_path(tmp),
-			extra_args,
-			utils.escape_path(tmp),
-			utils.escape_path(tmp)
-		)
+        return string.format(
+            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go test -v ./... %s\"",
+            extra_args
+        )
 	end
 
 	-- handle node project with test script
@@ -289,29 +272,10 @@ commands["run"] = function(args)
     if utils.is_go(target_dir) then
         utils.printf("[go] running %s", utils.clean_path(target_dir))
 
-        local content = table.concat({
-			"setlocal",
-			"set CGO_ENABLED=1",
-			"set CC=zig cc",
-			"set CXX=zig c++",
-			"go run . %*",
-			"endlocal"
-		}, "\r\n") .. "\r\n"
-
-		local tmp = utils.create_batch(content)
-
-		if not tmp then
-			utils.errorf("failed to create temp file")
-
-			return
-		end
-
-		return string.format("%s %s && del %s || del %s",
-			utils.escape_path(tmp),
-			extra_args,
-			utils.escape_path(tmp),
-			utils.escape_path(tmp)
-		)
+        return string.format(
+            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go run . %s\"",
+            extra_args
+        )
     end
 
     -- handle node project
@@ -380,66 +344,35 @@ commands["build"] = function(args)
             base = base .. ".exe"
         end
 
-        local ldflags = "-s -w -trimpath -buildvcs=false"
+        local ldflags = "-s -w"
 
-		if target_os == "linux" or target_os == "windows" then
-			ldflags = ldflags .. " -linkmode external -extldflags \\\"-static\\\""
-		end
+        if target_os == "linux" or target_os == "windows" then
+            ldflags = ldflags .. " -linkmode external -extldflags \\\"-static\\\""
+        end
 
-		local zig_targets = {
-			["linux"] = "x86_64-linux-musl",
-			["windows"] = "x86_64-windows-gnu",
-			["darwin"] = "x86_64-macos-none"
-		}
+        local zig_targets = {
+            ["linux"] = "x86_64-linux-musl",
+            ["windows"] = "x86_64-windows-gnu",
+            ["darwin"] = "x86_64-macos-none"
+        }
 
-		local zig_target = zig_targets[target_os]
+        local zig_target = zig_targets[target_os]
+        local env_cc = ""
 
-		local cc = ""
-        local cxx = ""
+        if target_os == "windows" then
+            env_cc = " && set ^\"CC=zig cc^\" && set ^\"CXX=zig c++^\""
+        elseif zig_target then
+            env_cc = string.format(" && set ^\"CC=zig cc -target %s^\" && set ^\"CXX=zig c++ -target %s^\"", zig_target, zig_target)
+        end
 
-		if target_os == "windows" then
-			cc = "zig cc"
-			cxx = "zig c++"
-		elseif zig_target then
-			cc = "zig cc -target " .. zig_target
-			cxx = "zig c++ -target " .. zig_target
-		end
-
-		local env_setup = {
-			"set GOOS=" .. target_os,
-			"set GOARCH=amd64",
-			"set CGO_ENABLED=1"
-		}
-
-		if cc ~= "" then
-			table.insert(env_setup, "set CC=" .. cc)
-			table.insert(env_setup, "set CXX=" .. cxx)
-		end
-
-		local go_line = string.format("go build -ldflags %q %%* -o %q", ldflags, base)
-
-		local content = table.concat({
-            "@echo off",
-			"setlocal",
-			table.concat(env_setup, "\r\n"),
-			go_line,
-			"endlocal"
-        }, "\r\n") .. "\r\n"
-
-		local tmp = utils.create_batch(content)
-
-		if not tmp then
-			utils.errorf("failed to create temp file")
-
-            return
-		end
-
-		return string.format("%s %s && del %s || del %s",
-			utils.escape_path(tmp),
-			extra_args,
-			utils.escape_path(tmp),
-			utils.escape_path(tmp)
-		)
+        return string.format(
+            "cmd /c \"set GOOS=%s && set GOARCH=amd64 && set CGO_ENABLED=1%s && go build -trimpath -buildvcs=false -ldflags ^\"%s^\" -o ^\"%s^\" %s .\"",
+            target_os,
+            env_cc,
+            ldflags,
+            base,
+            extra_args
+        )
     end
 
     -- handle node project
@@ -580,5 +513,6 @@ clink.onfilterinput(function(text)
         return
     end
 
+    -- print(func(arguments))
     return func(arguments) or ""
 end)
