@@ -117,6 +117,72 @@ function push() {
 	)
 }
 
+# create and push a git tag
+function tag() {
+	(
+		set -euo pipefail
+
+		local target=$(git_root "${1:-.}")
+
+		if [ ! -d "$target/.git" ]; then
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+
+			return 1
+		fi
+
+		local last_tag
+
+		last_tag=$(git -C "$target" describe --tags --abbrev=0 2>/dev/null || true)
+
+		if [[ -z "$last_tag" ]]; then
+			last_tag="n/a"
+		fi
+
+		printf "\x1b[90mcurrent: %s\033[0m\n\n" "$last_tag"
+
+		local tag_name
+		local msg
+
+		read -rp "new tag: " tag_name
+
+		tag_name="$(echo "$tag_name" | xargs)"
+
+		if [[ -z "$tag_name" ]]; then
+			printf "\033[33merror: tag name is required\033[0m\n"
+
+			return 1
+		fi
+
+		read -rp "message: " msg
+
+		msg="$(echo "$msg" | xargs)"
+
+		if [[ -z "$msg" ]]; then
+			printf "\033[33merror: message is required\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[37mtagging %s as %s\033[0m\n" "$target" "$tag_name"
+
+		if ! git -C "$target" tag -a "$tag_name" -m "$msg"; then
+			printf "\033[33merror: failed to create tag\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[37mpushing tag %s\033[0m\n" "$tag_name"
+
+		if ! git -C "$target" push origin "$tag_name"; then
+			printf "\033[33merror: failed to push tag\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[32msuccess: tagged and pushed %s\033[0m\n" "$tag_name"
+	)
+}
+
 # print git remote origin
 function origin() {
 	(

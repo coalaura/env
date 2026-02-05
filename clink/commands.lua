@@ -71,6 +71,93 @@ end
 
 clink.argmatcher("push"):addarg(clink.dirmatches)
 
+-- create and push a git tag
+commands["tag"] = function(args)
+	local target_dir = args or os.getcwd()
+
+	local root = utils.git_root(target_dir)
+
+	local ok, err = utils.is_git(root)
+
+    if not ok then
+		utils.errorf(err)
+
+        return
+	end
+
+	local escaped_root = utils.escape_path(root)
+
+	-- last tag name
+	local last_tag = ""
+
+    local handle = io.popen(string.format(
+        "git.exe -C %s describe --tags --abbrev=0 2>nul",
+        escaped_root
+    ))
+
+    if handle then
+        last_tag = utils.trim(handle:read("*l") or "")
+
+        handle:close()
+    end
+
+	if last_tag == "" then
+        last_tag = "n/a"
+    end
+
+    utils.printf(
+        "\x1b[90mcurrent: %s",
+        last_tag
+    )
+
+	local tag_name = utils.read_line("new tag: ", "")
+
+	tag_name = utils.trim(tag_name)
+
+	if tag_name == "" then
+		utils.errorf("tag name is required")
+
+		return
+	end
+
+	local msg = utils.read_line("message: ", "")
+
+	msg = utils.trim(msg)
+
+	if msg == "" then
+		utils.errorf("message is required")
+
+		return
+	end
+
+	local escaped_root = utils.escape_path(root)
+	local escaped_msg = utils.escape_input(msg)
+
+	utils.printf("tagging %s as %s", utils.clean_path(root), tag_name)
+
+	local cmd = string.format("git.exe -C %s tag -a %s -m \"%s\"", escaped_root, tag_name, escaped_msg)
+
+	if not os.execute(cmd) then
+		utils.errorf("failed to create tag")
+
+		return
+	end
+
+	utils.printf("pushing tag %s", tag_name)
+
+	cmd = string.format("git.exe -C %s push origin %s", escaped_root, tag_name)
+
+	if not os.execute(cmd) then
+		utils.errorf("failed to push tag")
+
+		return
+	end
+
+	utils.successf("tagged and pushed %s", tag_name)
+end
+
+clink.argmatcher("tag"):addarg(clink.dirmatches)
+
 -- print git remote origin
 commands["origin"] = function(args)
     local target_dir = args or os.getcwd()
