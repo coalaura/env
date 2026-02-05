@@ -295,7 +295,7 @@ commands["test"] = function(args)
         utils.printf("[go] testing %s", utils.clean_path(target_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go test -v ./... %s\"",
+            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go test -v . %s\"",
             extra_args
         )
 	end
