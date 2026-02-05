@@ -205,34 +205,29 @@ commands["run"] = function(args)
     if utils.is_go(target_dir) then
         utils.printf("[go] running %s", utils.clean_path(target_dir))
 
-        -- original env
-        local env_backup = {
-            CGO_ENABLED = os.getenv("CGO_ENABLED"),
-            CC = os.getenv("CC"),
-            CXX = os.getenv("CXX")
-        }
+        local content = table.concat({
+			"setlocal",
+			"set CGO_ENABLED=1",
+			"set CC=zig cc",
+			"set CXX=zig c++",
+			"go run . %*",
+			"endlocal"
+		}, "\r\n") .. "\r\n"
 
-        -- build env
-        os.setenv("CGO_ENABLED", "1")
-        os.setenv("CC", "zig cc")
-        os.setenv("CXX", "zig c++")
+		local tmp = utils.create_batch(content)
 
-        -- run
-        local ok = os.execute(string.format(
-            "go run . %s",
-            utils.format_extra_args(args)
-        ))
+		if not tmp then
+			utils.errorf("failed to create temp file")
 
-        -- restore
-        for name, value in pairs(env_backup) do
-            os.setenv(name, value)
-        end
+			return
+		end
 
-        if ok then
-            return "exit /b 0"
-        end
-
-        return "exit /b 1"
+		return string.format("%s %s && del %s || del %s",
+			utils.escape_path(tmp),
+			args or "",
+			utils.escape_path(tmp),
+			utils.escape_path(tmp)
+		)
     end
 
     -- handle node project
@@ -299,67 +294,64 @@ commands["build"] = function(args)
             base = base .. ".exe"
         end
 
-        -- zig target mapping
-        local zig_targets = {
-            ["linux"] = "x86_64-linux-musl",
-            ["windows"] = "x86_64-windows-gnu",
-            ["darwin"] = "x86_64-macos-none"
-        }
-
-        local zig_target = zig_targets[target_os]
-
-        -- linking flags
         local ldflags = "-s -w -trimpath -buildvcs=false"
 
-        if target_os == "linux" or target_os == "windows" then
-            ldflags = ldflags .. " -linkmode external -extldflags \"-static\""
-        end
+		if target_os == "linux" or target_os == "windows" then
+			ldflags = ldflags .. " -linkmode external -extldflags \\\"-static\\\""
+		end
 
-        -- original env
-        local env_backup = {
-            GOOS = os.getenv("GOOS"),
-            GOARCH = os.getenv("GOARCH"),
-            CGO_ENABLED = os.getenv("CGO_ENABLED"),
-            CC = os.getenv("CC"),
-            CXX = os.getenv("CXX")
-        }
+		local zig_targets = {
+			["linux"] = "x86_64-linux-musl",
+			["windows"] = "x86_64-windows-gnu",
+			["darwin"] = "x86_64-macos-none"
+		}
 
-        -- build env
-        os.setenv("GOOS", target_os)
-        os.setenv("GOARCH", "amd64")
-        os.setenv("CGO_ENABLED", "1")
+		local zig_target = zig_targets[target_os]
 
-        if target_os == "windows" then
-            os.setenv("CC", "zig cc")
-            os.setenv("CXX", "zig c++")
-        elseif zig_target then
-            os.setenv("CC", string.format("zig cc -target %s", zig_target))
-            os.setenv("CXX", string.format("zig c++ -target %s", zig_target))
-        else
-            os.setenv("CC", nil)
-            os.setenv("CXX", nil)
-        end
+		local cc = ""
+        local cxx = ""
 
-        -- build
-        local build_args = string.format(
-            "go build -ldflags \"%s\" %s -o %s",
-            ldflags,
-            utils.format_extra_args(args),
-            base
-        )
+		if target_os == "windows" then
+			cc = "zig cc"
+			cxx = "zig c++"
+		elseif zig_target then
+			cc = "zig cc -target " .. zig_target
+			cxx = "zig c++ -target " .. zig_target
+		end
 
-        local ok = os.execute(build_args)
+		local env_setup = {
+			"set GOOS=" .. target_os,
+			"set GOARCH=amd64",
+			"set CGO_ENABLED=1"
+		}
 
-        -- restore
-        for name, value in pairs(env_backup) do
-            os.setenv(name, value)
-        end
+		if cc ~= "" then
+			table.insert(env_setup, "set CC=" .. cc)
+			table.insert(env_setup, "set CXX=" .. cxx)
+		end
 
-        if ok then
-            return "exit /b 0"
-        end
+		local go_line = string.format("go build -ldflags %q %%* -o %q", ldflags, base)
 
-        return "exit /b 1"
+		local content = "@echo off\r\n" ..
+			"setlocal\r\n" ..
+			table.concat(env_setup, "\r\n") .. "\r\n" ..
+			go_line .. "\r\n" ..
+			"endlocal\r\n"
+
+		local tmp = utils.create_batch(content)
+
+		if not tmp then
+			utils.errorf("failed to create temp file")
+
+            return
+		end
+
+		return string.format("%s %s && del %s || del %s",
+			utils.escape_path(tmp),
+			args or "",
+			utils.escape_path(tmp),
+			utils.escape_path(tmp)
+		)
     end
 
     -- handle node project

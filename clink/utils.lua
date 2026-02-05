@@ -158,6 +158,25 @@ function _M.background(commands)
     os.execute(string.format("start /b cmd /c \"%s\"", sub))
 end
 
+function _M.create_batch(content)
+	local tmp = os.getenv("TMP") or os.getenv("TEMP") or "."
+
+	local name = string.format("%s\\_clink_%d_%d.cmd", tmp, os.time(), math.random(1000, 9999))
+
+	local f = io.open(name, "w")
+
+	if not f then
+        return false
+    end
+
+	f:write("@echo off\r\n")
+	f:write(content)
+
+	f:close()
+
+	return name
+end
+
 -- Parse target directory and extra arguments separated by --
 -- Returns: target_dir (string), extra_args (table)
 function _M.parse_target_and_args(args)
