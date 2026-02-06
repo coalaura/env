@@ -360,7 +360,7 @@ commands["run"] = function(args)
         utils.printf("[go] running %s", utils.clean_path(target_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go run . %s\"",
+            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc -target x86_64-windows-gnu && set CXX=zig c++ -target x86_64-windows-gnu && go run . %s\"",
             extra_args
         )
     end
@@ -447,9 +447,9 @@ commands["build"] = function(args)
         local env_cc = ""
 
         if target_os == "windows" then
-            env_cc = " && set ^\"CC=zig cc^\" && set ^\"CXX=zig c++^\""
+            env_cc = " && set CC=zig cc -target x86_64-windows-gnu && set CXX=zig c++ -target x86_64-windows-gnu"
         elseif zig_target then
-            env_cc = string.format(" && set ^\"CC=zig cc -target %s^\" && set ^\"CXX=zig c++ -target %s^\"", zig_target, zig_target)
+            env_cc = string.format(" && set CC=zig cc -target %s && set CXX=zig c++ -target %s", zig_target, zig_target)
         end
 
         return string.format(

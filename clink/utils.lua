@@ -320,15 +320,15 @@ function _M.read_line(prompt, default)
 end
 
 function _M.printf(format, ...)
-    print("\x1b[37m" .. string.format(format, ...) .. "\x1b[0m")
+    print("\x1b[37m" .. string.format(format or "", ...) .. "\x1b[0m")
 end
 
 function _M.successf(format, ...)
-    print("\x1b[32msuccess: " .. string.format(format, ...) .. "\x1b[0m")
+    print("\x1b[32msuccess: " .. string.format(format or "", ...) .. "\x1b[0m")
 end
 
 function _M.errorf(format, ...)
-    print("\x1b[33merror: " .. string.format(format, ...) .. "\x1b[0m")
+    print("\x1b[33merror: " .. string.format(format or "", ...) .. "\x1b[0m")
 end
 
 return _M

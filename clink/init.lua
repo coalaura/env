@@ -59,8 +59,8 @@ init_openssh()
 
 -- initialized environment variables
 os.setenv("CGO_ENABLED", "1")
-os.setenv("CC", "zig cc")
-os.setenv("CXX", "zig c++")
+os.setenv("CC", "zig cc -target x86_64-windows-gnu")
+os.setenv("CXX", "zig c++ -target x86_64-windows-gnu")
 
 -- initialize other aliases
 os.setalias("clear", "cls")
