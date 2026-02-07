@@ -357,10 +357,13 @@ commands["run"] = function(args)
 
     -- handle go project
     if utils.is_go(target_dir) then
-        utils.printf("[go] running %s", utils.clean_path(target_dir))
+        local main_dir = utils.find_go_main_dir(target_dir)
+
+        utils.printf("[go] running %s", utils.clean_path(main_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc -target x86_64-windows-gnu && set CXX=zig c++ -target x86_64-windows-gnu && go run . %s\"",
+            "cmd /c \"set CGO_ENABLED=1 && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\" && go run %s %s\"",
+            main_dir,
             extra_args
         )
     end
@@ -423,13 +426,15 @@ commands["build"] = function(args)
 
     -- handle go project
     if utils.is_go(target_dir) then
-        local base = utils.basename(target_dir) or "app"
+        local main_dir = utils.find_go_main_dir(target_dir)
 
-        utils.printf("[go/%s/%s] building %s", target_os, base, utils.clean_path(target_dir))
+        local base = utils.basename(target_dir) or "app"
 
         if target_os == "windows" then
             base = base .. ".exe"
         end
+
+        utils.printf("[go/%s/%s] building %s", target_os, base, utils.clean_path(main_dir))
 
         local ldflags = "-s -w"
 
@@ -447,18 +452,19 @@ commands["build"] = function(args)
         local env_cc = ""
 
         if target_os == "windows" then
-            env_cc = " && set CC=zig cc -target x86_64-windows-gnu && set CXX=zig c++ -target x86_64-windows-gnu"
+            env_cc = " && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\""
         elseif zig_target then
-            env_cc = string.format(" && set CC=zig cc -target %s && set CXX=zig c++ -target %s", zig_target, zig_target)
+            env_cc = string.format(" && set ^\"CC=zig cc -target %s^\" && set ^\"CXX=zig c++ -target %s^\"", zig_target, zig_target)
         end
 
         return string.format(
-            "cmd /c \"set GOOS=%s && set GOARCH=amd64 && set CGO_ENABLED=1%s && go build -trimpath -buildvcs=false -ldflags ^\"%s^\" -o ^\"%s^\" %s .\"",
+            "cmd /c \"set ^\"GOOS=%s^\" && set ^\"GOARCH=amd64^\" && set ^\"CGO_ENABLED=1^\"%s && go build -trimpath -buildvcs=false -ldflags ^\"%s^\" -o ^\"%s^\"%s %s\"",
             target_os,
             env_cc,
             ldflags,
             base,
-            extra_args
+            extra_args,
+            main_dir
         )
     end
 
@@ -584,6 +590,14 @@ clink.onfilterinput(function(text)
 
     local command, arguments = text:match("^(%S+)%s*(.*)$")
 
+    local debug = false
+
+    if command == "debug" then
+        debug = true
+
+        command, arguments = (arguments or ""):match("^(%S+)%s*(.*)$")
+    end
+
     if not command then
         return
     end
@@ -600,6 +614,13 @@ clink.onfilterinput(function(text)
         return
     end
 
-    -- print(func(arguments))
-    return func(arguments) or ""
+    local result = func(arguments)
+
+    if debug then
+        utils.printf("$ %s", result or "n/a")
+
+        return ""
+    end
+
+    return result or ""
 end)

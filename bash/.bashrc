@@ -6,6 +6,81 @@
 [[ $- != *i* ]] && return
 
 ##
+# Helper Functions
+##
+
+# Find the directory containing package main with func main, prioritizing highest level
+function _find_go_main_dir() {
+    local root_dir="${1:-.}"
+
+    root_dir=$(realpath "$root_dir")
+
+    local has_main_pkg=false
+    local has_main_func=false
+
+    for f in "$root_dir"/*.go; do
+        [[ -f "$f" ]] || continue
+
+        if grep -q "^package main" "$f" 2>/dev/null; then
+            has_main_pkg=true
+
+            if grep -q "func main(" "$f" 2>/dev/null; then
+                has_main_func=true
+
+                break
+            fi
+        fi
+    done
+
+    if [[ "$has_main_pkg" == true && "$has_main_func" == true ]]; then
+        echo "$root_dir"
+
+        return
+    fi
+
+    # Find all main packages using go list
+    local candidates=()
+
+    while IFS='|' read -r pkg_name pkg_dir; do
+        [[ "$pkg_name" == "main" ]] || continue
+        [[ -d "$pkg_dir" ]] || continue
+
+        for f in "$pkg_dir"/*.go; do
+            [[ -f "$f" ]] || continue
+
+            if grep -q "func main(" "$f" 2>/dev/null; then
+                candidates+=("$pkg_dir")
+
+			    break
+            fi
+        done
+    done < <(cd "$root_dir" && go list -f '{{.Name}}|{{.Dir}}' ./... 2>/dev/null)
+
+    if [[ ${#candidates[@]} -eq 0 ]]; then
+        echo "$root_dir"
+
+        return
+    fi
+
+    # Find shallowest path (fewest slashes = highest level)
+    local main_dir="${candidates[0]}"
+    local min_depth=$(echo "$main_dir" | tr -cd '/' | wc -c)
+
+    for dir in "${candidates[@]:1}"; do
+        local depth=$(echo "$dir" | tr -cd '/' | wc -c)
+
+		if [[ $depth -lt $min_depth ]]; then
+            min_depth=$depth
+            main_dir="$dir"
+        elif [[ $depth -eq $min_depth && "$dir" < "$main_dir" ]]; then
+            main_dir="$dir"
+        fi
+    done
+
+    echo "$main_dir"
+}
+
+##
 # Commands
 ##
 
@@ -371,14 +446,18 @@ function run() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			printf "\033[37m[go] running %s\033[0m\n" "$target"
+			local main_dir
+
+			main_dir=$(_find_go_main_dir "$target")
+
+			printf "\033[37m[go] running %s\033[0m\n" "$main_dir"
 
 			# enable CGO with zig
 			export CGO_ENABLED=1
 			export CC="zig cc"
 			export CXX="zig c++"
 
-			go run . "${extra_args[@]}"
+			go run "$main_dir" "${extra_args[@]}"
 
 			return
 		fi
@@ -475,12 +554,16 @@ function build() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
+			local main_dir
+
+			main_dir=$(_find_go_main_dir "$target")
+
 			local base
 
 			base="$(basename "$target")"
 			base="${base//[[:space:]]/}"
 
-			printf "\033[37m[go/%s] building %s\033[0m\n" "$base" "$target"
+			printf "\033[37m[go/%s/%s] building %s\033[0m\n" "$target_os" "$base" "$main_dir"
 
 			if [[ "$target_os" == "windows" ]]; then
 				base="$base.exe"
@@ -544,7 +627,7 @@ function build() (
 				export CXX="zig c++"
 			fi
 
-			go build -ldflags "$ldflags" -o "$base" "${extra_args[@]}" .
+			go build -ldflags "$ldflags" -o "$base" "${extra_args[@]}" "$main_dir"
 
 			return
 		fi

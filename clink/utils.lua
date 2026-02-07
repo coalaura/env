@@ -116,11 +116,15 @@ function _M.trim(str)
     return (str or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
-function _M.escape_path(pt)
+function _M.escape_path(pt, escapeQuotes)
     pt = path.normalise(pt)
 
     pt = pt:gsub("[/\\]+$", "")
     pt = pt:gsub("\"", "\"\"")
+
+    if escapeQuotes then
+        return string.format("^\"%s^\"", pt)
+    end
 
     return string.format("\"%s\"", pt)
 end
@@ -310,6 +314,77 @@ function _M.get_first_existing_file(dir, allowed)
     return false
 end
 
+function _M.find_go_main_dir(root)
+    root = path.normalise(root)
+
+    local handle = io.popen(string.format("dir /b \"%s\\*.go\" 2>nul", root))
+
+    if handle then
+        for file in handle:lines() do
+            local content = _M.read_file(path.join(root, file)) or ""
+
+            if content:match("package%s+main") and content:match("func%s+main%s*%(") then
+                handle:close()
+
+                return root
+            end
+        end
+
+        handle:close()
+    end
+
+    local cmd = string.format("cd /d \"%s\" && go list -f \"{{.Name}}|{{.Dir}}\" ./... 2>nul", root)
+
+    local list_handle = io.popen(cmd)
+
+    if not list_handle then
+        return root
+    end
+
+    local candidates = {}
+
+    for line in list_handle:lines() do
+        local pkg_name, pkg_dir = line:match("^([^|]+)|(.+)$")
+
+        if pkg_name == "main" and pkg_dir then
+            local dir_handle = io.popen(string.format("dir /b \"%s\\*.go\" 2>nul", pkg_dir))
+
+            if dir_handle then
+                for file in dir_handle:lines() do
+                    local content = _M.read_file(path.join(pkg_dir, file)) or ""
+
+                    if content:match("func%s+main%s*%(") then
+                        table.insert(candidates, pkg_dir)
+
+                        break
+                    end
+                end
+
+                dir_handle:close()
+            end
+        end
+    end
+
+    list_handle:close()
+
+    if #candidates == 0 then
+        return root
+    end
+
+    table.sort(candidates, function(a, b)
+        local _, count_a = a:gsub("[/\\]", "")
+        local _, count_b = b:gsub("[/\\]", "")
+
+        if count_a == count_b then
+            return a < b
+        end
+
+        return count_a < count_b
+    end)
+
+    return candidates[1]
+end
+
 function _M.read_line(prompt, default)
     io.write(prompt)
     io.flush()
@@ -320,15 +395,27 @@ function _M.read_line(prompt, default)
 end
 
 function _M.printf(format, ...)
-    print("\x1b[37m" .. string.format(format or "", ...) .. "\x1b[0m")
+    if not format then
+        return
+    end
+
+    print("\x1b[37m" .. string.format(format, ...) .. "\x1b[0m")
 end
 
 function _M.successf(format, ...)
-    print("\x1b[32msuccess: " .. string.format(format or "", ...) .. "\x1b[0m")
+    if not format then
+        return
+    end
+
+    print("\x1b[32msuccess: " .. string.format(format, ...) .. "\x1b[0m")
 end
 
 function _M.errorf(format, ...)
-    print("\x1b[33merror: " .. string.format(format or "", ...) .. "\x1b[0m")
+    if not format then
+        return
+    end
+
+    print("\x1b[33merror: " .. string.format(format, ...) .. "\x1b[0m")
 end
 
 return _M
