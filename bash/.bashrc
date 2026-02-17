@@ -386,7 +386,7 @@ function test() (
 			export CC="zig cc"
 			export CXX="zig c++"
 
-			go test -v . "${extra_args[@]}"
+			go test -v "${extra_args[@]}" .
 
 			return
 		fi
@@ -457,7 +457,7 @@ function run() (
 			export CC="zig cc"
 			export CXX="zig c++"
 
-			go run "$main_dir" "${extra_args[@]}"
+			go run "${extra_args[@]}" "$main_dir"
 
 			return
 		fi
@@ -627,7 +627,7 @@ function build() (
 				export CXX="zig c++"
 			fi
 
-			go build -ldflags "$ldflags" -o "$base" "${extra_args[@]}" "$main_dir"
+			go build -ldflags "$ldflags" "${extra_args[@]}" -o "$base" "$main_dir"
 
 			return
 		fi
