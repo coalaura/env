@@ -597,7 +597,7 @@ function build() (
 			esac
 
 			# Static linking flags
-			local ldflags="-s -w -trimpath -buildvcs=false"
+			local ldflags="-s -w"
 
 			if [[ "$target_os" == "linux" ]]; then
 				ldflags="$ldflags -linkmode external -extldflags '-static'"
@@ -627,7 +627,7 @@ function build() (
 				export CXX="zig c++"
 			fi
 
-			go build -ldflags "$ldflags" "${extra_args[@]}" -o "$base" "$main_dir"
+			go build -trimpath -buildvcs=false -ldflags "$ldflags" "${extra_args[@]}" -o "$base" "$main_dir"
 
 			return
 		fi
