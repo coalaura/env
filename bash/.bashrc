@@ -283,7 +283,7 @@ function origin() {
 	)
 }
 
-# discard all changes in a git repo
+# reset and cleans git repo
 function trash() {
 	(
 		set -euo pipefail
@@ -298,7 +298,6 @@ function trash() {
 
 		local confirm
 
-		# Explicitly prompt about the target so you don't trash the wrong repo
 		read -rp "trash everything in $(basename "$target")? [y/N] " confirm
 
 		if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
@@ -306,6 +305,13 @@ function trash() {
 
 			return 1
 		fi
+
+		printf "\033[37maborting pending operations...\033[0m\n"
+
+		git -C "$target" rebase --abort 2>/dev/null || true
+		git -C "$target" merge --abort 2>/dev/null || true
+		git -C "$target" cherry-pick --abort 2>/dev/null || true
+		git -C "$target" bisect reset 2>/dev/null || true
 
 		printf "\033[37mresetting...\033[0m\n"
 
@@ -802,11 +808,6 @@ fi
 
 if ! ssh-add -l >/dev/null 2>&1; then
 	eval "$(ssh-agent -s)" > "$SSH_AGENT_FILE"
-fi
-
-# ensure github ssh key is loaded
-if [ -f "$HOME/.ssh/keys/github" ]; then
-	ssh-add "$HOME/.ssh/keys/github" > /dev/null 2>&1
 fi
 
 # ensure github ssh key is loaded

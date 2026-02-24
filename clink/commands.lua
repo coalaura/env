@@ -185,7 +185,7 @@ end
 
 clink.argmatcher("origin"):addarg(clink.dirmatches)
 
--- reset and clean git repo
+-- reset and cleans git repo
 commands["trash"] = function(args)
     local target_dir = args or os.getcwd()
 
@@ -209,10 +209,17 @@ commands["trash"] = function(args)
 
     local escaped_root = utils.escape_path(root)
 
+    utils.printf("aborting pending operations...")
+
+    os.execute(string.format("git.exe -C %s rebase --abort 2>nul", escaped_root))
+    os.execute(string.format("git.exe -C %s merge --abort 2>nul", escaped_root))
+    os.execute(string.format("git.exe -C %s cherry-pick --abort 2>nul", escaped_root))
+    os.execute(string.format("git.exe -C %s bisect reset 2>nul", escaped_root))
+
     utils.printf("resetting...")
 
     if not os.execute(string.format("git.exe -C %s reset --hard", escaped_root)) then
-        utils.errorf("failed")
+        utils.errorf("failed to reset")
 
         return
     end
@@ -220,7 +227,7 @@ commands["trash"] = function(args)
     utils.printf("cleaning...")
 
     if not os.execute(string.format("git.exe -C %s clean -fd", escaped_root)) then
-        utils.errorf("failed")
+        utils.errorf("failed to clean")
 
         return
     end
@@ -295,7 +302,7 @@ commands["test"] = function(args)
         utils.printf("[go] testing %s", utils.clean_path(target_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CGO_LDFLAGS=-lsynchronization && set CC=zig cc && set CXX=zig c++ && go test -v %s .\"",
+            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go test -v %s .\"",
             extra_args
         )
 	end
@@ -362,7 +369,7 @@ commands["run"] = function(args)
         utils.printf("[go] running %s", utils.clean_path(main_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CGO_LDFLAGS=-lsynchronization && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\" && go run %s %s\"",
+            "cmd /c \"set CGO_ENABLED=1 && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\" && go run %s %s\"",
             extra_args,
             main_dir
         )
