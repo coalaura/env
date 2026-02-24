@@ -181,6 +181,32 @@ function _M.create_batch(content)
 	return name
 end
 
+local function escape_cmd_set_value(v)
+    v = tostring(v)
+
+    v = v:gsub("%^", "^^") -- caret first
+    v = v:gsub("%%", "%%%%") -- prevent %VAR% expansion
+    v = v:gsub('"', '^"') -- literal quote
+
+    return v
+end
+
+function _M.command_with_env(command, env)
+    local entries = {}
+
+    for key, value in pairs(env) do
+        table.insert(entries, string.format(
+            "set \"%s=%s\"",
+            key,
+            escape_cmd_set_value(value)
+        ))
+    end
+
+    table.insert(entries, command)
+
+    return string.format("cmd /v:off /c \"%s\"", table.concat(entries, " && "))
+end
+
 -- Parse target directory and extra arguments separated by --
 -- Returns: target_dir (string), extra_args (table)
 function _M.parse_target_and_args(args)

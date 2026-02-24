@@ -301,9 +301,13 @@ commands["test"] = function(args)
 	if utils.is_go(target_dir) then
         utils.printf("[go] testing %s", utils.clean_path(target_dir))
 
-        return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go test -v %s .\"",
-            extra_args
+        return utils.command_with_env(
+            string.format("go test -v %s .", extra_args),
+            {
+                CGO_ENABLED = "1",
+                CC = "zig cc",
+                CXX = "zig c++",
+            }
         )
 	end
 
@@ -368,10 +372,13 @@ commands["run"] = function(args)
 
         utils.printf("[go] running %s", utils.clean_path(main_dir))
 
-        return string.format(
-            "cmd /c \"set \"CGO_ENABLED=1\" && set \"CC=zig cc -target x86_64-windows-gnu\" && set \"CXX=zig c++ -target x86_64-windows-gnu\" && go run %s %s\"",
-            extra_args,
-            utils.escape_path(main_dir)
+        return utils.command_with_env(
+            string.format("go run %s %s", extra_args, utils.escape_path(main_dir)),
+            {
+                CGO_ENABLED = "1",
+                CC = "zig cc -target x86_64-windows-gnu",
+                CXX = "zig c++ -target x86_64-windows-gnu",
+            }
         )
     end
 
@@ -455,25 +462,28 @@ commands["build"] = function(args)
             ["darwin"] = "x86_64-macos-none"
         }
 
+        local env = {
+            GOOS = target_os,
+            GOARCH = "amd64",
+            CGO_ENABLED = "1",
+        }
+
         local zig_target = zig_targets[target_os]
-        local env_cc = ""
 
         if zig_target then
-            env_cc = string.format(
-                " && set \"CC=zig cc -target %s\" && set \"CXX=zig c++ -target %s\"",
-                zig_target,
-                zig_target
-            )
+            env.CC = "zig cc -target " .. zig_target
+            env.CXX = "zig c++ -target " .. zig_target
         end
 
-        return string.format(
-            "cmd /c \"set \"GOOS=%s\" && set \"GOARCH=amd64\" && set \"CGO_ENABLED=1\"%s && go build -trimpath -buildvcs=false -ldflags \"%s\" %s -o %s %s\"",
-            target_os,
-            env_cc,
-            ldflags,
-            extra_args,
-            utils.escape_path(base),
-            utils.escape_path(main_dir)
+        return utils.command_with_env(
+            string.format(
+                "go build -trimpath -buildvcs=false -ldflags \"%s\" %s -o %s %s",
+                ldflags,
+                extra_args,
+                utils.escape_path(base),
+                utils.escape_path(main_dir)
+            ),
+            env
         )
     end
 
