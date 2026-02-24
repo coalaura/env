@@ -295,7 +295,7 @@ commands["test"] = function(args)
         utils.printf("[go] testing %s", utils.clean_path(target_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set CC=zig cc && set CXX=zig c++ && go test -v %s .\"",
+            "cmd /c \"set CGO_ENABLED=1 && set CGO_LDFLAGS=-lsynchronization && set CC=zig cc && set CXX=zig c++ && go test -v %s .\"",
             extra_args
         )
 	end
@@ -362,7 +362,7 @@ commands["run"] = function(args)
         utils.printf("[go] running %s", utils.clean_path(main_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\" && go run %s %s\"",
+            "cmd /c \"set CGO_ENABLED=1 && set CGO_LDFLAGS=-lsynchronization && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\" && go run %s %s\"",
             extra_args,
             main_dir
         )
