@@ -369,9 +369,9 @@ commands["run"] = function(args)
         utils.printf("[go] running %s", utils.clean_path(main_dir))
 
         return string.format(
-            "cmd /c \"set CGO_ENABLED=1 && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\" && go run %s %s\"",
+            "cmd /c \"set \"CGO_ENABLED=1\" && set \"CC=zig cc -target x86_64-windows-gnu\" && set \"CXX=zig c++ -target x86_64-windows-gnu\" && go run %s %s\"",
             extra_args,
-            main_dir
+            utils.escape_path(main_dir)
         )
     end
 
@@ -446,7 +446,7 @@ commands["build"] = function(args)
         local ldflags = "-s -w"
 
         if target_os == "linux" or target_os == "windows" then
-            ldflags = ldflags .. " -linkmode external -extldflags \\\"-static\\\""
+            ldflags = ldflags .. " -linkmode external -extldflags=-static"
         end
 
         local zig_targets = {
@@ -458,20 +458,22 @@ commands["build"] = function(args)
         local zig_target = zig_targets[target_os]
         local env_cc = ""
 
-        if target_os == "windows" then
-            env_cc = " && set ^\"CC=zig cc -target x86_64-windows-gnu^\" && set ^\"CXX=zig c++ -target x86_64-windows-gnu^\""
-        elseif zig_target then
-            env_cc = string.format(" && set ^\"CC=zig cc -target %s^\" && set ^\"CXX=zig c++ -target %s^\"", zig_target, zig_target)
+        if zig_target then
+            env_cc = string.format(
+                " && set \"CC=zig cc -target %s\" && set \"CXX=zig c++ -target %s\"",
+                zig_target,
+                zig_target
+            )
         end
 
         return string.format(
-            "cmd /c \"set ^\"GOOS=%s^\" && set ^\"GOARCH=amd64^\" && set ^\"CGO_ENABLED=1^\"%s && go build -trimpath -buildvcs=false -ldflags ^\"%s^\" %s -o ^\"%s^\" %s\"",
+            "cmd /c \"set \"GOOS=%s\" && set \"GOARCH=amd64\" && set \"CGO_ENABLED=1\"%s && go build -trimpath -buildvcs=false -ldflags \"%s\" %s -o %s %s\"",
             target_os,
             env_cc,
             ldflags,
             extra_args,
-            base,
-            main_dir
+            utils.escape_path(base),
+            utils.escape_path(main_dir)
         )
     end
 
