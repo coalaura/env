@@ -302,7 +302,7 @@ commands["bench"] = function(args)
 		utils.printf("[go] benchmarking %s", utils.clean_path(target_dir))
 
 		return utils.command_with_env(
-			string.format("go test -bench=. -benchmem %s .", extra_args),
+			string.format("go test -run=^$ -bench=. -benchmem %s ./...", extra_args),
 			{
 				CGO_ENABLED = "1",
 				CC = "zig cc",
@@ -372,7 +372,7 @@ commands["test"] = function(args)
         utils.printf("[go] testing %s", utils.clean_path(target_dir))
 
         return utils.command_with_env(
-            string.format("go test -v %s .", extra_args),
+            string.format("go test -v %s ./...", extra_args),
             {
                 CGO_ENABLED = "1",
                 CC = "zig cc",

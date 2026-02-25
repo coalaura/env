@@ -392,7 +392,7 @@ function bench() (
 			export CC="zig cc"
 			export CXX="zig c++"
 
-			go test -bench=. -benchmem "${extra_args[@]}" .
+			go test -run=^$ -bench=. -benchmem "${extra_args[@]}" ./...
 
 			return
 		fi
@@ -460,7 +460,7 @@ function test() (
 			export CC="zig cc"
 			export CXX="zig c++"
 
-			go test -v "${extra_args[@]}" .
+			go test -v "${extra_args[@]}" ./...
 
 			return
 		fi
