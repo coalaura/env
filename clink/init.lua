@@ -37,6 +37,12 @@ end
 -- Shell settings
 --
 
+-- set title bar color
+clink.oninject(function()
+    io.write("\x1b]11;#24273a\x07")
+    io.flush()
+end)
+
 -- replace ~ with home directory
 clink.onfilterinput(function(text)
     local index = string.find(text, " ~")
