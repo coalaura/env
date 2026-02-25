@@ -364,6 +364,74 @@ function git_ssh() {
 	)
 }
 
+# benchmark a project
+function bench() (
+	(
+		set -euo pipefail
+
+		local target="$(realpath ".")"
+		local -a extra_args=("$@")
+
+		# handle bench script
+		if [[ -f "$target/bench.sh" ]]; then
+			printf "\033[37m[bench.sh] benchmarking %s\033[0m\n" "$target"
+
+			chmod +x ./bench.sh 2>/dev/null
+
+			./bench.sh "${extra_args[@]}"
+
+			return
+		fi
+
+		# handle go project
+		if [[ -f "$target/go.mod" ]]; then
+			printf "\033[37m[go] benchmarking %s\033[0m\n" "$target"
+
+			# enable CGO with zig
+			export CGO_ENABLED=1
+			export CC="zig cc"
+			export CXX="zig c++"
+
+			go test -bench=. -benchmem "${extra_args[@]}" .
+
+			return
+		fi
+
+		# handle node project
+		if [[ -f "$target/package.json" ]]; then
+			local script=""
+
+			while IFS= read -r line; do
+				case "$line" in
+					*\"bench\"*:*)     script="${script:-bench}" ;;
+					*\"benchmark\"*:*) script="${script:-benchmark}" ;;
+				esac
+			done < "$target/package.json"
+
+			if [[ -n "$script" ]]; then
+				printf "\033[37m[bun/%s] benchmarking %s\033[0m\n" "$script" "$target"
+
+				bun run "$script" "${extra_args[@]}"
+
+				return
+			fi
+
+			# fallback standalone bench files
+			for file in "bench.js" "bench.ts" "benchmark.js" "benchmark.ts"; do
+				if [[ -f "$target/$file" ]]; then
+					printf "\033[37m[bun/%s] benchmarking %s\033[0m\n" "$file" "$target"
+
+					bun "$file" "${extra_args[@]}"
+
+					return
+				fi
+			done
+		fi
+
+		printf "\033[33merror: %s is not a recognized benchmark project\033[0m\n" "$target"
+	)
+)
+
 # test a project
 function test() (
 	(

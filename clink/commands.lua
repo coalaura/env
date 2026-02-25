@@ -278,6 +278,76 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
+-- benchmark a project
+commands["bench"] = function(args)
+	local target_dir = os.getcwd()
+
+	local extra_args = utils.format_extra_args(args)
+
+	-- handle bench script
+	local bench_cmd = path.join(target_dir, "bench.cmd")
+
+	if os.isfile("bench.cmd") then
+		utils.printf("[bench.cmd] benchmarking %s", utils.clean_path(target_dir))
+
+		return string.format(
+			"call %s %s",
+			utils.escape_path(bench_cmd),
+			extra_args
+		)
+	end
+
+	-- handle go project
+	if utils.is_go(target_dir) then
+		utils.printf("[go] benchmarking %s", utils.clean_path(target_dir))
+
+		return utils.command_with_env(
+			string.format("go test -bench=. -benchmem %s .", extra_args),
+			{
+				CGO_ENABLED = "1",
+				CC = "zig cc",
+				CXX = "zig c++",
+			}
+		)
+	end
+
+	-- handle node project
+	if utils.is_node(target_dir) then
+		local package = path.join(target_dir, "package.json")
+
+		local script = utils.get_package_json_script(package, {"bench", "benchmark"})
+
+		if script then
+			utils.printf("[bun/%s] benchmarking %s", script, utils.clean_path(target_dir))
+
+			return string.format(
+				"bun run %s %s",
+				script,
+				extra_args
+			)
+		end
+
+		-- fallback to standalone bench files
+		local patterns = {"bench.js", "bench.ts", "benchmark.js", "benchmark.ts"}
+
+		for id, pattern in ipairs(patterns) do
+			if os.isfile(path.join(target_dir, pattern)) then
+				utils.printf("[bun] benchmarking %s", utils.clean_path(target_dir))
+
+				return string.format(
+					"bun %s %s",
+					pattern,
+					extra_args
+				)
+			end
+		end
+	end
+
+	utils.errorf("%s is not a recognized benchmark project", utils.clean_path(target_dir))
+end
+
+clink.argmatcher("bench"):addarg(clink.dirmatches)
+
 -- test a project
 commands["test"] = function(args)
 	local target_dir = os.getcwd()
