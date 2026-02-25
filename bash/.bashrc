@@ -91,7 +91,7 @@ function git_root() {
 	git -C "$path" rev-parse --show-toplevel 2>/dev/null || echo "$path"
 }
 
-# perform maintenance and updates
+# perform system maintenance and updates
 function update() {
 	(
 		set -euo pipefail
@@ -100,26 +100,99 @@ function update() {
 			echo "[$(date '+%H:%M:%S')] - $1"
 		}
 
-		print_time "pacman -Syu"
-		sudo pacman -Syu --noconfirm > /dev/null
+		function get_space() {
+			df --output=used -B1 / | tail -n1 | xargs
+		}
 
-		print_time "paru -Syu"
-		paru -Syu --noconfirm > /dev/null
+		read -r used_before < <(get_space)
 
-		print_time "pacman -Sc"
-		sudo pacman -Sc --noconfirm > /dev/null
+		##
+		# arch (pacman, paru, yay)
+		##
+		if command -v pacman &> /dev/null; then
+			if command -v paru &> /dev/null; then
+				print_time "paru -syu"
+				paru -Syu --noconfirm > /dev/null
+			elif command -v yay &> /dev/null; then
+				print_time "yay -syu"
+				yay -Syu --noconfirm > /dev/null
+			else
+				print_time "pacman -syu"
+				sudo pacman -Syu --noconfirm > /dev/null
+			fi
 
-		print_time "pacman -Rns (orphans)"
-		readarray -t orphans < <(pacman -Qtdq 2>/dev/null)
-		if (( ${#orphans[@]} )); then
-			sudo pacman -Rns --noconfirm "${orphans[@]}" > /dev/null
+			print_time "pacman -sc"
+
+			if command -v paccache &> /dev/null; then
+				sudo paccache -rk2 -ruk0 >/dev/null 2>&1 || true
+			else
+				sudo pacman -Sc --noconfirm > /dev/null
+			fi
+
+			print_time "pacman -rns (orphans)"
+
+			readarray -t orphans < <(pacman -Qtdq 2>/dev/null || true)
+			if (( ${#orphans[@]} )); then
+				sudo pacman -Rns --noconfirm "${orphans[@]}" > /dev/null 2>&1 || true
+			fi
 		fi
 
-		print_time "remove old package caches"
-		sudo paccache -rk2 -ruk0 >/dev/null 2>&1 || true
+		##
+		# debian (apt)
+		##
+		if command -v apt-get &> /dev/null; then
+			print_time "apt update"
+			sudo apt-get update -qq
+
+			print_time "apt full-upgrade"
+			sudo env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y -qq > /dev/null
+
+			print_time "apt autoremove"
+			sudo env DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y -qq > /dev/null
+
+			print_time "apt clean"
+			sudo apt-get clean -qq > /dev/null
+		fi
+
+		##
+		# other (flatpak, snap)
+		##
+		if command -v flatpak &> /dev/null; then
+			print_time "flatpak update"
+			flatpak update -y > /dev/null 2>&1 || true
+
+			print_time "flatpak uninstall unused"
+			flatpak uninstall --unused -y > /dev/null 2>&1 || true
+		fi
+
+		if command -v snap &> /dev/null; then
+			print_time "snap refresh"
+			sudo snap refresh > /dev/null 2>&1 || true
+		fi
+
+		##
+		# docker
+		##
+		if command -v docker &> /dev/null; then
+			print_time "docker system prune"
+			sudo docker system prune --all --force --volumes > /dev/null 2>&1 || true
+
+			for cid in $(sudo docker ps -q 2>/dev/null || true); do
+				print_time "docker clean container $cid"
+				sudo docker exec "$cid" sh -c "rm -rf /tmp/* /tmp/.[!.]* /tmp/..?* /var/tmp/* /var/tmp/.[!.]* /var/tmp/..?*" > /dev/null 2>&1 || true
+			done
+		fi
+
+		##
+		# logs & temp
+		##
+		if command -v journalctl &> /dev/null; then
+			print_time "journalctl vacuum"
+			sudo journalctl --vacuum-time=14d >/dev/null 2>&1 || true
+		fi
 
 		print_time "clean old logs"
-		sudo find /var/log -type f -name "*.log" -mtime +14 -delete > /dev/null 2>&1 || true
+		sudo find /var/log -type f \( -name "*.log" -o -name "*.gz" \) -mtime +14 -delete > /dev/null 2>&1 || true
 
 		print_time "clean old /tmp"
 		sudo find /tmp -type f -atime +7 -delete > /dev/null 2>&1 || true
@@ -127,7 +200,22 @@ function update() {
 		print_time "clean old /var/tmp"
 		sudo find /var/tmp -type f -atime +7 -delete > /dev/null 2>&1 || true
 
-		print_time "completed"
+		##
+		# summary
+		##
+		read -r used_after < <(get_space)
+
+		freed=$((used_before - used_after))
+
+		if (( freed > 0 )); then
+			freed_human=$(numfmt --to=iec "$freed" 2>/dev/null || echo "${freed}B")
+			print_time "completed (freed $freed_human)"
+		elif (( freed < 0 )); then
+			used_human=$(numfmt --to=iec "$(( -freed ))" 2>/dev/null || echo "$(( -freed ))B")
+			print_time "completed (used additional $used_human space)"
+		else
+			print_time "completed"
+		fi
 	)
 }
 
