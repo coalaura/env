@@ -346,8 +346,6 @@ commands["bench"] = function(args)
 	utils.errorf("%s is not a recognized benchmark project", utils.clean_path(target_dir))
 end
 
-clink.argmatcher("bench"):addarg(clink.dirmatches)
-
 -- test a project
 commands["test"] = function(args)
 	local target_dir = os.getcwd()
@@ -414,8 +412,6 @@ commands["test"] = function(args)
 
 	utils.errorf("%s is not a recognized test project", utils.clean_path(target_dir))
 end
-
-clink.argmatcher("test"):addarg(clink.dirmatches)
 
 -- run a project
 commands["run"] = function(args)
@@ -484,8 +480,6 @@ commands["run"] = function(args)
 
     utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
 end
-
-clink.argmatcher("run"):addarg(clink.dirmatches)
 
 -- build a project
 commands["build"] = function(args)
@@ -581,7 +575,38 @@ commands["build"] = function(args)
     utils.errorf("%s is not a recognized project")
 end
 
-clink.argmatcher("build"):addarg(clink.dirmatches):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
+clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
+
+-- auto-fix/lint a project
+commands["fix"] = function(args)
+    local target_dir = os.getcwd()
+
+    local target_type = utils.trim(args or ""):lower()
+
+    if target_type == "" then
+        if utils.is_go(target_dir) then
+            target_type = "go"
+        elseif utils.is_node(target_dir) then
+            target_type = "js"
+        end
+    end
+
+    if target_type == "go" then
+        utils.printf("[go] fixing %s", utils.clean_path(target_dir))
+
+        return "go fix ./... && go fmt ./..."
+    elseif target_type == "js" then
+        utils.printf("[biome] fixing %s", utils.clean_path(target_dir))
+
+        local config = path.join(utils.home(), "biome.json")
+
+        return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+    end
+
+    utils.errorf("unknown or undetected project type to fix")
+end
+
+clink.argmatcher("fix"):addarg({"go", "js", "ts", "node"})
 
 -- update a go project
 commands["goup"] = function(args)
@@ -626,15 +651,6 @@ commands["goup"] = function(args)
 end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
-
--- run biome check
-commands["bio"] = function(args)
-    local config = path.join(utils.home(), "biome.json")
-
-    return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s %s", utils.escape_path(config), args or "")
-end
-
-clink.argmatcher("bio"):addarg(clink.dirmatches)
 
 -- download and run vencord installer
 commands["vencord"] = function()

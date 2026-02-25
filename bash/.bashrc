@@ -748,6 +748,45 @@ __build_complete() {
     done
 }
 
+# auto-fix/lint a project
+function fix() (
+	(
+		set -euo pipefail
+
+		local target="$(realpath ".")"
+
+		local target_type="${1:-}"
+		target_type="${target_type,,}"
+
+		if [[ -z "$target_type" ]]; then
+			if [[ -f "$target/go.mod" ]]; then
+				target_type="go"
+			elif [[ -f "$target/package.json" ]]; then
+				target_type="js"
+			fi
+		fi
+
+		case "$target_type" in
+			go)
+				printf "\033[37m[go] fixing %s\033[0m\n" "$target"
+
+				go fix ./...
+				go fmt ./...
+				;;
+			js)
+				printf "\033[37m[biome] fixing %s\033[0m\n" "$target"
+
+				biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
+				;;
+			*)
+				printf "\033[33merror: unknown or undetected project type to fix\033[0m\n"
+
+				return 1
+				;;
+		esac
+	)
+)
+
 # update a go project
 function goup() {
 	(
@@ -775,11 +814,6 @@ function goup() {
 
 		printf "\033[32msuccess: updated packages\033[0m\n"
 	)
-}
-
-# run biome check
-function bio() {
-	biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" $@
 }
 
 # download and run vencord installer
