@@ -38,10 +38,8 @@ end
 --
 
 -- set title bar color
-clink.oninject(function()
-    io.write("\x1b]11;#24273a\x07")
-    io.flush()
-end)
+io.write("\x1b]11;#24273a\x07")
+io.flush()
 
 -- replace ~ with home directory
 clink.onfilterinput(function(text)
