@@ -77,7 +77,8 @@ keys = [
 	{ key = "v", with = "control", action = "none" },
 	{ key = "w", with = "control", esc = "exit\r\n" },
 	{ key = "q", with = "control", esc = "exit\r\n" },
-	{ key = "n", with = "control", action = "CreateWindow" }
+	{ key = "n", with = "control", action = "CreateWindow" },
+	{ key = "c", with = "alt", esc = "clear\r\n" }
 ]
 
 [platform]
