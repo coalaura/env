@@ -652,6 +652,76 @@ end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
 
+-- create an ssh tunnel for a specific port
+commands["tunnel"] = function(args)
+    if not args then
+        utils.errorf("usage: tunnel <host> <port>")
+
+        return
+    end
+
+    local host, port = args:match("^(%S+)%s+(%d+)$")
+
+    if not host or not port then
+        utils.errorf("usage: tunnel <host> <port>")
+
+        return
+    end
+
+    utils.printf("tunneling port %s to %s", port, host)
+
+    return string.format("ssh -N -L %s:localhost:%s %s", port, port, utils.escape_input(host))
+end
+
+-- unzips or untars an archive to a target directory
+commands["unpack"] = function(args)
+    if not args or args == "" then
+        utils.errorf("usage: unpack <archive> [target_dir]")
+
+        return
+    end
+
+    local file = false
+    local dir = false
+
+    if args:sub(1, 1) == '"' then
+        file, dir = args:match('^"([^"]+)"%s*(.*)$')
+    elseif args:sub(1, 1) == "'" then
+        file, dir = args:match("^'([^']+)'%s*(.*)$")
+    else
+        file, dir = args:match("^(%S+)%s*(.*)$")
+    end
+
+    if not file or file == "" then
+        file = args
+    end
+
+    dir = utils.trim(dir or "")
+
+    if dir == "" then
+        dir = "."
+    end
+
+    if not os.isfile(file) then
+        utils.errorf("file '%s' not found", file)
+
+        return
+    end
+
+    local esc_file = utils.escape_path(file)
+    local esc_dir = utils.escape_path(dir)
+
+    utils.printf("unpacking %s to %s", utils.clean_path(file), utils.clean_path(dir))
+
+    local cmd = ""
+
+    if dir ~= "." then
+        cmd = string.format("mkdir %s 2>nul & ", esc_dir)
+    end
+
+    return cmd .. string.format("tar.exe -xf %s -C %s", esc_file, esc_dir)
+end
+
 -- download and run vencord installer
 commands["vencord"] = function()
     local tmp = os.getenv("TMP") or os.getenv("TEMP") or utils.home()

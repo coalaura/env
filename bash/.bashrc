@@ -904,6 +904,82 @@ function goup() {
 	)
 }
 
+# create an ssh tunnel for a specific port
+function tunnel() {
+	(
+		set -euo pipefail
+
+		local host="${1:-}"
+		local port="${2:-}"
+
+		if [[ -z "$host" || -z "$port" ]]; then
+			printf "\033[33merror: usage: tunnel <host> <port>\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[37mtunneling port %s to %s\033[0m\n" "$port" "$host"
+
+		ssh -N -L "$port:localhost:$port" "$host"
+	)
+}
+
+# unpack an archive to a target directory automatically
+function unpack() {
+	(
+		set -euo pipefail
+
+		local file="${1:-}"
+		local dir="${2:-.}"
+
+		if [[ -z "$file" ]]; then
+			printf "\033[33merror: usage: unpack <archive> [target_dir]\033[0m\n"
+
+			return 1
+		fi
+
+		if [[ ! -f "$file" ]]; then
+			printf "\033[33merror: file '%s' not found\033[0m\n" "$file"
+
+			return 1
+		fi
+
+		mkdir -p "$dir"
+
+		printf "\033[37munpacking %s to %s\033[0m\n" "$file" "$dir"
+
+		local base_file=$(basename "$file")
+
+		case "${file,,}" in
+			*.tar.*|*.tgz|*.tbz2|*.txz|*.tar)
+				tar -xf "$file" -C "$dir"
+				;;
+			*.zip)
+				unzip -q "$file" -d "$dir"
+				;;
+			*.gz)
+				gzip -dkc "$file" > "$dir/${base_file%.gz}"
+				;;
+			*.bz2)
+				bzip2 -dkc "$file" > "$dir/${base_file%.bz2}"
+				;;
+			*.xz)
+				xz -dkc "$file" > "$dir/${base_file%.xz}"
+				;;
+			*.zst)
+				zstd -dqc "$file" -o "$dir/${base_file%.zst}"
+				;;
+			*)
+				printf "\033[33merror: unsupported or unrecognized archive format '%s'\033[0m\n" "$file"
+
+				return 1
+				;;
+		esac
+
+		printf "\033[32msuccess: unpacked\033[0m\n"
+	)
+}
+
 # download and run vencord installer
 function vencord() {
 	sh -c "$(curl -sS https://vencord.dev/install.sh)"
