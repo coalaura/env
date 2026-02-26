@@ -290,7 +290,7 @@ function _M.parse_target_os(args)
             args = false
         end
 
-        return "linux", args
+        return "windows", args
     end
 
     table.remove(words, #words)
