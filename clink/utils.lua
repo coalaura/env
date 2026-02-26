@@ -270,7 +270,7 @@ function _M.parse_target_os(args)
     end
 
     if #words == 0 then
-        return "linux", false
+        return "windows", false
     end
 
     local target = false
