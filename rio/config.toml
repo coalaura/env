@@ -75,10 +75,10 @@ program = "bash"
 [bindings]
 keys = [
 	{ key = "v", with = "control", action = "none" },
-	{ key = "w", with = "control", esc = "exit\r\n" },
-	{ key = "q", with = "control", esc = "exit\r\n" },
+	{ key = "w", with = "control", esc = "\u0003exit\r\n" },
+	{ key = "q", with = "control", esc = "\u0003exit\r\n" },
 	{ key = "n", with = "control", action = "CreateWindow" },
-	{ key = "c", with = "alt", esc = "clear\r\n" }
+	{ key = "c", with = "alt", esc = "\u0003clear\r\n" }
 ]
 
 [platform]
