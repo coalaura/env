@@ -459,10 +459,21 @@ function profile() (
 
 		local target="$(realpath ".")"
 		local -a extra_args=("$@")
+		local focus=""
+
+		# If the first argument exists and doesn't start with '-', it's a focus keyword
+		if (( ${#extra_args[@]} > 0 )) && [[ "${extra_args[0]}" != -* ]]; then
+			focus="${extra_args[0]}"
+			extra_args=("${extra_args[@]:1}")
+		fi
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			printf "\033[37m[go] profiling %s\033[0m\n" "$target"
+			if [[ -n "$focus" ]]; then
+				printf "\033[37m[go] profiling %s (focus: %s)\033[0m\n" "$target" "$focus"
+			else
+				printf "\033[37m[go] profiling %s\033[0m\n" "$target"
+			fi
 
 			rm -rf .profile
 			mkdir -p .profile
@@ -472,17 +483,30 @@ function profile() (
 			export CC="zig cc"
 			export CXX="zig c++"
 
-			go build -gcflags="-m" ./... > .profile/escape_analysis.txt 2>&1 || true
-			go build -gcflags="-d=ssa/check_bce/debug=1" ./... > .profile/bce.txt 2>&1 || true
-			go test -run=^$ -bench=. -benchmem -cpuprofile=.profile/cpu.prof -memprofile=.profile/mem.prof "${extra_args[@]}" ./... > .profile/bench.txt 2>&1 || true
+			if [[ -n "$focus" ]]; then
+				go build -gcflags="-m -m" ./... 2>&1 | grep -i "$focus" > .profile/escape_analysis.txt || true
+				go build -gcflags="-d=ssa/check_bce/debug=1" ./... 2>&1 | grep -i "$focus" > .profile/bce.txt || true
+			else
+				go build -gcflags="-m" ./... > .profile/escape_analysis.txt 2>&1 || true
+				go build -gcflags="-d=ssa/check_bce/debug=1" ./... > .profile/bce.txt 2>&1 || true
+			fi
+
+			go test -run=^$ -bench=. -benchmem \
+				-cpuprofile=.profile/cpu.prof \
+				-memprofile=.profile/mem.prof \
+				-mutexprofile=.profile/mutex.prof \
+				-blockprofile=.profile/block.prof \
+				-trace=.profile/trace.out \
+				"${extra_args[@]}" ./... > .profile/bench.txt 2>&1 || true
 
 			printf "\033[32msuccess: profile complete\033[0m\n"
-			printf "\033[37mresults saved to .profile/\033[0m\n"
 			printf "\033[37m  escape/inline: .profile/escape_analysis.txt\033[0m\n"
 			printf "\033[37m  bce misses:    .profile/bce.txt\033[0m\n"
 			printf "\033[37m  benchmarks:    .profile/bench.txt\033[0m\n"
 			printf "\033[37m  cpu profile:   go tool pprof -http=:8080 .profile/cpu.prof\033[0m\n"
 			printf "\033[37m  mem profile:   go tool pprof -http=:8081 .profile/mem.prof\033[0m\n"
+			printf "\033[37m  mutex blocks:  go tool pprof -http=:8082 .profile/mutex.prof\033[0m\n"
+			printf "\033[37m  trace ui:      go tool trace .profile/trace.out\033[0m\n"
 
 			return
 		fi

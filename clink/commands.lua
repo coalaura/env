@@ -282,19 +282,40 @@ clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 commands["profile"] = function(args)
     local target_dir = os.getcwd()
 
+    local focus = ""
+
+    if args and args ~= "" then
+        local first_word = args:match("^(%S+)")
+
+        if first_word and first_word:sub(1, 1) ~= "-" then
+            focus = first_word
+
+            args = args:sub(#first_word + 1)
+        end
+    end
+
     local extra_args = utils.format_extra_args(args)
 
     if utils.is_go(target_dir) then
-        utils.printf("[go] profiling %s", utils.clean_path(target_dir))
+        if focus ~= "" then
+            utils.printf("[go] profiling %s (focus: %s)", utils.clean_path(target_dir), focus)
+        else
+            utils.printf("[go] profiling %s", utils.clean_path(target_dir))
+        end
 
         os.execute("rmdir /s /q .profile 2>nul")
         os.execute("mkdir .profile 2>nul")
 
-        os.execute("go build -gcflags=\"-m\" ./... > .profile\\escape_analysis.txt 2>&1")
-        os.execute("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... > .profile\\bce.txt 2>&1")
+        if focus ~= "" then
+            os.execute(string.format("go build -gcflags=\"-m -m\" ./... 2>&1 | findstr /I \"%s\" > .profile\\escape_analysis.txt", focus))
+            os.execute(string.format("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... 2>&1 | findstr /I \"%s\" > .profile\\bce.txt", focus))
+        else
+            os.execute("go build -gcflags=\"-m\" ./... > .profile\\escape_analysis.txt 2>&1")
+            os.execute("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... > .profile\\bce.txt 2>&1")
+        end
 
         utils.command_with_env(
-            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof %s ./... > .profile\\bench.txt 2>&1", extra_args),
+            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s ./... > .profile\\bench.txt 2>&1", extra_args),
             {
                 CGO_ENABLED = "1",
                 CC = "zig cc",
@@ -303,12 +324,13 @@ commands["profile"] = function(args)
         )
 
         utils.successf("profile complete")
-        utils.printf("results saved to .profile/")
         utils.printf("  escape/inline: .profile\\escape_analysis.txt")
         utils.printf("  bce misses:    .profile\\bce.txt")
         utils.printf("  benchmarks:    .profile\\bench.txt")
         utils.printf("  cpu profile:   go tool pprof -http=:8080 .profile\\cpu.prof")
         utils.printf("  mem profile:   go tool pprof -http=:8081 .profile\\mem.prof")
+        utils.printf("  mutex blocks:  go tool pprof -http=:8082 .profile\\mutex.prof")
+        utils.printf("  trace ui:      go tool trace .profile\\trace.out")
 
         return
     end
