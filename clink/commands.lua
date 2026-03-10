@@ -278,6 +278,44 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
+-- profile a project
+commands["profile"] = function(args)
+    local target_dir = os.getcwd()
+
+    local extra_args = utils.format_extra_args(args)
+
+    if utils.is_go(target_dir) then
+        utils.printf("[go] profiling %s", utils.clean_path(target_dir))
+
+        os.execute("rmdir /s /q .profile 2>nul")
+        os.execute("mkdir .profile 2>nul")
+
+        os.execute("go build -gcflags=\"-m\" ./... > .profile\\escape_analysis.txt 2>&1")
+        os.execute("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... > .profile\\bce.txt 2>&1")
+
+        utils.command_with_env(
+            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof %s ./... > .profile\\bench.txt 2>&1", extra_args),
+            {
+                CGO_ENABLED = "1",
+                CC = "zig cc",
+                CXX = "zig c++",
+            }
+        )
+
+        utils.successf("profile complete")
+        utils.printf("results saved to .profile/")
+        utils.printf("  escape/inline: .profile\\escape_analysis.txt")
+        utils.printf("  bce misses:    .profile\\bce.txt")
+        utils.printf("  benchmarks:    .profile\\bench.txt")
+        utils.printf("  cpu profile:   go tool pprof -http=:8080 .profile\\cpu.prof")
+        utils.printf("  mem profile:   go tool pprof -http=:8081 .profile\\mem.prof")
+
+        return
+    end
+
+    utils.errorf("%s is not a recognized profile project", utils.clean_path(target_dir))
+end
+
 -- benchmark a project
 commands["bench"] = function(args)
 	local target_dir = os.getcwd()

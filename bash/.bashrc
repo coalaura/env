@@ -452,6 +452,45 @@ function git_ssh() {
 	)
 }
 
+# profile a project
+function profile() (
+	(
+		set -euo pipefail
+
+		local target="$(realpath ".")"
+		local -a extra_args=("$@")
+
+		# handle go project
+		if [[ -f "$target/go.mod" ]]; then
+			printf "\033[37m[go] profiling %s\033[0m\n" "$target"
+
+			rm -rf .profile
+			mkdir -p .profile
+
+			# enable CGO with zig
+			export CGO_ENABLED=1
+			export CC="zig cc"
+			export CXX="zig c++"
+
+			go build -gcflags="-m" ./... > .profile/escape_analysis.txt 2>&1 || true
+			go build -gcflags="-d=ssa/check_bce/debug=1" ./... > .profile/bce.txt 2>&1 || true
+			go test -run=^$ -bench=. -benchmem -cpuprofile=.profile/cpu.prof -memprofile=.profile/mem.prof "${extra_args[@]}" ./... > .profile/bench.txt 2>&1 || true
+
+			printf "\033[32msuccess: profile complete\033[0m\n"
+			printf "\033[37mresults saved to .profile/\033[0m\n"
+			printf "\033[37m  escape/inline: .profile/escape_analysis.txt\033[0m\n"
+			printf "\033[37m  bce misses:    .profile/bce.txt\033[0m\n"
+			printf "\033[37m  benchmarks:    .profile/bench.txt\033[0m\n"
+			printf "\033[37m  cpu profile:   go tool pprof -http=:8080 .profile/cpu.prof\033[0m\n"
+			printf "\033[37m  mem profile:   go tool pprof -http=:8081 .profile/mem.prof\033[0m\n"
+
+			return
+		fi
+
+		printf "\033[33merror: %s is not a recognized profile project\033[0m\n" "$target"
+	)
+)
+
 # benchmark a project
 function bench() (
 	(
