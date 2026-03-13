@@ -278,6 +278,22 @@ end
 
 clink.argmatcher("git_ssh"):addarg(clink.dirmatches)
 
+-- time a command, similar to linux `time`
+commands["time"] = function(args)
+    if not args or utils.trim(args) == "" then
+        utils.errorf("usage: time <command> [args...]")
+
+        return
+    end
+
+    local ps_cmd = args:gsub("'", "''")
+
+    return string.format(
+        "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$sw=[System.Diagnostics.Stopwatch]::StartNew(); cmd /d /c '%s'; $code=$LASTEXITCODE; $sw.Stop(); $ts=$sw.Elapsed; Write-Host ''; Write-Host ('real {0:00}:{1:00}:{2:00}.{3:000}' -f $ts.Hours, $ts.Minutes, $ts.Seconds, $ts.Milliseconds); exit $code\"",
+        ps_cmd
+    )
+end
+
 -- profile a project
 commands["profile"] = function(args)
     local target_dir = os.getcwd()
@@ -632,7 +648,7 @@ commands["build"] = function(args)
         )
     end
 
-    utils.errorf("%s is not a recognized project")
+    utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
 end
 
 clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})

@@ -425,7 +425,11 @@ function _M.printf(format, ...)
         return
     end
 
-    print("\x1b[37m" .. string.format(format, ...) .. "\x1b[0m")
+    if #{...} > 0 then
+        format = string.format(format, ...)
+    end
+
+    print(string.format("\x1b[37m%s\x1b[0m", format))
 end
 
 function _M.successf(format, ...)
@@ -433,7 +437,11 @@ function _M.successf(format, ...)
         return
     end
 
-    print("\x1b[32msuccess: " .. string.format(format, ...) .. "\x1b[0m")
+    if #{...} > 0 then
+        format = string.format(format, ...)
+    end
+
+    print(string.format("\x1b[32msuccess: %s\x1b[0m", format))
 end
 
 function _M.errorf(format, ...)
@@ -441,7 +449,11 @@ function _M.errorf(format, ...)
         return
     end
 
-    print("\x1b[33merror: " .. string.format(format, ...) .. "\x1b[0m")
+    if #{...} > 0 then
+        format = string.format(format, ...)
+    end
+
+    print(string.format("\x1b[33merror: %s\x1b[0m", format))
 end
 
 return _M
