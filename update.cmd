@@ -105,6 +105,12 @@ if not %errorlevel%==0 (
     winget install --id zig.zig
 )
 
+:: install time
+if not exist "%USERPROFILE%\.bin\time.exe" (
+    echo Installing time...
+    curl -L "https://github.com/coalaura/time/releases/download/v0.1.0/time_v0.1.0_windows_amd64.exe" -o "%USERPROFILE%\.bin\time.exe"
+)
+
 endlocal
 
 if %0 == "%~0" (
