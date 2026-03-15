@@ -63,4 +63,10 @@ if ! command -v zig >/dev/null 2>&1; then
 	sudo pacman -Sy zig
 fi
 
+# install upx
+if ! command -v upx >/dev/null 2>&1; then
+	echo "Installing upx..."
+	sudo pacman -Sy upx
+fi
+
 echo "Done."

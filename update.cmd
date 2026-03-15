@@ -105,6 +105,14 @@ if not %errorlevel%==0 (
     winget install --id zig.zig
 )
 
+:: install upx
+where upx >nul 2>&1
+
+if not %errorlevel%==0 (
+    echo Installing upx...
+    winget install --id UPX.UPX
+)
+
 :: install time
 if not exist "%USERPROFILE%\.bin\time.exe" (
     echo Installing time...

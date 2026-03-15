@@ -162,23 +162,20 @@ function _M.background(commands)
     os.execute(string.format("start /b cmd /c \"%s\"", sub))
 end
 
-function _M.create_batch(content)
-	local tmp = os.getenv("TMP") or os.getenv("TEMP") or "."
+function _M.start_timer()
+    return os.clock()
+end
 
-	local name = string.format("%s\\_clink_%d_%d.cmd", tmp, os.time(), math.random(1000, 9999))
+function _M.end_timer(start_time, action_name)
+    action_name = action_name or "built"
 
-	local f = io.open(name, "w")
+    local elapsed = os.clock() - start_time
 
-	if not f then
-        return false
+    if elapsed < 1.0 then
+        _M.printf("[time] %s in %dms", action_name, math.floor(elapsed * 1000))
+    else
+        _M.printf("[time] %s in %.2fs", action_name, elapsed)
     end
-
-	f:write("@echo off\r\n")
-	f:write(content)
-
-	f:close()
-
-	return name
 end
 
 local function escape_cmd_set_value(v)
@@ -307,6 +304,7 @@ end
 function _M.prepare_go_env(target_os, target_arch, extra_args_str)
     local is_pure = false
     local is_compat = false
+    local is_min = false
 
     extra_args_str = extra_args_str or ""
 
@@ -320,6 +318,12 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         is_compat = true
 
         extra_args_str = extra_args_str:gsub("%s*%-%-compat%s*", " ")
+    end
+
+    if extra_args_str:match("%-%-min") then
+        is_min = true
+
+        extra_args_str = extra_args_str:gsub("%s*%-%-min%s*", " ")
     end
 
     extra_args_str = _M.trim(extra_args_str)
@@ -348,7 +352,7 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         env.GOAMD64 = "v3"
     end
 
-    local mode_str = (is_pure and "pure" or "cgo") .. (is_compat and ",compat" or ",opt")
+    local mode_str = (is_pure and "pure" or "cgo") .. (is_compat and ",compat" or ",opt") .. (is_min and ",min" or "")
 
     if env.CGO_ENABLED == "1" then
         if target_os == "linux" or target_os == "windows" then
@@ -371,7 +375,9 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
             env.CXX = "zig c++"
         end
 
-        local cflags = "-g0 -O3 -ffunction-sections -fdata-sections"
+        local opt_level = is_min and "-Os" or "-O3"
+
+        local cflags = "-g0 " .. opt_level .. " -ffunction-sections -fdata-sections"
 
         if target_arch == "amd64" then
             if is_compat then
@@ -391,7 +397,8 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         build_flags = build_flags,
         ldflags = ldflags,
         extra_args = extra_args_str,
-        mode = mode_str
+        mode = mode_str,
+        is_min = is_min
     }
 end
 

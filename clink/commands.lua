@@ -651,17 +651,42 @@ commands["build"] = function(args)
 
         utils.printf("[go/%s/%s] building %s (mode: %s)", target_os, base, utils.clean_path(main_dir), go_env.mode)
 
-        return utils.command_with_env(
-            string.format(
-                "go build %s -ldflags \"%s\" %s -o %s %s",
-                go_env.build_flags,
-                go_env.ldflags,
-                go_env.extra_args,
-                utils.escape_path(base),
-                utils.escape_path(main_dir)
-            ),
-            go_env.env
+        local cmd = string.format(
+            "go build %s -ldflags \"%s\" %s -o %s %s",
+            go_env.build_flags,
+            go_env.ldflags,
+            go_env.extra_args,
+            utils.escape_path(base),
+            utils.escape_path(main_dir)
         )
+
+        local t0 = utils.start_timer()
+
+        local result = os.execute(utils.command_with_env(cmd, go_env.env))
+        local success = (result == true or result == 0)
+
+        if success then
+            utils.end_timer(t0, "built")
+
+            if go_env.is_min then
+                utils.printf("[upx] compressing %s", base)
+
+                local t1 = utils.start_timer()
+
+                local upx_res = os.execute(string.format(
+                    "upx --best --lzma %s >nul 2>&1",
+                    utils.escape_path(base)
+                ))
+
+                if upx_res == true or upx_res == 0 then
+                    utils.end_timer(t1, "compressed")
+                else
+                    utils.errorf("upx compression failed or upx is not installed")
+                end
+            end
+        end
+
+        return ""
     end
 
     -- handle node project
@@ -678,11 +703,13 @@ commands["build"] = function(args)
 
         utils.printf("[bun/%s] building %s", script, utils.clean_path(target_dir))
 
-        return string.format(
-            "bun run %s",
-            script,
-            extra_args
-        )
+        local t0 = utils.start_timer()
+
+        local result = os.execute(string.format("bun run %s %s", script, extra_args))
+
+        if result == true or result == 0 then
+            utils.end_timer(t0)
+        end
     end
 
     utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))

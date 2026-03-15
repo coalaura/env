@@ -9,6 +9,32 @@
 # Helper Functions
 ##
 
+# Starts a timer
+function _start_timer() {
+    date +%s%3N 2>/dev/null || echo 0
+}
+
+# Stops and prints a started timer
+function _end_timer() {
+    local start_time="$1"
+    local action_name="${2:-built}"
+    local end_time=$(_start_timer)
+
+    if [[ "$start_time" != "0" && "$end_time" != "0" ]]; then
+        local elapsed=$((end_time - start_time))
+
+        if [[ $elapsed -lt 1000 ]]; then
+            printf "\033[37m[time]%s in %dms\033[0m\n" "$action_name" "$elapsed"
+        else
+            local sec=$(awk "BEGIN {printf \"%.2f\", $elapsed/1000}")
+
+            printf "\033[37m[time]%s in %ss\033[0m\n" "$action_name" "$sec"
+        fi
+    else
+        printf "\033[37m[time]%s\033[0m\n" "$action_name"
+    fi
+}
+
 # Find the directory containing package main with func main, prioritizing highest level
 function _find_go_main_dir() {
     local root_dir="${1:-.}"
@@ -89,6 +115,7 @@ function _apply_go_env() {
 
     local is_pure=false
     local is_compat=false
+	local is_min=false
 
     GO_EXTRA_ARGS=()
 
@@ -97,6 +124,8 @@ function _apply_go_env() {
             is_pure=true
         elif [[ "$arg" == "--compat" ]]; then
             is_compat=true
+        elif [[ "$arg" == "--min" ]]; then
+            is_min=true
         else
             GO_EXTRA_ARGS+=("$arg")
         fi
@@ -104,6 +133,7 @@ function _apply_go_env() {
 
     export GOOS="$target_os"
     export GOARCH="$target_arch"
+	export GO_MINIFY="$is_min"
 
     GO_BUILD_FLAGS=("-trimpath" "-pgo=auto" "-buildvcs=false")
     GO_LDFLAGS="-s -w"
@@ -134,6 +164,10 @@ function _apply_go_env() {
 		GO_MODE_STR="${GO_MODE_STR},compat"
 	else
 		GO_MODE_STR="${GO_MODE_STR},opt"
+	fi
+
+    if [[ "$is_compat" == "true" ]]; then
+		GO_MODE_STR="${GO_MODE_STR},min"
 	fi
 
     if [[ "$CGO_ENABLED" == "1" ]]; then
@@ -172,7 +206,13 @@ function _apply_go_env() {
             export CXX="zig c++"
         fi
 
-        local cflags="-g0 -O3 -ffunction-sections -fdata-sections"
+		local opt_level="-O3"
+
+		if [[ "$is_min" == "true" ]]; then
+			opt_level="-Os"
+		fi
+
+        local cflags="-g0 $opt_level -ffunction-sections -fdata-sections"
 
         if [[ "$target_arch" == "amd64" ]]; then
             if [[ "$is_compat" == "true" ]]; then
@@ -944,7 +984,31 @@ function build() (
 
 			printf "\033[37m[go/%s/%s] building %s (mode: %s)\033[0m\n" "$target_os" "$base" "$main_dir" "$GO_MODE_STR"
 
+			local t0=$(_start_timer)
+
 			go build "${GO_BUILD_FLAGS[@]}" -ldflags "$GO_LDFLAGS" "${GO_EXTRA_ARGS[@]}" -o "$base" "$main_dir"
+
+			local exit_code=$?
+
+			if [[ $exit_code -ne 0 ]]; then
+				return $exit_code
+			fi
+
+			_end_timer "$t0" "built"
+
+			if [[ "$GO_MINIFY" == "true" ]]; then
+				if command -v upx &> /dev/null; then
+					printf "\033[37m[upx] compressing %s\033[0m\n" "$base"
+
+					local t1=$(_start_timer)
+
+					upx --best --lzma "$base" > /dev/null
+
+					_end_timer "$t1" "compressed"
+				else
+					printf "\033[33mwarning: upx not found, skipping compression\033[0m\n"
+				fi
+			fi
 
 			return
 		fi
@@ -968,7 +1032,17 @@ function build() (
 
 			printf "\033[37m[bun/%s] building %s\033[0m\n" "$script" "$target"
 
+			local t0=$(_start_timer)
+
 			bun run "$script" "${extra_args[@]}"
+
+			local exit_code=$?
+
+			if [[ $exit_code -ne 0 ]]; then
+				return $exit_code
+			fi
+
+			_end_timer "$t0" "built"
 
 			return
 		fi
