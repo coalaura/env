@@ -1053,6 +1053,21 @@ function beep() {
 	printf '\a'
 }
 
+# safer rm that blocks absolute paths
+function rm() {
+    local target="${1:-}"
+
+	shift
+
+    if [[ "$target" == /* ]]; then
+        printf "\033[33merror: absolute path in rm\033[0m\n"
+
+        return 1
+    fi
+
+    command rm "$@"
+}
+
 ##
 # Shell settings
 ##
@@ -1115,6 +1130,9 @@ export PATH="$PATH:/usr/local/go/bin"
 
 # so ssh/etc properly detect the terminal
 export TERM=xterm-256color
+
+# ignore .cmd extension for complete
+export FIGNORE=(.cmd .exe)
 
 ##
 # CGo settings
