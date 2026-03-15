@@ -346,6 +346,67 @@ function tag() {
 	)
 }
 
+# delete and push-delete a git tag
+function dtag() {
+	(
+		set -euo pipefail
+
+		local target=$(git_root "${1:-.}")
+
+		if [ ! -d "$target/.git" ]; then
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+
+			return 1
+		fi
+
+		local -a tags=()
+
+		readarray -t tags < <(git -C "$target" tag --sort=-creatordate | head -n 5)
+
+		if (( ${#tags[@]} == 0 )); then
+			printf "\033[33merror: no tags found\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\x1b[90mlatest:\033[0m\n"
+
+		local tag_name
+
+		for tag_name in "${tags[@]}"; do
+			printf "\x1b[90m- %s\033[0m\n" "$tag_name"
+		done
+
+		printf "\n"
+
+		read -rp "delete tag: " tag_name
+
+		tag_name="$(echo "$tag_name" | xargs)"
+
+		if [[ -z "$tag_name" ]]; then
+			printf "\033[33merror: tag name is required\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[37mdeleting %s from %s\033[0m\n" "$tag_name" "$target"
+
+		if ! git -C "$target" push origin ":refs/tags/$tag_name"; then
+			printf "\033[33merror: failed to delete remote tag\033[0m\n"
+
+			return 1
+		fi
+
+		if ! git -C "$target" tag -d "$tag_name"; then
+			printf "\033[33merror: failed to delete local tag\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[32msuccess: deleted and pushed %s\033[0m\n" "$tag_name"
+	)
+}
+
 # print git remote origin
 function origin() {
 	(
