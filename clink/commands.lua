@@ -384,31 +384,27 @@ commands["profile"] = function(args)
     local extra_args = utils.format_extra_args(args)
 
     if utils.is_go(target_dir) then
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+
         if focus ~= "" then
             utils.printf("[go] profiling %s (focus: %s)", utils.clean_path(target_dir), focus)
+
+            os.execute(utils.command_with_env(string.format("go build -gcflags=\"-m -m\" ./... 2>&1 | findstr /I \"%s\" > .profile\\escape_analysis.txt", focus), go_env.env))
+            os.execute(utils.command_with_env(string.format("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... 2>&1 | findstr /I \"%s\" > .profile\\bce.txt", focus), go_env.env))
         else
             utils.printf("[go] profiling %s", utils.clean_path(target_dir))
+
+            os.execute(utils.command_with_env("go build -gcflags=\"-m\" ./... > .profile\\escape_analysis.txt 2>&1", go_env.env))
+            os.execute(utils.command_with_env("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... > .profile\\bce.txt 2>&1", go_env.env))
         end
 
         os.execute("rmdir /s /q .profile 2>nul")
         os.execute("mkdir .profile 2>nul")
 
-        if focus ~= "" then
-            os.execute(string.format("go build -gcflags=\"-m -m\" ./... 2>&1 | findstr /I \"%s\" > .profile\\escape_analysis.txt", focus))
-            os.execute(string.format("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... 2>&1 | findstr /I \"%s\" > .profile\\bce.txt", focus))
-        else
-            os.execute("go build -gcflags=\"-m\" ./... > .profile\\escape_analysis.txt 2>&1")
-            os.execute("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... > .profile\\bce.txt 2>&1")
-        end
-
-        utils.command_with_env(
-            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s ./... > .profile\\bench.txt 2>&1", extra_args),
-            {
-                CGO_ENABLED = "1",
-                CC = "zig cc",
-                CXX = "zig c++",
-            }
-        )
+        os.execute(utils.command_with_env(
+            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s ./... > .profile\\bench.txt 2>&1", go_env.extra_args),
+            go_env.env
+        ))
 
         utils.successf("profile complete")
         utils.printf("  escape/inline: .profile\\escape_analysis.txt")
@@ -446,17 +442,15 @@ commands["bench"] = function(args)
 
 	-- handle go project
 	if utils.is_go(target_dir) then
-		utils.printf("[go] benchmarking %s", utils.clean_path(target_dir))
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
-		return utils.command_with_env(
-			string.format("go test -run=^$ -bench=. -benchmem %s ./...", extra_args),
-			{
-				CGO_ENABLED = "1",
-				CC = "zig cc",
-				CXX = "zig c++",
-			}
-		)
-	end
+        utils.printf("[go] benchmarking %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
+
+        return utils.command_with_env(
+            string.format("go test -run=^$ -bench=. -benchmem %s ./...", go_env.extra_args),
+            go_env.env
+        )
+    end
 
 	-- handle node project
 	if utils.is_node(target_dir) then
@@ -514,17 +508,15 @@ commands["test"] = function(args)
 
 	-- handle go project
 	if utils.is_go(target_dir) then
-        utils.printf("[go] testing %s", utils.clean_path(target_dir))
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+
+        utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
         return utils.command_with_env(
-            string.format("go test -v %s ./...", extra_args),
-            {
-                CGO_ENABLED = "1",
-                CC = "zig cc",
-                CXX = "zig c++",
-            }
+            string.format("go test -v %s ./...", go_env.extra_args),
+            go_env.env
         )
-	end
+    end
 
 	-- handle node project with test script
 	if utils.is_node(target_dir) then
@@ -582,16 +574,13 @@ commands["run"] = function(args)
     -- handle go project
     if utils.is_go(target_dir) then
         local main_dir = utils.find_go_main_dir(target_dir)
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
-        utils.printf("[go] running %s", utils.clean_path(main_dir))
+        utils.printf("[go] running %s (mode: %s)", utils.clean_path(main_dir), go_env.mode)
 
         return utils.command_with_env(
-            string.format("go run %s %s", extra_args, utils.escape_path(main_dir)),
-            {
-                CGO_ENABLED = "1",
-                CC = "zig cc -target x86_64-windows-gnu",
-                CXX = "zig c++ -target x86_64-windows-gnu",
-            }
+            string.format("go run %s %s", go_env.extra_args, utils.escape_path(main_dir)),
+            go_env.env
         )
     end
 
@@ -652,49 +641,26 @@ commands["build"] = function(args)
     -- handle go project
     if utils.is_go(target_dir) then
         local main_dir = utils.find_go_main_dir(target_dir)
-
         local base = utils.basename(target_dir) or "app"
 
         if target_os == "windows" then
             base = base .. ".exe"
         end
 
-        utils.printf("[go/%s/%s] building %s", target_os, base, utils.clean_path(main_dir))
+        local go_env = utils.prepare_go_env(target_os, "amd64", extra_args)
 
-        local ldflags = "-s -w"
-
-        if target_os == "linux" or target_os == "windows" then
-            ldflags = ldflags .. " -linkmode external -extldflags=-static"
-        end
-
-        local zig_targets = {
-            ["linux"] = "x86_64-linux-musl",
-            ["windows"] = "x86_64-windows-gnu",
-            ["darwin"] = "x86_64-macos-none"
-        }
-
-        local env = {
-            GOOS = target_os,
-            GOARCH = "amd64",
-            CGO_ENABLED = "1",
-        }
-
-        local zig_target = zig_targets[target_os]
-
-        if zig_target then
-            env.CC = "zig cc -target " .. zig_target
-            env.CXX = "zig c++ -target " .. zig_target
-        end
+        utils.printf("[go/%s/%s] building %s (mode: %s)", target_os, base, utils.clean_path(main_dir), go_env.mode)
 
         return utils.command_with_env(
             string.format(
-                "go build -trimpath -buildvcs=false -ldflags \"%s\" %s -o %s %s",
-                ldflags,
-                extra_args,
+                "go build %s -ldflags \"%s\" %s -o %s %s",
+                go_env.build_flags,
+                go_env.ldflags,
+                go_env.extra_args,
                 utils.escape_path(base),
                 utils.escape_path(main_dir)
             ),
-            env
+            go_env.env
         )
     end
 

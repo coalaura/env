@@ -304,6 +304,97 @@ function _M.parse_target_os(args)
     return target, args
 end
 
+function _M.prepare_go_env(target_os, target_arch, extra_args_str)
+    local is_pure = false
+    local is_compat = false
+
+    extra_args_str = extra_args_str or ""
+
+    if extra_args_str:match("%-%-pure") then
+        is_pure = true
+
+        extra_args_str = extra_args_str:gsub("%s*%-%-pure%s*", " ")
+    end
+
+    if extra_args_str:match("%-%-compat") then
+        is_compat = true
+
+        extra_args_str = extra_args_str:gsub("%s*%-%-compat%s*", " ")
+    end
+
+    extra_args_str = _M.trim(extra_args_str)
+
+    local env = {
+        GOOS = target_os,
+        GOARCH = target_arch,
+    }
+
+    local build_flags = "-trimpath -pgo=auto -buildvcs=false"
+    local ldflags = "-s -w"
+
+    if is_pure then
+        build_flags = build_flags .. " -tags netgo,osusergo"
+
+        env.CGO_ENABLED = "0"
+        env.CC = ""
+        env.CXX = ""
+    else
+        env.CGO_ENABLED = "1"
+    end
+
+    if is_compat then
+        env.GOAMD64 = "v1"
+    else
+        env.GOAMD64 = "v3"
+    end
+
+    local mode_str = (is_pure and "pure" or "cgo") .. (is_compat and ",compat" or ",opt")
+
+    if env.CGO_ENABLED == "1" then
+        if target_os == "linux" or target_os == "windows" then
+            ldflags = ldflags .. " -linkmode external -extldflags=-static"
+        end
+
+        local zig_targets = {
+            ["linux"] = "x86_64-linux-musl",
+            ["windows"] = "x86_64-windows-gnu",
+            ["darwin"] = "x86_64-macos-none"
+        }
+
+        local zig_target = zig_targets[target_os]
+
+        if zig_target then
+            env.CC = "zig cc -target " .. zig_target
+            env.CXX = "zig c++ -target " .. zig_target
+        else
+            env.CC = "zig cc"
+            env.CXX = "zig c++"
+        end
+
+        local cflags = "-g0 -O3 -ffunction-sections -fdata-sections"
+
+        if target_arch == "amd64" then
+            if is_compat then
+                cflags = cflags .. " -march=x86_64"
+            else
+                cflags = cflags .. " -march=x86_64_v3"
+            end
+        end
+
+        env.CGO_CFLAGS = cflags
+        env.CGO_CXXFLAGS = cflags
+        env.CGO_LDFLAGS = "-Wl,--gc-sections"
+    end
+
+    return {
+        env = env,
+        build_flags = build_flags,
+        ldflags = ldflags,
+        extra_args = extra_args_str,
+        mode = mode_str
+    }
+end
+
 function _M.get_package_json_script(pt, allowed)
     local body = _M.read_file(pt)
 

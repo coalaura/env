@@ -80,6 +80,114 @@ function _find_go_main_dir() {
     echo "$main_dir"
 }
 
+# Setup Go build environment and parse custom flags
+function _apply_go_env() {
+    local target_os="${1:-linux}"
+    local target_arch="${2:-amd64}"
+
+    shift 2
+
+    local is_pure=false
+    local is_compat=false
+
+    GO_EXTRA_ARGS=()
+
+    for arg in "$@"; do
+        if [[ "$arg" == "--pure" ]]; then
+            is_pure=true
+        elif [[ "$arg" == "--compat" ]]; then
+            is_compat=true
+        else
+            GO_EXTRA_ARGS+=("$arg")
+        fi
+    done
+
+    export GOOS="$target_os"
+    export GOARCH="$target_arch"
+
+    GO_BUILD_FLAGS=("-trimpath" "-pgo=auto" "-buildvcs=false")
+    GO_LDFLAGS="-s -w"
+
+    if [[ "$is_pure" == "true" ]]; then
+        export CGO_ENABLED=0
+
+        GO_BUILD_FLAGS+=("-tags" "netgo,osusergo")
+
+		unset CC CXX CGO_CFLAGS CGO_CXXFLAGS CGO_LDFLAGS
+    else
+        export CGO_ENABLED=1
+    fi
+
+    if [[ "$is_compat" == "true" ]]; then
+        export GOAMD64=v1
+    else
+        export GOAMD64=v3
+    fi
+
+    GO_MODE_STR="cgo"
+
+    if [[ "$is_pure" == "true" ]]; then
+		GO_MODE_STR="pure"
+	fi
+
+    if [[ "$is_compat" == "true" ]]; then
+		GO_MODE_STR="${GO_MODE_STR},compat"
+	else
+		GO_MODE_STR="${GO_MODE_STR},opt"
+	fi
+
+    if [[ "$CGO_ENABLED" == "1" ]]; then
+        local zig_target=""
+        local host_arch=$(uname -m)
+
+        case "$host_arch" in
+            x86_64) host_arch="amd64" ;;
+            aarch64) host_arch="arm64" ;;
+        esac
+
+        case "$target_os/$target_arch" in
+            linux/amd64)   zig_target="x86_64-linux-musl" ;;
+            linux/arm64)   zig_target="aarch64-linux-musl" ;;
+            windows/amd64) zig_target="x86_64-windows-gnu" ;;
+            windows/arm64) zig_target="aarch64-windows-gnu" ;;
+            darwin/amd64)  zig_target="x86_64-macos-none" ;;
+            darwin/arm64)  zig_target="aarch64-macos-none" ;;
+        esac
+
+        if [[ "$target_os" == "linux" || "$target_os" == "windows" ]]; then
+            GO_LDFLAGS="$GO_LDFLAGS -linkmode external -extldflags '-static'"
+        fi
+
+        local is_cross=false
+
+        if [[ "$target_os" != "linux" ]] || [[ "$target_arch" != "$host_arch" ]]; then
+            is_cross=true
+        fi
+
+        if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
+            export CC="zig cc -target $zig_target"
+            export CXX="zig c++ -target $zig_target"
+        else
+            export CC="zig cc"
+            export CXX="zig c++"
+        fi
+
+        local cflags="-g0 -O3 -ffunction-sections -fdata-sections"
+
+        if [[ "$target_arch" == "amd64" ]]; then
+            if [[ "$is_compat" == "true" ]]; then
+                cflags="$cflags -march=x86_64"
+            else
+                cflags="$cflags -march=x86_64_v3"
+            fi
+        fi
+
+        export CGO_CFLAGS="$cflags"
+        export CGO_CXXFLAGS="$cflags"
+        export CGO_LDFLAGS="-Wl,--gc-sections"
+    fi
+}
+
 ##
 # Commands
 ##
@@ -530,27 +638,21 @@ function profile() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			if [[ -n "$focus" ]]; then
-				printf "\033[37m[go] profiling %s (focus: %s)\033[0m\n" "$target" "$focus"
-			else
-				printf "\033[37m[go] profiling %s\033[0m\n" "$target"
-			fi
-
-			rm -rf .profile
-			mkdir -p .profile
-
-			# enable CGO with zig
-			export CGO_ENABLED=1
-			export CC="zig cc"
-			export CXX="zig c++"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
 			if [[ -n "$focus" ]]; then
+				printf "\033[37m[go] profiling %s (focus: %s, mode: %s)\033[0m\n" "$target" "$focus" "$GO_MODE_STR"
+
 				go build -gcflags="-m -m" ./... 2>&1 | grep -i "$focus" > .profile/escape_analysis.txt || true
 				go build -gcflags="-d=ssa/check_bce/debug=1" ./... 2>&1 | grep -i "$focus" > .profile/bce.txt || true
 			else
+				printf "\033[37m[go] profiling %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
+
 				go build -gcflags="-m" ./... > .profile/escape_analysis.txt 2>&1 || true
 				go build -gcflags="-d=ssa/check_bce/debug=1" ./... > .profile/bce.txt 2>&1 || true
 			fi
+
+			rm -rf .profile && mkdir -p .profile
 
 			go test -run=^$ -bench=. -benchmem \
 				-cpuprofile=.profile/cpu.prof \
@@ -558,7 +660,7 @@ function profile() (
 				-mutexprofile=.profile/mutex.prof \
 				-blockprofile=.profile/block.prof \
 				-trace=.profile/trace.out \
-				"${extra_args[@]}" ./... > .profile/bench.txt 2>&1 || true
+				"${GO_EXTRA_ARGS[@]}" ./... > .profile/bench.txt 2>&1 || true
 
 			printf "\033[32msuccess: profile complete\033[0m\n"
 			printf "\033[37m  escape/inline: .profile/escape_analysis.txt\033[0m\n"
@@ -597,14 +699,11 @@ function bench() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			printf "\033[37m[go] benchmarking %s\033[0m\n" "$target"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
-			# enable CGO with zig
-			export CGO_ENABLED=1
-			export CC="zig cc"
-			export CXX="zig c++"
+			printf "\033[37m[go] benchmarking %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
 
-			go test -run=^$ -bench=. -benchmem "${extra_args[@]}" ./...
+			go test -run=^$ -bench=. -benchmem "${GO_EXTRA_ARGS[@]}" ./...
 
 			return
 		fi
@@ -665,14 +764,11 @@ function test() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			printf "\033[37m[go] testing %s\033[0m\n" "$target"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
-			# enable CGO with zig
-			export CGO_ENABLED=1
-			export CC="zig cc"
-			export CXX="zig c++"
+			printf "\033[37m[go] testing %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
 
-			go test -v "${extra_args[@]}" ./...
+			go test -v "${GO_EXTRA_ARGS[@]}" ./...
 
 			return
 		fi
@@ -732,18 +828,13 @@ function run() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			local main_dir
+			local main_dir=$(_find_go_main_dir "$target")
 
-			main_dir=$(_find_go_main_dir "$target")
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
-			printf "\033[37m[go] running %s\033[0m\n" "$main_dir"
+			printf "\033[37m[go] running %s (mode: %s)\033[0m\n" "$main_dir" "$GO_MODE_STR"
 
-			# enable CGO with zig
-			export CGO_ENABLED=1
-			export CC="zig cc"
-			export CXX="zig c++"
-
-			go run "${extra_args[@]}" "$main_dir"
+			go run "${GO_EXTRA_ARGS[@]}" "$main_dir"
 
 			return
 		fi
@@ -840,80 +931,20 @@ function build() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			local main_dir
+			local main_dir=$(_find_go_main_dir "$target")
+			local base="$(basename "$target")"
 
-			main_dir=$(_find_go_main_dir "$target")
-
-			local base
-
-			base="$(basename "$target")"
 			base="${base//[[:space:]]/}"
-
-			printf "\033[37m[go/%s/%s] building %s\033[0m\n" "$target_os" "$base" "$main_dir"
 
 			if [[ "$target_os" == "windows" ]]; then
 				base="$base.exe"
 			fi
 
-			# Zig target mapping
-			local zig_target=""
+			_apply_go_env "$target_os" "$target_arch" "${extra_args[@]}"
 
-			case "$target_os/$target_arch" in
-				linux/amd64)
-					zig_target="x86_64-linux-musl"
-					;;
-				linux/arm64)
-					zig_target="aarch64-linux-musl"
-					;;
-				windows/amd64)
-					zig_target="x86_64-windows-gnu"
-					;;
-				windows/arm64)
-					zig_target="aarch64-windows-gnu"
-					;;
-				darwin/amd64)
-					zig_target="x86_64-macos-none"
-					;;
-				darwin/arm64)
-					zig_target="aarch64-macos-none"
-					;;
-				*)
-					zig_target=""
-					;;
-			esac
+			printf "\033[37m[go/%s/%s] building %s (mode: %s)\033[0m\n" "$target_os" "$base" "$main_dir" "$GO_MODE_STR"
 
-			# Static linking flags
-			local ldflags="-s -w"
-
-			if [[ "$target_os" == "linux" ]]; then
-				ldflags="$ldflags -linkmode external -extldflags '-static'"
-			elif [[ "$target_os" == "windows" ]]; then
-				ldflags="$ldflags -linkmode external -extldflags '-static'"
-			fi
-
-			# Cross-compilation check: use Zig when target != host
-			local is_cross=false
-
-			if [[ "$target_os" != "linux" ]]; then
-				is_cross=true
-			elif [[ "$target_arch" != "$host_arch" ]]; then
-				is_cross=true
-			fi
-
-			# Set build environment
-			export GOOS="$target_os"
-			export GOARCH="$target_arch"
-			export CGO_ENABLED=1
-
-			if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
-				export CC="zig cc -target $zig_target"
-				export CXX="zig c++ -target $zig_target"
-			else
-				export CC="zig cc"
-				export CXX="zig c++"
-			fi
-
-			go build -trimpath -buildvcs=false -ldflags "$ldflags" "${extra_args[@]}" -o "$base" "$main_dir"
+			go build "${GO_BUILD_FLAGS[@]}" -ldflags "$GO_LDFLAGS" "${GO_EXTRA_ARGS[@]}" -o "$base" "$main_dir"
 
 			return
 		fi
