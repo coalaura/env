@@ -54,6 +54,11 @@ echo Copying biome config...
 copy "biome\biome.json" "%USERPROFILE%\biome.json"
 copy "biome\biome.json" "D:\biome.json"
 
+:: vscode keybinds.json
+echo Copying vscode keybinds...
+
+copy ".vscode\keybinds.json" "%APPDATA%\Code\User\keybindings.json"
+
 :: dependencies
 echo Checking dependencies...
 
