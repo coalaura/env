@@ -30,6 +30,11 @@ echo "Copying .bashrc..."
 
 cp bash/.bashrc ~/.bashrc
 
+# vscode keybinds.json
+echo "Copying vscode keybinds..."
+
+cp .vscode/keybinds.json ~/.config/Code/User/keybindings.json
+
 # dependencies
 echo "Checking dependencies..."
 
