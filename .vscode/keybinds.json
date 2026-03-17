@@ -328,5 +328,45 @@
 		"key": "ctrl+d",
 		"command": "-editor.action.addSelectionToNextFindMatch",
 		"when": "editorFocus"
+	},
+	{
+		"key": "ctrl+shift+down",
+		"command": "cursorColumnSelectDown",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+alt+down",
+		"command": "-cursorColumnSelectDown",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+up",
+		"command": "cursorColumnSelectUp",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+alt+up",
+		"command": "-cursorColumnSelectUp",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+pagedown",
+		"command": "cursorColumnSelectPageDown",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+alt+pagedown",
+		"command": "-cursorColumnSelectPageDown",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+pageup",
+		"command": "cursorColumnSelectPageUp",
+		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+alt+pageup",
+		"command": "-cursorColumnSelectPageUp",
+		"when": "textInputFocus"
 	}
 ]
