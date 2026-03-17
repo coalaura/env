@@ -172,9 +172,9 @@ function _M.end_timer(start_time, action_name)
     local elapsed = os.clock() - start_time
 
     if elapsed < 1.0 then
-        _M.printf("[time] %s in %dms", action_name, math.floor(elapsed * 1000))
+        _M.printf("\x1b[90m- %s in %dms", action_name, math.floor(elapsed * 1000))
     else
-        _M.printf("[time] %s in %.2fs", action_name, elapsed)
+        _M.printf("\x1b[90m- %s in %.2fs", action_name, elapsed)
     end
 end
 

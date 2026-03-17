@@ -24,14 +24,14 @@ function _end_timer() {
         local elapsed=$((end_time - start_time))
 
         if [[ $elapsed -lt 1000 ]]; then
-            printf "\033[37m[time]%s in %dms\033[0m\n" "$action_name" "$elapsed"
+            printf "\033[90m- %s in %dms\033[0m\n" "$action_name" "$elapsed"
         else
             local sec=$(awk "BEGIN {printf \"%.2f\", $elapsed/1000}")
 
-            printf "\033[37m[time]%s in %ss\033[0m\n" "$action_name" "$sec"
+            printf "\033[90m- %s in %ss\033[0m\n" "$action_name" "$sec"
         fi
     else
-        printf "\033[37m[time]%s\033[0m\n" "$action_name"
+        printf "\033[90m- %s\033[0m\n" "$action_name"
     fi
 }
 
