@@ -106,6 +106,21 @@ function _find_go_main_dir() {
     echo "$main_dir"
 }
 
+# Run go generate for a project
+function _go_generate() {
+	local target="${1:-.}"
+
+	printf "\033[37m[go] generating %s\033[0m\n" "$target"
+
+	local t0=$(_start_timer)
+
+	if ! go -C "$target" generate ./...; then
+		return 1
+	fi
+
+	_end_timer "$t0" "generated"
+}
+
 # Setup Go build environment and parse custom flags
 function _apply_go_env() {
     local target_os="${1:-linux}"
@@ -681,6 +696,7 @@ function profile() (
 			rm -rf .profile && mkdir -p .profile
 
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+			_go_generate "$target"
 
 			if [[ -n "$focus" ]]; then
 				printf "\033[37m[go] profiling %s (focus: %s, mode: %s)\033[0m\n" "$target" "$focus" "$GO_MODE_STR"
@@ -740,6 +756,7 @@ function bench() (
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+			_go_generate "$target"
 
 			printf "\033[37m[go] benchmarking %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
 
@@ -805,6 +822,7 @@ function test() (
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+			_go_generate "$target"
 
 			printf "\033[37m[go] testing %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
 
@@ -871,6 +889,7 @@ function run() (
 			local main_dir=$(_find_go_main_dir "$target")
 
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+			_go_generate "$target"
 
 			printf "\033[37m[go] running %s (mode: %s)\033[0m\n" "$main_dir" "$GO_MODE_STR"
 
@@ -981,6 +1000,7 @@ function build() (
 			fi
 
 			_apply_go_env "$target_os" "$target_arch" "${extra_args[@]}"
+			_go_generate "$target"
 
 			printf "\033[37m[go/%s/%s] building %s (mode: %s)\033[0m\n" "$target_os" "$base" "$main_dir" "$GO_MODE_STR"
 

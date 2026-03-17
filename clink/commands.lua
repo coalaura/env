@@ -386,6 +386,13 @@ commands["profile"] = function(args)
     if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
+        os.execute("rmdir /s /q .profile 2>nul")
+        os.execute("mkdir .profile 2>nul")
+
+        if not utils.go_generate(target_dir) then
+            return
+        end
+
         if focus ~= "" then
             utils.printf("[go] profiling %s (focus: %s)", utils.clean_path(target_dir), focus)
 
@@ -397,9 +404,6 @@ commands["profile"] = function(args)
             os.execute(utils.command_with_env("go build -gcflags=\"-m\" ./... > .profile\\escape_analysis.txt 2>&1", go_env.env))
             os.execute(utils.command_with_env("go build -gcflags=\"-d=ssa/check_bce/debug=1\" ./... > .profile\\bce.txt 2>&1", go_env.env))
         end
-
-        os.execute("rmdir /s /q .profile 2>nul")
-        os.execute("mkdir .profile 2>nul")
 
         os.execute(utils.command_with_env(
             string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s ./... > .profile\\bench.txt 2>&1", go_env.extra_args),
@@ -443,6 +447,10 @@ commands["bench"] = function(args)
 	-- handle go project
 	if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+
+        if not utils.go_generate(target_dir) then
+            return
+        end
 
         utils.printf("[go] benchmarking %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -510,6 +518,10 @@ commands["test"] = function(args)
 	if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
+        if not utils.go_generate(target_dir) then
+            return
+        end
+
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
         return utils.command_with_env(
@@ -575,6 +587,10 @@ commands["run"] = function(args)
     if utils.is_go(target_dir) then
         local main_dir = utils.find_go_main_dir(target_dir)
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+
+        if not utils.go_generate(target_dir) then
+            return
+        end
 
         utils.printf("[go] running %s (mode: %s)", utils.clean_path(main_dir), go_env.mode)
 
@@ -648,6 +664,10 @@ commands["build"] = function(args)
         end
 
         local go_env = utils.prepare_go_env(target_os, "amd64", extra_args)
+
+        if not utils.go_generate(target_dir) then
+            return
+        end
 
         utils.printf("[go/%s/%s] building %s (mode: %s)", target_os, base, utils.clean_path(main_dir), go_env.mode)
 

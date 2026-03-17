@@ -178,6 +178,34 @@ function _M.end_timer(start_time, action_name)
     end
 end
 
+function _M.command_ok(result)
+	return result == true or result == 0
+end
+
+function _M.go_generate(dir, env)
+    _M.printf("[go] generating %s", _M.clean_path(dir))
+
+    local t0 = _M.start_timer()
+
+    local cmd = string.format(
+		"go -C %s generate ./...",
+		_M.escape_path(dir)
+	)
+
+    local gen_result = os.execute(_M.command_with_env(
+        cmd,
+        env
+    ))
+
+    if not _M.command_ok(gen_result) then
+        return false
+    end
+
+    _M.end_timer(t0, "generated")
+
+    return true
+end
+
 local function escape_cmd_set_value(v)
     v = tostring(v)
 
