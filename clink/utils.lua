@@ -219,12 +219,14 @@ end
 function _M.command_with_env(command, env)
     local entries = {}
 
-    for key, value in pairs(env) do
-        table.insert(entries, string.format(
-            "set \"%s=%s\"",
-            key,
-            escape_cmd_set_value(value)
-        ))
+    if env then
+        for key, value in pairs(env) do
+            table.insert(entries, string.format(
+                "set \"%s=%s\"",
+                key,
+                escape_cmd_set_value(value)
+            ))
+        end
     end
 
     table.insert(entries, command)

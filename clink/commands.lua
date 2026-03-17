@@ -389,7 +389,7 @@ commands["profile"] = function(args)
         os.execute("rmdir /s /q .profile 2>nul")
         os.execute("mkdir .profile 2>nul")
 
-        if not utils.go_generate(target_dir) then
+        if not utils.go_generate(target_dir, go_env.env) then
             return
         end
 
@@ -448,7 +448,7 @@ commands["bench"] = function(args)
 	if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
-        if not utils.go_generate(target_dir) then
+        if not utils.go_generate(target_dir, go_env.env) then
             return
         end
 
@@ -518,7 +518,7 @@ commands["test"] = function(args)
 	if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
-        if not utils.go_generate(target_dir) then
+        if not utils.go_generate(target_dir, go_env.env) then
             return
         end
 
@@ -588,7 +588,7 @@ commands["run"] = function(args)
         local main_dir = utils.find_go_main_dir(target_dir)
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
-        if not utils.go_generate(target_dir) then
+        if not utils.go_generate(target_dir, go_env.env) then
             return
         end
 
@@ -665,7 +665,7 @@ commands["build"] = function(args)
 
         local go_env = utils.prepare_go_env(target_os, "amd64", extra_args)
 
-        if not utils.go_generate(target_dir) then
+        if not utils.go_generate(target_dir, go_env.env) then
             return
         end
 
