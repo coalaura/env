@@ -166,13 +166,13 @@ function _apply_go_env() {
 		GO_MODE_STR="${GO_MODE_STR},opt"
 	fi
 
-    if [[ "$is_compat" == "true" ]]; then
+    if [[ "$is_min" == "true" ]]; then
 		GO_MODE_STR="${GO_MODE_STR},min"
 	fi
 
     if [[ "$CGO_ENABLED" == "1" ]]; then
         local zig_target=""
-        local host_arch=$(uname -m)
+        local host_arch="$(go env GOHOSTARCH 2>/dev/null || uname -m)"
 
         case "$host_arch" in
             x86_64) host_arch="amd64" ;;
@@ -678,6 +678,8 @@ function profile() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
+			rm -rf .profile && mkdir -p .profile
+
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
 			if [[ -n "$focus" ]]; then
@@ -691,8 +693,6 @@ function profile() (
 				go build -gcflags="-m" ./... > .profile/escape_analysis.txt 2>&1 || true
 				go build -gcflags="-d=ssa/check_bce/debug=1" ./... > .profile/bce.txt 2>&1 || true
 			fi
-
-			rm -rf .profile && mkdir -p .profile
 
 			go test -run=^$ -bench=. -benchmem \
 				-cpuprofile=.profile/cpu.prof \
@@ -949,7 +949,7 @@ function build() (
 		fi
 
 		# Detect host arch for native builds
-		local host_arch=$(uname -m)
+		local host_arch="$(go env GOHOSTARCH 2>/dev/null || uname -m)"
 
 		target_arch="$host_arch"
 
@@ -1123,7 +1123,7 @@ function goup() {
 
 		go -C "$target" mod edit -go "$gv"
 
-		printf "\033[32msuccess: set go version to %s\n" "$gv"
+		printf "\033[32msuccess: set go version to %s\033[0m\n" "$gv"
 
 		go -C "$target" get -u ./...
 
@@ -1221,17 +1221,19 @@ function beep() {
 
 # safer rm that blocks absolute paths
 function rm() {
-    local target="${1:-}"
+	local arg
 
-	shift
+	for arg in "$@"; do
+		case "$arg" in
+			-*) ;;
+			/*)
+				printf "\033[33merror: absolute path in rm: %s\033[0m\n" "$arg"
+				return 1
+				;;
+		esac
+	done
 
-    if [[ "$target" == /* ]]; then
-        printf "\033[33merror: absolute path in rm\033[0m\n"
-
-        return 1
-    fi
-
-    command rm "$@"
+	command rm "$@"
 }
 
 ##
@@ -1298,7 +1300,7 @@ export PATH="$PATH:/usr/local/go/bin"
 export TERM=xterm-256color
 
 # ignore .cmd extension for complete
-export FIGNORE=(.cmd .exe)
+export FIGNORE=".cmd:.exe"
 
 ##
 # CGo settings
@@ -1315,12 +1317,13 @@ export CXX="zig c++"
 # ensure ssh-agent is running
 SSH_AGENT_FILE="$HOME/.ssh/.agent-env"
 
-if [ -f "$SSH_AGENT_FILE" ]; then
-	source "$SSH_AGENT_FILE" > /dev/null 2>&1
+if [[ -r "$SSH_AGENT_FILE" ]]; then
+	source "$SSH_AGENT_FILE" >/dev/null 2>&1
 fi
 
 if ! ssh-add -l >/dev/null 2>&1; then
-	eval "$(ssh-agent -s)" > "$SSH_AGENT_FILE"
+	ssh-agent -s > "$SSH_AGENT_FILE"
+	source "$SSH_AGENT_FILE" >/dev/null 2>&1
 fi
 
 # ensure github ssh key is loaded
