@@ -76,7 +76,7 @@ os.setalias("tidy", "go mod tidy")
 os.setalias("..", "cd ..")
 os.setalias("...", "cd ..\\..")
 os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
-os.setalias("time", string.format("\"%s\" $*", path.join(utils.home(), ".bin\\time.exe")))
+os.setalias("t", "time")
 
 -- handle ..\ or ...\
 clink.onfilterinput(function(text)

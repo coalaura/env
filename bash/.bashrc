@@ -1276,6 +1276,7 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias home='cd ~'
 alias cls='clear'
+alias t='command time'
 
 # Auto-correct cd typos
 shopt -s cdspell

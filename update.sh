@@ -74,4 +74,10 @@ if ! command -v upx >/dev/null 2>&1; then
 	sudo pacman -Sy upx
 fi
 
+# install time
+if ! type -P time >/dev/null 2>&1; then
+	echo "Installing time..."
+	curl -sL https://src.ws2.sh/time/install.sh | sh
+fi
+
 echo "Done."
