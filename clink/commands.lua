@@ -730,6 +730,8 @@ commands["build"] = function(args)
         if result == true or result == 0 then
             utils.end_timer(t0)
         end
+
+        return ""
     end
 
     utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
