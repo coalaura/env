@@ -296,39 +296,30 @@ function _M.parse_target_os(args)
         table.insert(words, word)
     end
 
-    if #words == 0 then
-        return "windows", false
-    end
+    local target = "windows"
+    local remaining = {}
 
-    local target = false
+    for _, word in ipairs(words) do
+        local lower = word:lower()
 
-    local last = words[#words]:lower()
-
-    if last == "win" or last == "windows" then
-        target = "windows"
-    elseif last == "lin" or last == "linux" then
-        target = "linux"
-    elseif last == "dar" or last == "darwin" then
-        target = "darwin"
-    end
-
-    if not target then
-        if args == "" then
-            args = false
+        if lower == "win" or lower == "windows" then
+            target = "windows"
+        elseif lower == "lin" or lower == "linux" then
+            target = "linux"
+        elseif lower == "dar" or lower == "darwin" then
+            target = "darwin"
+        else
+            table.insert(remaining, word)
         end
-
-        return "windows", args
     end
 
-    table.remove(words, #words)
+    local rest = table.concat(remaining, " ")
 
-    if #words > 0 then
-        args = table.concat(words, " ")
-    else
-        args = false
+    if rest == "" then
+        rest = false
     end
 
-    return target, args
+    return target, rest
 end
 
 function _M.prepare_go_env(target_os, target_arch, extra_args_str)
@@ -356,7 +347,51 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         extra_args_str = extra_args_str:gsub("%s*%-%-min%s*", " ")
     end
 
-    extra_args_str = _M.trim(extra_args_str)
+    local words = {}
+
+    for word in extra_args_str:gmatch("%S+") do
+        table.insert(words, word)
+    end
+
+    local passthrough = {}
+    local merged_tags = {}
+    local seen_tags = {}
+
+    local function add_tags(tag_str)
+        for tag in tostring(tag_str or ""):gmatch("[^,%s]+") do
+            if not seen_tags[tag] then
+                seen_tags[tag] = true
+
+                table.insert(merged_tags, tag)
+            end
+        end
+    end
+
+    local i = 1
+
+    while i <= #words do
+        local word = words[i]
+
+        if word == "-tags" or word == "--tags" then
+            if i < #words then
+                add_tags(words[i + 1])
+
+                i = i + 2
+            else
+                i = i + 1
+            end
+        else
+            local inline_tags = word:match("^%-%-?tags=(.+)$")
+
+            if inline_tags then
+                add_tags(inline_tags)
+            else
+                table.insert(passthrough, word)
+            end
+
+            i = i + 1
+        end
+    end
 
     local env = {
         GOOS = target_os,
@@ -367,13 +402,17 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
     local ldflags = "-s -w"
 
     if is_pure then
-        build_flags = build_flags .. " -tags netgo,osusergo"
+        add_tags("netgo,osusergo")
 
         env.CGO_ENABLED = "0"
         env.CC = ""
         env.CXX = ""
     else
         env.CGO_ENABLED = "1"
+    end
+
+    if #merged_tags > 0 then
+        build_flags = build_flags .. " -tags " .. table.concat(merged_tags, ",")
     end
 
     if is_compat then
@@ -426,7 +465,7 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         env = env,
         build_flags = build_flags,
         ldflags = ldflags,
-        extra_args = extra_args_str,
+        extra_args = _M.trim(table.concat(passthrough, " ")),
         mode = mode_str,
         is_min = is_min
     }

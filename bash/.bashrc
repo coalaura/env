@@ -130,25 +130,68 @@ function _apply_go_env() {
 
     local is_pure=false
     local is_compat=false
-	local is_min=false
+    local is_min=false
 
     GO_EXTRA_ARGS=()
 
-    for arg in "$@"; do
-        if [[ "$arg" == "--pure" ]]; then
-            is_pure=true
-        elif [[ "$arg" == "--compat" ]]; then
-            is_compat=true
-        elif [[ "$arg" == "--min" ]]; then
-            is_min=true
-        else
-            GO_EXTRA_ARGS+=("$arg")
-        fi
+    local -a merged_tags=()
+    local -A seen_tags=()
+
+    _add_go_tags() {
+        local tag_str="$1"
+        local old_ifs="$IFS"
+        local tag
+
+        IFS=','
+
+        for tag in $tag_str; do
+            tag="$(echo "$tag" | xargs)"
+
+            if [[ -z "$tag" ]]; then
+				continue
+			fi
+
+            if [[ -z "${seen_tags[$tag]:-}" ]]; then
+                seen_tags["$tag"]=1
+
+                merged_tags+=("$tag")
+            fi
+        done
+
+        IFS="$old_ifs"
+    }
+
+    while (( $# > 0 )); do
+        case "$1" in
+            --pure)
+                is_pure=true
+                ;;
+            --compat)
+                is_compat=true
+                ;;
+            --min)
+                is_min=true
+                ;;
+            -tags|--tags)
+                if (( $# > 1 )); then
+                    _add_go_tags "$2"
+                    shift
+                fi
+                ;;
+            -tags=*|--tags=*)
+                _add_go_tags "${1#*=}"
+                ;;
+            *)
+                GO_EXTRA_ARGS+=("$1")
+                ;;
+        esac
+
+        shift
     done
 
     export GOOS="$target_os"
     export GOARCH="$target_arch"
-	export GO_MINIFY="$is_min"
+    export GO_MINIFY="$is_min"
 
     GO_BUILD_FLAGS=("-trimpath" "-pgo=auto" "-buildvcs=false")
     GO_LDFLAGS="-s -w"
@@ -156,34 +199,38 @@ function _apply_go_env() {
     if [[ "$is_pure" == "true" ]]; then
         export CGO_ENABLED=0
 
-        GO_BUILD_FLAGS+=("-tags" "netgo,osusergo")
+        _add_go_tags "netgo,osusergo"
 
-		unset CC CXX CGO_CFLAGS CGO_CXXFLAGS CGO_LDFLAGS
+        unset CC CXX CGO_CFLAGS CGO_CXXFLAGS CGO_LDFLAGS
     else
         export CGO_ENABLED=1
+    fi
+
+    if (( ${#merged_tags[@]} > 0 )); then
+        GO_BUILD_FLAGS+=("-tags" "$(IFS=,; echo "${merged_tags[*]}")")
     fi
 
     if [[ "$is_compat" == "true" ]]; then
         export GOAMD64=v1
     else
         export GOAMD64=v3
-    fi
+    end
 
     GO_MODE_STR="cgo"
 
     if [[ "$is_pure" == "true" ]]; then
-		GO_MODE_STR="pure"
-	fi
+        GO_MODE_STR="pure"
+    fi
 
     if [[ "$is_compat" == "true" ]]; then
-		GO_MODE_STR="${GO_MODE_STR},compat"
-	else
-		GO_MODE_STR="${GO_MODE_STR},opt"
-	fi
+        GO_MODE_STR="${GO_MODE_STR},compat"
+    else
+        GO_MODE_STR="${GO_MODE_STR},opt"
+    fi
 
     if [[ "$is_min" == "true" ]]; then
-		GO_MODE_STR="${GO_MODE_STR},min"
-	fi
+        GO_MODE_STR="${GO_MODE_STR},min"
+    fi
 
     if [[ "$CGO_ENABLED" == "1" ]]; then
         local zig_target=""
@@ -221,11 +268,11 @@ function _apply_go_env() {
             export CXX="zig c++"
         fi
 
-		local opt_level="-O3"
+        local opt_level="-O3"
 
-		if [[ "$is_min" == "true" ]]; then
-			opt_level="-Os"
-		fi
+        if [[ "$is_min" == "true" ]]; then
+            opt_level="-Os"
+        fi
 
         local cflags="-g0 $opt_level -ffunction-sections -fdata-sections"
 
