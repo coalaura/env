@@ -4,4 +4,9 @@
         "path",
         "rl"
     ],
+    "lugo.environment.knownGlobals": [
+        "path",
+        "clink",
+        "rl"
+    ],
 }

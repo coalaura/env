@@ -486,7 +486,7 @@ function _M.get_package_json_script(pt, allowed)
         return false
     end
 
-    for id, script in ipairs(allowed) do
+    for _, script in ipairs(allowed) do
         if scripts[script] then
             return script
         end
@@ -496,7 +496,7 @@ function _M.get_package_json_script(pt, allowed)
 end
 
 function _M.get_first_existing_file(dir, allowed)
-    for id, file in ipairs(allowed) do
+    for _, file in ipairs(allowed) do
         local pt = path.join(dir, file)
 
         if os.isfile(pt) then

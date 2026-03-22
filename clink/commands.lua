@@ -130,7 +130,6 @@ commands["tag"] = function(args)
 		return
 	end
 
-	local escaped_root = utils.escape_path(root)
 	local escaped_msg = utils.escape_input(msg)
 
 	utils.printf("tagging %s as %s", utils.clean_path(root), tag_name)
@@ -479,7 +478,7 @@ commands["bench"] = function(args)
 		-- fallback to standalone bench files
 		local patterns = {"bench.js", "bench.ts", "benchmark.js", "benchmark.ts"}
 
-		for id, pattern in ipairs(patterns) do
+		for _, pattern in ipairs(patterns) do
 			if os.isfile(path.join(target_dir, pattern)) then
 				utils.printf("[bun] benchmarking %s", utils.clean_path(target_dir))
 
@@ -549,7 +548,7 @@ commands["test"] = function(args)
 		-- fallback to bun test if test files exist
 		local patterns = {"index.test.js", "index.test.ts", "index.spec.js", "index.spec.ts", "main.test.js", "main.test.ts"}
 
-		for id, pattern in ipairs(patterns) do
+		for _, pattern in ipairs(patterns) do
 			if os.isfile(path.join(target_dir, pattern)) then
 				utils.printf("[bun test] testing %s", utils.clean_path(target_dir))
 
