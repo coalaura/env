@@ -1200,6 +1200,77 @@ function goup() {
 	)
 }
 
+# update github actions in workflows
+ghup() (
+	set -euo pipefail
+
+	local target_dir="${1:-.}"
+	target_dir="$(realpath "$target_dir")"
+
+	local wf_dir="$target_dir/.github/workflows"
+
+	if [[ ! -d "$wf_dir" ]]; then
+		printf "\033[33merror: no workflows directory found at %s\033[0m\n" "$wf_dir"
+
+		return 1
+	fi
+
+	local total=0
+	local count=0
+
+	shopt -s nullglob
+
+	for pt in "$wf_dir"/*.yml "$wf_dir"/*.yaml; do
+		if [[ -f "$pt" ]]; then
+			continue
+		fi
+
+		((total += 1))
+
+		local content="$(cat "$pt")"
+
+		local new_content="$content"
+
+		bump() {
+			local action="$1"
+			local old_majors="$2"
+			local new_major="$3"
+
+			perl -0pe "s{(\Q$action\E\@v)[$old_majors](?![.\d])}{\${1}$new_major}g"
+		}
+
+		new_content="$(printf '%s' "$new_content" | bump "actions/checkout" "1-5" "6")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/setup-go" "1-5" "6")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/cache" "1-4" "5")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/cache/restore" "1-4" "5")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/cache/save" "1-4" "5")"
+		new_content="$(printf '%s' "$new_content" | bump "oven-sh/setup-bun" "1" "2")"
+		new_content="$(printf '%s' "$new_content" | bump "biomejs/setup-biome" "1" "2")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/github-script" "1-6" "7")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/upload-artifact" "4-5" "6")"
+		new_content="$(printf '%s' "$new_content" | bump "actions/download-artifact" "4-7" "8")"
+
+		if ! grep -Eq '^[[:space:]-]*always-auth[[:space:]]*:' <<< "$new_content"; then
+			new_content="$(printf '%s' "$new_content" | bump "actions/setup-node" "1-5" "6")"
+		fi
+
+		if [[ "$new_content" != "$content" ]]; then
+			printf '%s' "$new_content" > "$pt"
+			printf "\033[37mupdated %s\033[0m\n" "$(basename "$pt")"
+
+			((count += 1))
+		fi
+	done
+
+	if (( total == 0 )); then
+		printf "\033[37mno workflows found\033[0m\n"
+	elif (( count == 0 )); then
+		printf "\033[37mall actions are up to date (%d files checked)\033[0m\n" "$total"
+	else
+		printf "\033[32msuccess: updated actions in %d/%d workflow(s)\033[0m\n" "$count" "$total"
+	fi
+)
+
 # create an ssh tunnel for a specific port
 function tunnel() {
 	(
@@ -1310,7 +1381,7 @@ function rm() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push git_ssh origin trash goup
+complete -o dirnames -A directory pull push git_ssh origin trash goup ghup
 complete -F __build_complete build
 
 # various aliases

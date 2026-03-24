@@ -42,6 +42,38 @@ function _M.write_file(pt, data)
     file:close()
 end
 
+function _M.list_workflow_files(dir)
+    local files = {}
+    local seen = {}
+
+    local function add_matches(pattern)
+        local matches = os.globfiles(pattern)
+
+        print("pattern", pattern, #matches)
+
+        if not matches then
+            return
+        end
+
+        for _, pt in ipairs(matches) do
+            local pt = path.normalise(path.join(dir, pt))
+
+            if not seen[pt] then
+                seen[pt] = true
+
+                table.insert(files, pt)
+            end
+        end
+    end
+
+    add_matches(path.join(dir, "*.yml"))
+    add_matches(path.join(dir, "*.yaml"))
+
+    table.sort(files)
+
+    return files
+end
+
 function _M.is_git(dir)
     local git_dir = path.join(dir, ".git")
 
@@ -114,6 +146,10 @@ end
 
 function _M.trim(str)
     return (str or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+function _M.escape_pattern(str)
+    return (str or ""):gsub("[%-%.%+%?%*%%%[%]%^%$%(%)]", "%%%1")
 end
 
 function _M.escape_path(pt, escapeQuotes)
@@ -261,8 +297,8 @@ function _M.parse_target_and_args(args)
     local extra_args = {}
 
     if rest and rest ~= "" then
-        for arg in rest:gmatch("%S+") do
-            table.insert(extra_args, arg)
+        for extraArg in rest:gmatch("%S+") do
+            table.insert(extra_args, extraArg)
         end
     end
 
@@ -280,8 +316,8 @@ function _M.format_extra_args(args)
 
     local escaped = {}
 
-    for _, arg in ipairs(args) do
-        table.insert(escaped, _M.escape_input(arg))
+    for _, extraArg in ipairs(args) do
+        table.insert(escaped, _M.escape_input(extraArg))
     end
 
     return " " .. table.concat(escaped, " ")

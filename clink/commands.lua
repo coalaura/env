@@ -73,22 +73,22 @@ clink.argmatcher("push"):addarg(clink.dirmatches)
 
 -- create and push a git tag
 commands["tag"] = function(args)
-	local target_dir = args or os.getcwd()
+    local target_dir = args or os.getcwd()
 
-	local root = utils.git_root(target_dir)
+    local root = utils.git_root(target_dir)
 
-	local ok, err = utils.is_git(root)
+    local ok, err = utils.is_git(root)
 
     if not ok then
-		utils.errorf(err)
+        utils.errorf(err)
 
         return
-	end
+    end
 
-	local escaped_root = utils.escape_path(root)
+    local escaped_root = utils.escape_path(root)
 
-	-- last tag name
-	local last_tag = ""
+    -- last tag name
+    local last_tag = ""
 
     local handle = io.popen(string.format(
         "git.exe -C %s describe --tags --abbrev=0 2>nul",
@@ -101,7 +101,7 @@ commands["tag"] = function(args)
         handle:close()
     end
 
-	if last_tag == "" then
+    if last_tag == "" then
         last_tag = "n/a"
     end
 
@@ -110,136 +110,136 @@ commands["tag"] = function(args)
         last_tag
     )
 
-	local tag_name = utils.read_line("new tag: ", "")
+    local tag_name = utils.read_line("new tag: ", "")
 
-	tag_name = utils.trim(tag_name)
+    tag_name = utils.trim(tag_name)
 
-	if tag_name == "" then
-		utils.errorf("tag name is required")
+    if tag_name == "" then
+        utils.errorf("tag name is required")
 
-		return
-	end
+        return
+    end
 
-	local msg = utils.read_line("message: ", "")
+    local msg = utils.read_line("message: ", "")
 
-	msg = utils.trim(msg)
+    msg = utils.trim(msg)
 
-	if msg == "" then
-		utils.errorf("message is required")
+    if msg == "" then
+        utils.errorf("message is required")
 
-		return
-	end
+        return
+    end
 
-	local escaped_msg = utils.escape_input(msg)
+    local escaped_msg = utils.escape_input(msg)
 
-	utils.printf("tagging %s as %s", utils.clean_path(root), tag_name)
+    utils.printf("tagging %s as %s", utils.clean_path(root), tag_name)
 
-	local cmd = string.format("git.exe -C %s tag -a %s -m \"%s\"", escaped_root, tag_name, escaped_msg)
+    local cmd = string.format("git.exe -C %s tag -a %s -m \"%s\"", escaped_root, tag_name, escaped_msg)
 
-	if not os.execute(cmd) then
-		utils.errorf("failed to create tag")
+    if not os.execute(cmd) then
+        utils.errorf("failed to create tag")
 
-		return
-	end
+        return
+    end
 
-	utils.printf("pushing tag %s", tag_name)
+    utils.printf("pushing tag %s", tag_name)
 
-	cmd = string.format("git.exe -C %s push origin %s", escaped_root, tag_name)
+    cmd = string.format("git.exe -C %s push origin %s", escaped_root, tag_name)
 
-	if not os.execute(cmd) then
-		utils.errorf("failed to push tag")
+    if not os.execute(cmd) then
+        utils.errorf("failed to push tag")
 
-		return
-	end
+        return
+    end
 
-	utils.successf("tagged and pushed %s", tag_name)
+    utils.successf("tagged and pushed %s", tag_name)
 end
 
 clink.argmatcher("tag"):addarg(clink.dirmatches)
 
 -- delete and push-delete a git tag
 commands["dtag"] = function(args)
-	local target_dir = args or os.getcwd()
+    local target_dir = args or os.getcwd()
 
-	local root = utils.git_root(target_dir)
+    local root = utils.git_root(target_dir)
 
-	local ok, err = utils.is_git(root)
+    local ok, err = utils.is_git(root)
 
-	if not ok then
-		utils.errorf(err)
+    if not ok then
+        utils.errorf(err)
 
-		return
-	end
+        return
+    end
 
-	local escaped_root = utils.escape_path(root)
-	local tags = {}
+    local escaped_root = utils.escape_path(root)
+    local tags = {}
 
-	local handle = io.popen(string.format(
-		"git.exe -C %s tag --sort=-creatordate 2>nul",
-		escaped_root
-	))
+    local handle = io.popen(string.format(
+        "git.exe -C %s tag --sort=-creatordate 2>nul",
+        escaped_root
+    ))
 
-	if handle then
-		for line in handle:lines() do
-			line = utils.trim(line or "")
+    if handle then
+        for line in handle:lines() do
+            local line = utils.trim(line or "")
 
-			if line ~= "" then
-				table.insert(tags, line)
-			end
+            if line ~= "" then
+                table.insert(tags, line)
+            end
 
-			if #tags >= 5 then
-				break
-			end
-		end
+            if #tags >= 5 then
+                break
+            end
+        end
 
-		handle:close()
-	end
+        handle:close()
+    end
 
-	if #tags == 0 then
-		utils.errorf("no tags found")
+    if #tags == 0 then
+        utils.errorf("no tags found")
 
-		return
-	end
+        return
+    end
 
-	utils.printf("\x1b[90mlatest:")
+    utils.printf("\x1b[90mlatest:")
 
-	for _, tag_name in ipairs(tags) do
-		utils.printf("\x1b[90m- %s", tag_name)
-	end
+    for _, tag_name in ipairs(tags) do
+        utils.printf("\x1b[90m- %s", tag_name)
+    end
 
-	local tag_name = utils.read_line("delete tag: ", "")
+    local tag_name = utils.read_line("delete tag: ", "")
 
-	tag_name = utils.trim(tag_name)
+    tag_name = utils.trim(tag_name)
 
-	if tag_name == "" then
-		utils.errorf("tag name is required")
+    if tag_name == "" then
+        utils.errorf("tag name is required")
 
-		return
-	end
+        return
+    end
 
-	utils.printf("deleting %s from %s", tag_name, utils.clean_path(root))
+    utils.printf("deleting %s from %s", tag_name, utils.clean_path(root))
 
-	local cmd = string.format(
-		"git.exe -C %s push origin :refs/tags/%s",
-		escaped_root,
-		tag_name
-	)
+    local cmd = string.format(
+        "git.exe -C %s push origin :refs/tags/%s",
+        escaped_root,
+        tag_name
+    )
 
-	if not os.execute(cmd) then
-		utils.errorf("failed to delete remote tag")
+    if not os.execute(cmd) then
+        utils.errorf("failed to delete remote tag")
 
-		return
-	end
+        return
+    end
 
-	cmd = string.format("git.exe -C %s tag -d %s", escaped_root, tag_name)
+    cmd = string.format("git.exe -C %s tag -d %s", escaped_root, tag_name)
 
-	if not os.execute(cmd) then
-		utils.errorf("failed to delete local tag")
+    if not os.execute(cmd) then
+        utils.errorf("failed to delete local tag")
 
-		return
-	end
+        return
+    end
 
-	utils.successf("deleted and pushed %s", tag_name)
+    utils.successf("deleted and pushed %s", tag_name)
 end
 
 clink.argmatcher("dtag"):addarg(clink.dirmatches)
@@ -426,25 +426,25 @@ end
 
 -- benchmark a project
 commands["bench"] = function(args)
-	local target_dir = os.getcwd()
+    local target_dir = os.getcwd()
 
-	local extra_args = utils.format_extra_args(args)
+    local extra_args = utils.format_extra_args(args)
 
-	-- handle bench script
-	local bench_cmd = path.join(target_dir, "bench.cmd")
+    -- handle bench script
+    local bench_cmd = path.join(target_dir, "bench.cmd")
 
-	if os.isfile("bench.cmd") then
-		utils.printf("[bench.cmd] benchmarking %s", utils.clean_path(target_dir))
+    if os.isfile("bench.cmd") then
+        utils.printf("[bench.cmd] benchmarking %s", utils.clean_path(target_dir))
 
-		return string.format(
-			"call %s %s",
-			utils.escape_path(bench_cmd),
-			extra_args
-		)
-	end
+        return string.format(
+            "call %s %s",
+            utils.escape_path(bench_cmd),
+            extra_args
+        )
+    end
 
-	-- handle go project
-	if utils.is_go(target_dir) then
+    -- handle go project
+    if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
         if not utils.go_generate(target_dir, go_env.env) then
@@ -459,62 +459,62 @@ commands["bench"] = function(args)
         )
     end
 
-	-- handle node project
-	if utils.is_node(target_dir) then
-		local package = path.join(target_dir, "package.json")
+    -- handle node project
+    if utils.is_node(target_dir) then
+        local package = path.join(target_dir, "package.json")
 
-		local script = utils.get_package_json_script(package, {"bench", "benchmark"})
+        local script = utils.get_package_json_script(package, {"bench", "benchmark"})
 
-		if script then
-			utils.printf("[bun/%s] benchmarking %s", script, utils.clean_path(target_dir))
+        if script then
+            utils.printf("[bun/%s] benchmarking %s", script, utils.clean_path(target_dir))
 
-			return string.format(
-				"bun run %s %s",
-				script,
-				extra_args
-			)
-		end
+            return string.format(
+                "bun run %s %s",
+                script,
+                extra_args
+            )
+        end
 
-		-- fallback to standalone bench files
-		local patterns = {"bench.js", "bench.ts", "benchmark.js", "benchmark.ts"}
+        -- fallback to standalone bench files
+        local patterns = {"bench.js", "bench.ts", "benchmark.js", "benchmark.ts"}
 
-		for _, pattern in ipairs(patterns) do
-			if os.isfile(path.join(target_dir, pattern)) then
-				utils.printf("[bun] benchmarking %s", utils.clean_path(target_dir))
+        for _, pattern in ipairs(patterns) do
+            if os.isfile(path.join(target_dir, pattern)) then
+                utils.printf("[bun] benchmarking %s", utils.clean_path(target_dir))
 
-				return string.format(
-					"bun %s %s",
-					pattern,
-					extra_args
-				)
-			end
-		end
-	end
+                return string.format(
+                    "bun %s %s",
+                    pattern,
+                    extra_args
+                )
+            end
+        end
+    end
 
-	utils.errorf("%s is not a recognized benchmark project", utils.clean_path(target_dir))
+    utils.errorf("%s is not a recognized benchmark project", utils.clean_path(target_dir))
 end
 
 -- test a project
 commands["test"] = function(args)
-	local target_dir = os.getcwd()
+    local target_dir = os.getcwd()
 
-	local extra_args = utils.format_extra_args(args)
+    local extra_args = utils.format_extra_args(args)
 
-	-- handle test script
-	local test_cmd = path.join(target_dir, "test.cmd")
+    -- handle test script
+    local test_cmd = path.join(target_dir, "test.cmd")
 
-	if os.isfile("test.cmd") then
-		utils.printf("[test.cmd] testing %s", utils.clean_path(target_dir))
+    if os.isfile("test.cmd") then
+        utils.printf("[test.cmd] testing %s", utils.clean_path(target_dir))
 
-		return string.format(
-			"call %s %s",
-			utils.escape_path(test_cmd),
-			extra_args
-		)
-	end
+        return string.format(
+            "call %s %s",
+            utils.escape_path(test_cmd),
+            extra_args
+        )
+    end
 
-	-- handle go project
-	if utils.is_go(target_dir) then
+    -- handle go project
+    if utils.is_go(target_dir) then
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
         if not utils.go_generate(target_dir, go_env.env) then
@@ -529,38 +529,38 @@ commands["test"] = function(args)
         )
     end
 
-	-- handle node project with test script
-	if utils.is_node(target_dir) then
-		local package = path.join(target_dir, "package.json")
+    -- handle node project with test script
+    if utils.is_node(target_dir) then
+        local package = path.join(target_dir, "package.json")
 
-		local script = utils.get_package_json_script(package, {"test"})
+        local script = utils.get_package_json_script(package, {"test"})
 
-		if script then
-			utils.printf("[bun/%s] testing %s", script, utils.clean_path(target_dir))
+        if script then
+            utils.printf("[bun/%s] testing %s", script, utils.clean_path(target_dir))
 
-			return string.format(
-				"bun run %s %s",
-				script,
-				extra_args
-			)
-		end
+            return string.format(
+                "bun run %s %s",
+                script,
+                extra_args
+            )
+        end
 
-		-- fallback to bun test if test files exist
-		local patterns = {"index.test.js", "index.test.ts", "index.spec.js", "index.spec.ts", "main.test.js", "main.test.ts"}
+        -- fallback to bun test if test files exist
+        local patterns = {"index.test.js", "index.test.ts", "index.spec.js", "index.spec.ts", "main.test.js", "main.test.ts"}
 
-		for _, pattern in ipairs(patterns) do
-			if os.isfile(path.join(target_dir, pattern)) then
-				utils.printf("[bun test] testing %s", utils.clean_path(target_dir))
+        for _, pattern in ipairs(patterns) do
+            if os.isfile(path.join(target_dir, pattern)) then
+                utils.printf("[bun test] testing %s", utils.clean_path(target_dir))
 
-				return string.format(
-					"bun test %s",
-					extra_args
-				)
-			end
-		end
-	end
+                return string.format(
+                    "bun test %s",
+                    extra_args
+                )
+            end
+        end
+    end
 
-	utils.errorf("%s is not a recognized test project", utils.clean_path(target_dir))
+    utils.errorf("%s is not a recognized test project", utils.clean_path(target_dir))
 end
 
 -- run a project
@@ -812,6 +812,108 @@ commands["goup"] = function(args)
 end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
+
+-- update github actions in workflows
+commands["ghup"] = function(args)
+    local target_dir = args or os.getcwd()
+
+    local gh_dir = path.join(target_dir, ".github")
+    local wf_dir = path.join(gh_dir, "workflows")
+
+    if not os.isdir(wf_dir) then
+        utils.errorf("no workflows directory found at %s", utils.clean_path(wf_dir))
+
+        return
+    end
+
+    local cmd = string.format("cmd /c \"cd /d \"%s\" && dir /b /a-d *.yml *.yaml 2>nul\"", wf_dir:gsub('"', '""'))
+    local handle = io.popen(cmd)
+
+    if not handle then
+        utils.errorf("failed to read workflows directory")
+
+        return
+    end
+
+    local total = 0
+    local count = 0
+
+    for file in handle:lines() do
+        local file = utils.trim(file)
+
+        if file ~= "" then
+            total = total + 1
+
+            local pt = path.join(wf_dir, file)
+            local content = utils.read_file(pt)
+
+            if content then
+                local new_content = content
+                local changed = false
+
+                local function bump(action, old_majors, new_major)
+                    local escaped = utils.escape_pattern(action)
+
+                    -- Match action@vX followed by non-dot/non-digit
+                    local p1 = string.format("(%s@v)([%s])([^%%.%%d])", escaped, old_majors)
+                    local r1 = string.format("%%1%s%%3", new_major)
+
+                    local c1, n1 = new_content:gsub(p1, r1)
+
+                    if n1 > 0 then
+                        new_content = c1
+                        changed = true
+                    end
+
+                    -- Match action@vX at EOF
+                    local p2 = string.format("(%s@v)([%s])$", escaped, old_majors)
+                    local r2 = string.format("%%1%s", new_major)
+
+                    local c2, n2 = new_content:gsub(p2, r2)
+
+                    if n2 > 0 then
+                        new_content = c2
+                        changed = true
+                    end
+                end
+
+                bump("actions/checkout", "12345", "6")
+                bump("actions/setup-go", "12345", "6")
+                bump("actions/cache", "1234", "5")
+                bump("actions/cache/restore", "1234", "5")
+                bump("actions/cache/save", "1234", "5")
+                bump("oven-sh/setup-bun", "1", "2")
+                bump("biomejs/setup-biome", "1", "2")
+                bump("actions/github-script", "123456", "7")
+                bump("actions/upload-artifact", "45", "6")
+                bump("actions/download-artifact", "4567", "8")
+
+                if not new_content:match("always%-auth%s*:") then
+                    bump("actions/setup-node", "12345", "6")
+                end
+
+                if changed and new_content ~= content then
+                    utils.write_file(pt, new_content)
+                    utils.printf("updated %s", file)
+
+                    count = count + 1
+                end
+            end
+        end
+    end
+
+    handle:close()
+
+    if total == 0 then
+        utils.printf("no workflows found to update")
+    elseif count == 0 then
+        utils.printf("all actions are up to date (%d files checked)", total)
+    else
+        utils.successf("updated actions in %d/%d workflow(s)", count, total)
+    end
+end
+
+clink.argmatcher("ghup"):addarg(clink.dirmatches)
 
 -- create an ssh tunnel for a specific port
 commands["tunnel"] = function(args)
