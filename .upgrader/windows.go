@@ -120,7 +120,7 @@ func InstallTime(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/v%s/time-windows-x64.exe", ver.String())
+	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/v%s/time_%s_windows_amd64.exe", ver.String(), ver.String())
 
 	path := filepath.Join(home, ".bin", "time.exe")
 

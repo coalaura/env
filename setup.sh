@@ -15,8 +15,10 @@ else
 
 	sudo chmod +x /usr/local/bin/.env_upgrader_tmp
 
-	TOOLS=(go biome zig upx bun time ls)
+	# skip coreutils
+	TOOLS=(go biome zig upx bun time)
 
+	# skip starship if connected via ssh
 	if [[ -z "${SSH_CLIENT:-}" ]]; then
 		TOOLS+=(starship)
 	fi
