@@ -103,7 +103,7 @@ func InstallBiome(ver *SemVer) error {
 }
 
 func InstallTime(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/v%s/time_%s_linux_amd64", ver.String(), ver.String())
+	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/%s/time_%s_linux_amd64", ver.String(), ver.String())
 
 	err := DownloadFileTo(uri, "/usr/local/bin/time")
 	if err != nil {
