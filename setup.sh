@@ -29,5 +29,3 @@ else
 fi
 
 bash update.sh
-
-echo "Done."

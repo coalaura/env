@@ -19,6 +19,8 @@ func main() {
 			log.Warnln(err)
 		}
 	}
+
+	log.Println("Completed upgrades.")
 }
 
 func FilterConfigs(configs []*UpgradeConfig, names []string) []*UpgradeConfig {
