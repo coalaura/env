@@ -33,7 +33,7 @@ echo "Copying .bashrc..."
 cp bash/.bashrc ~/.bashrc
 
 # vscode keybinds.json
-if [[ -d "~/.config/Code/User" ]]; then
+if [[ -d "$HOME/.config/Code/User" ]]; then
 	echo "Copying vscode keybinds..."
 
 	cp .vscode/keybinds.json ~/.config/Code/User/keybindings.json
@@ -42,16 +42,39 @@ fi
 # dependencies
 echo "Checking dependencies..."
 
+apt_updated=false
+
+install_pkg() {
+	local arch_pkg="$1"
+	local deb_pkg="${2:-$1}"
+
+	if command -v pacman >/dev/null 2>&1; then
+		sudo pacman -Sy --noconfirm "$arch_pkg"
+	elif command -v apt-get >/dev/null 2>&1; then
+		if [[ "$apt_updated" == false ]]; then
+			sudo apt-get update -qq
+			apt_updated=true
+		fi
+		sudo apt-get install -y "$deb_pkg"
+	else
+		echo "Unsupported package manager. Please install $arch_pkg manually."
+	fi
+}
+
 # install starship
 if ! command -v starship >/dev/null 2>&1; then
 	echo "Installing starship..."
-	sudo pacman -Sy starship
+	if command -v pacman >/dev/null 2>&1; then
+		sudo pacman -Sy --noconfirm starship
+	else
+		curl -sS https://starship.rs/install.sh | sh -s -- -y
+	fi
 fi
 
 # install ripgrep
 if ! command -v rg >/dev/null 2>&1; then
 	echo "Installing ripgrep..."
-	sudo pacman -Sy ripgrep
+	install_pkg ripgrep
 fi
 
 # install bun
@@ -64,18 +87,19 @@ fi
 if ! command -v biome >/dev/null 2>&1; then
 	echo "Installing biome..."
 	sudo curl -fsSL "https://github.com/biomejs/biome/releases/latest/download/biome-linux-x64" -o /usr/local/bin/biome
+	sudo chmod +x /usr/local/bin/biome
 fi
 
 # install zig
 if ! command -v zig >/dev/null 2>&1; then
 	echo "Installing zig..."
-	sudo pacman -Sy zig
+	install_pkg zig
 fi
 
 # install upx
 if ! command -v upx >/dev/null 2>&1; then
 	echo "Installing upx..."
-	sudo pacman -Sy upx
+	install_pkg upx upx-ucl
 fi
 
 # install time

@@ -9,11 +9,21 @@ if [ "${EUID:-$(id -u)}" -ne 0 ]; then
 	exit 1
 fi
 
-# update pacman packages
+# update packages
 (
 	echo "Updating starship/ripgrep..."
 
-	sudo pacman -Sy starship ripgrep
+	if command -v pacman >/dev/null 2>&1; then
+		pacman -Sy --noconfirm starship ripgrep
+	elif command -v apt-get >/dev/null 2>&1; then
+		apt-get update -qq
+		apt-get install -y ripgrep
+
+		# Update starship via official script on Debian
+		curl -sS https://starship.rs/install.sh | sh -s -- -y
+	else
+		echo "Unsupported package manager. Please update starship and ripgrep manually."
+	fi
 )
 
 # run upgrader
@@ -34,7 +44,7 @@ fi
 
 	chmod +x /tmp/env_upgrader_linux
 
-	sudo /tmp/env_upgrader_linux
+	/tmp/env_upgrader_linux
 
 	rm -f /tmp/env_upgrader_linux
 )
