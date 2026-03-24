@@ -4,6 +4,8 @@ set -euo pipefail
 
 echo "Updating configuration files..."
 
+mkdir -p ~/.config
+
 # rio config
 if command -v rio >/dev/null 2>&1; then
 	echo "Copying rio config..."
