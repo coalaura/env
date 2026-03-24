@@ -8,13 +8,20 @@ sudo curl -fsSL -o /tmp/env_upgrader_linux "https://coalaura.github.io/env/upgra
 
 if [ ! -s "/tmp/env_upgrader_linux" ] || [ "$(stat -c%s "/tmp/env_upgrader_linux")" -lt 256 ]; then
 	echo "Failed to download upgrader" >&2
+
 	rm -f "/tmp/env_upgrader_linux"
 else
-	echo "Running env upgrader..."
+	echo "Running upgrader..."
 
 	sudo chmod +x /tmp/env_upgrader_linux
 
-	sudo /tmp/env_upgrader_linux go biome zig upx starship bun time ls
+	TOOLS=(go biome zig upx bun time ls)
+
+	if [[ -z "${SSH_CLIENT:-}" ]]; then
+		TOOLS+=(starship)
+	fi
+
+	sudo /tmp/env_upgrader_linux "${TOOLS[@]}"
 
 	sudo rm -f /tmp/env_upgrader_linux
 fi
