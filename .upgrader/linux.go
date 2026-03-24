@@ -113,6 +113,17 @@ func InstallTime(ver *SemVer) error {
 	return os.Chmod("/usr/local/bin/time", 0755)
 }
 
+func InstallOnda(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/coalaura/onda/releases/download/v%s/onda_v%s_linux_amd64", ver.String(), ver.String())
+
+	err := DownloadFileTo(uri, "/usr/local/bin/onda")
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod("/usr/local/bin/onda", 0755)
+}
+
 func InstallCoreutils(ver *SemVer) error {
 	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String(), ver.String())
 

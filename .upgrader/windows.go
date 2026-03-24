@@ -127,6 +127,19 @@ func InstallTime(ver *SemVer) error {
 	return DownloadFileTo(uri, path)
 }
 
+func InstallOnda(ver *SemVer) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("https://github.com/coalaura/onda/releases/download/v%s/onda_v%s_windows_amd64.exe", ver.String(), ver.String())
+
+	path := filepath.Join(home, ".bin", "onda.exe")
+
+	return DownloadFileTo(uri, path)
+}
+
 func InstallCoreutils(ver *SemVer) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
