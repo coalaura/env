@@ -88,12 +88,11 @@ func GetConfigs() []*UpgradeConfig {
 
 		// Coreutils
 		{
-			Name:       "coreutils",
 			Repository: "uutils/coreutils",
 			Prefix:     "",
 
-			Binary: "ls",
-			Path:   GetLocalBinaryPath("ls"),
+			Binary: "coreutils",
+			Path:   GetLocalBinaryPath("coreutils"),
 			Args:   []string{"--version"},
 
 			Installer: InstallCoreutils,

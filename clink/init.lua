@@ -4,6 +4,26 @@ local utils = require("utils")
 -- Helper functions
 --
 
+local function init_coreutils()
+    local pipe = io.popen("coreutils --list")
+
+    if not pipe then
+        utils.errorf("failed to initialize coreutils")
+
+        return
+    end
+
+    for line in pipe:lines() do
+        local cmd = line:match("^%s*(.-)%s*$")
+
+        if cmd and cmd ~= "" and cmd ~= "coreutils" then
+            os.setalias(cmd, string.format("coreutils %s $*", cmd))
+        end
+    end
+
+    pipe:close()
+end
+
 local function init_openssh()
     local key = utils.escape_path(path.join(utils.home(), ".ssh\\keys\\github"))
 
@@ -35,6 +55,9 @@ end)
 -- starship path
 os.setenv("STARSHIP_CONFIG", path.join(utils.home(), ".config\\starship.toml"))
 
+-- initialize coreutils
+init_coreutils()
+
 -- initialize openssh
 init_openssh()
 
@@ -46,9 +69,9 @@ os.setenv("CXX", "zig c++ -target x86_64-windows-gnu")
 -- initialize other aliases
 os.setalias("clear", "cls")
 
-os.setalias("ls", "ls --color=auto $*")
-os.setalias("ll", "ls --color=auto -l $*")
-os.setalias("la", "ls --color=auto -la $*")
+os.setalias("ls", "coreutils ls --color=auto $*")
+os.setalias("ll", "coreutils ls --color=auto -l $*")
+os.setalias("la", "coreutils ls --color=auto -la $*")
 os.setalias("tidy", "go mod tidy")
 os.setalias("which", "where $*")
 os.setalias("..", "cd ..")

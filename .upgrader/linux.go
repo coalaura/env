@@ -135,28 +135,13 @@ func InstallCoreutils(ver *SemVer) error {
 		return err
 	}
 
-	binDir := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu", ver.String()), "bin")
-	dstDir := "/usr/local/bin"
+	src := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu", ver.String()), "coreutils")
+	dst := "/usr/local/bin/coreutils"
 
-	entries, err := os.ReadDir(binDir)
+	err = CopyFile(src, dst)
 	if err != nil {
 		return err
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		dst := filepath.Join(dstDir, entry.Name())
-
-		err = CopyFile(filepath.Join(binDir, entry.Name()), dst)
-		if err != nil {
-			return err
-		}
-
-		os.Chmod(dst, 0755)
-	}
-
-	return nil
+	return os.Chmod(dst, 0755)
 }

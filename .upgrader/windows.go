@@ -133,7 +133,7 @@ func InstallCoreutils(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-pc-windows-msvc.zip", ver.String(), ver.String())
+	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-pc-windows-gnu.zip", ver.String(), ver.String())
 
 	path, err := DownloadTempFile(uri, ".zip")
 	if err != nil {
@@ -154,26 +154,10 @@ func InstallCoreutils(ver *SemVer) error {
 		return err
 	}
 
-	srcDir := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-pc-windows-msvc", ver.String()))
-	dstDir := filepath.Join(home, ".bin")
+	src := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-pc-windows-gnu", ver.String()), "coreutils.exe")
+	dst := filepath.Join(home, ".bin", "coreutils.exe")
 
-	os.MkdirAll(dstDir, 0755)
+	os.MkdirAll(filepath.Dir(dst), 0755)
 
-	entries, err := os.ReadDir(srcDir)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".exe" {
-			continue
-		}
-
-		err = CopyFile(filepath.Join(srcDir, entry.Name()), filepath.Join(dstDir, entry.Name()))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return CopyFile(src, dst)
 }
