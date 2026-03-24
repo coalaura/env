@@ -4,13 +4,14 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 
 ## Structure
 
+- `.vscode/`: `keybinds.json` for vscode
 - `bash/`: `.bashrc` for linux
 - `biome/`: biome config
 - `clink/`: lua scripts and settings for clink
+- `fonts/`: required/nice fonts
 - `git/`: git configuration and better defaults
 - `rio/`: rio configuration and catppuccin themes
 - `starship/`: starship prompt config
-- `fonts/`: required/nice fonts
 - `background.png`: clean catppuccin wallpaper
 
 ## Usage
@@ -22,12 +23,12 @@ Copies configuration files from the repo to their respective system locations (e
 - **Windows**: Run `update.cmd`
 - **Linux**: Run `./update.sh`
 
-### Upgrade
+### Setup
 
-Updates installed software (via `winget` or `pacman`), upgrades the Bun runtime and executes the [upgrader](.upgrader) binary for tool maintenance.
+Installs and upgrades installed software, using the [upgrader](.upgrader) binary.
 
-- **Windows**: Run `upgrade.cmd` (auto-elevates via `sudo`)
-- **Linux**: Run `sudo ./upgrade.sh`
+- **Windows**: Run `setup.cmd` (auto-elevates via `sudo`)
+- **Linux**: Run `sudo ./setup.sh`
 
 ## Software
 
