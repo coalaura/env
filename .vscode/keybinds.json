@@ -368,5 +368,13 @@
 		"key": "ctrl+shift+alt+pageup",
 		"command": "-cursorColumnSelectPageUp",
 		"when": "textInputFocus"
+	},
+	{
+		"key": "ctrl+shift+alt+up",
+		"command": "editor.emmet.action.incrementNumberByOne"
+	},
+	{
+		"key": "ctrl+shift+alt+down",
+		"command": "editor.emmet.action.decrementNumberByOne"
 	}
 ]

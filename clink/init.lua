@@ -24,6 +24,10 @@ local function init_coreutils()
     pipe:close()
 end
 
+local test = {
+    function = 123,
+}
+
 local function init_openssh()
     local key = utils.escape_path(path.join(utils.home(), ".ssh\\keys\\github"))
 
