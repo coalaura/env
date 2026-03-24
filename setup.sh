@@ -25,11 +25,6 @@ install_or_upgrade_pkg() {
 	fi
 }
 
-# ripgrep
-echo "Installing/Upgrading ripgrep..."
-
-install_or_upgrade_pkg ripgrep
-
 # upx
 echo "Installing/Upgrading upx..."
 

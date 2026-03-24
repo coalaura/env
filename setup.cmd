@@ -41,17 +41,6 @@ if %errorlevel%==0 (
     winget install uutils.coreutils
 )
 
-:: ripgrep
-echo Installing/Upgrading ripgrep...
-
-where rg >nul 2>&1
-
-if %errorlevel%==0 (
-    winget upgrade BurntSushi.ripgrep.MSVC
-) else (
-    winget install BurntSushi.ripgrep.MSVC
-)
-
 :: bun
 echo Installing/Upgrading bun...
 
