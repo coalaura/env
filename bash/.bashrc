@@ -1449,6 +1449,9 @@ export CGO_ENABLED=1
 export CC="zig cc"
 export CXX="zig c++"
 
+# skip the rest, if connected via ssh
+[[ -n "$SSH_CLIENT" ]] && return
+
 ##
 # SSH Agent
 ##
