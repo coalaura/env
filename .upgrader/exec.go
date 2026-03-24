@@ -4,17 +4,28 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 )
 
 func (u *UpgradeConfig) ResolveCurrentVersion() (*SemVer, error) {
-	path, err := exec.LookPath(u.Binary)
-	if err != nil {
-		if errors.Is(err, exec.ErrNotFound) {
+	path := u.Path
+
+	if path == "" {
+		var err error
+
+		path, err = exec.LookPath(u.Binary)
+		if err != nil {
+			if errors.Is(err, exec.ErrNotFound) {
+				return NewEmptySemVer(), nil
+			}
+
+			return nil, err
+		}
+	} else {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
 			return NewEmptySemVer(), nil
 		}
-
-		return nil, err
 	}
 
 	cmd := exec.Command(path, u.Args...)

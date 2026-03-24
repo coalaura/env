@@ -9,6 +9,7 @@ type UpgradeConfig struct {
 	Prefix     string
 
 	Binary string
+	Path   string
 	Args   []string
 
 	Installer Installer
@@ -56,4 +57,16 @@ func (u *UpgradeConfig) Upgrade() error {
 	log.Println("upgrade okay")
 
 	return nil
+}
+
+func (u *UpgradeConfig) AssetVersion() string {
+	if u.Prefix == "" {
+		return u.VersionString()
+	}
+
+	return u.Prefix + u.VersionString()
+}
+
+func (u *UpgradeConfig) VersionString() string {
+	return ""
 }

@@ -96,6 +96,10 @@ func (s *SemVer) String() string {
 	return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
 }
 
+func (s *SemVer) String2() string {
+	return fmt.Sprintf("%d.%d", s.Major, s.Minor)
+}
+
 func (s *SemVer) HigherThan(b *SemVer) bool {
 	if s.Major != b.Major {
 		return s.Major > b.Major

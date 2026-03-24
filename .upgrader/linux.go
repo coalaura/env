@@ -1,10 +1,11 @@
-//go:build !windows
+//go:build linux
 
 package main
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func InstallGo(ver *SemVer) error {
@@ -25,6 +26,71 @@ func InstallGo(ver *SemVer) error {
 	return RunCommandOrError("tar", "-C", "/usr/local", "-xzf", path)
 }
 
+func InstallZig(ver *SemVer) error {
+	uri := fmt.Sprintf("https://ziglang.org/download/%s/zig-x86_64-linux-%s.tar.xz", ver.String(), ver.String())
+
+	path, err := DownloadTempFile(uri, ".tar.xz")
+	if err != nil {
+		return err
+	}
+
+	defer os.Remove(path)
+
+	return RunCommandOrError("sh", "-c", fmt.Sprintf("rm -rf /usr/local/zig && mkdir -p /usr/local/zig && tar -C /usr/local/zig --strip-components=1 -xf %q", path))
+}
+
+func InstallUPX(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/upx/upx/releases/download/v%s/upx-%s-amd64_linux.tar.xz", ver.String(), ver.String())
+
+	path, err := DownloadTempFile(uri, ".tar.xz")
+	if err != nil {
+		return err
+	}
+
+	defer os.Remove(path)
+
+	return RunCommandOrError("sh", "-c", fmt.Sprintf("tmpdir=$(mktemp -d) && tar -C \"$tmpdir\" -xf %q && install \"$tmpdir\"/*/upx /usr/local/bin/upx", path))
+}
+
+func InstallStarship(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/starship/starship/releases/download/v%s/starship-x86_64-unknown-linux-gnu.tar.gz", ver.String(), ver.String())
+
+	return InstallSingleBinaryFromTarGz(uri, "starship", "/usr/local/bin/starship")
+}
+
+func InstallBun(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/oven-sh/bun/releases/download/bun-v%s/bun-linux-x64.zip", ver.String())
+
+	path, err := DownloadTempFile(uri, ".zip")
+	if err != nil {
+		return err
+	}
+
+	defer os.Remove(path)
+
+	dir, err := os.MkdirTemp("", "upgrader-*")
+	if err != nil {
+		return err
+	}
+
+	defer os.RemoveAll(dir)
+
+	err = ExtractZipFile(path, dir)
+	if err != nil {
+		return err
+	}
+
+	src := filepath.Join(dir, "bun-linux-x64", "bun")
+	dst := GetBunBinaryPath()
+
+	err = CopyFile(src, dst)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(dst, 0755)
+}
+
 func InstallBiome(ver *SemVer) error {
 	uri := fmt.Sprintf("https://github.com/biomejs/biome/releases/download/%%40biomejs%%2Fbiome%%40%s/biome-linux-x64", ver.String())
 
@@ -34,4 +100,63 @@ func InstallBiome(ver *SemVer) error {
 	}
 
 	return os.Chmod("/usr/local/bin/biome", 0755)
+}
+
+func InstallTime(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/v%s/time-linux-x64", ver.String())
+
+	err := DownloadFileTo(uri, "/usr/local/bin/time")
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod("/usr/local/bin/time", 0755)
+}
+
+func InstallCoreutils(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String(), ver.String())
+
+	path, err := DownloadTempFile(uri, ".tar.gz")
+	if err != nil {
+		return err
+	}
+
+	defer os.Remove(path)
+
+	dir, err := os.MkdirTemp("", "upgrader-*")
+	if err != nil {
+		return err
+	}
+
+	defer os.RemoveAll(dir)
+
+	err = ExtractTarGzFile(path, dir)
+	if err != nil {
+		return err
+	}
+
+	binDir := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu", ver.String()), "bin")
+	dstDir := "/usr/local/bin"
+
+	entries, err := os.ReadDir(binDir)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		dst := filepath.Join(dstDir, entry.Name())
+
+		err = CopyFile(filepath.Join(binDir, entry.Name()), dst)
+		if err != nil {
+			return err
+		}
+
+		os.Chmod(dst, 0755)
+	}
+
+	return nil
 }

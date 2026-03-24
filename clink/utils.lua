@@ -9,6 +9,12 @@ function _M.home()
     return home
 end
 
+function _M.binary(name, suffix)
+    local dir = path.join(home, ".bin")
+
+    return path.join(dir, name) .. (suffix or "")
+end
+
 function _M.hostname()
     return host
 end
