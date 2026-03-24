@@ -93,7 +93,18 @@ fi
 # install zig
 if ! command -v zig >/dev/null 2>&1; then
 	echo "Installing zig..."
-	install_pkg zig
+
+	if command -v pacman >/dev/null 2>&1; then
+		sudo pacman -Sy --noconfirm zig
+	else
+		curl -fsSL "https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz" -o /tmp/zig.tar.xz
+
+		sudo mkdir -p /usr/local/zig
+		sudo tar -xf /tmp/zig.tar.xz -C /usr/local/zig --strip-components=1
+		sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
+
+		rm -f /tmp/zig.tar.xz
+	fi
 fi
 
 # install upx
