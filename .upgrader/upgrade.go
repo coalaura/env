@@ -9,6 +9,7 @@ import (
 type Installer func(*SemVer) error
 
 type UpgradeConfig struct {
+	Name       string
 	Repository string
 	Prefix     string
 
@@ -19,8 +20,16 @@ type UpgradeConfig struct {
 	Installer Installer
 }
 
+func (u *UpgradeConfig) GetName() string {
+	if u.Name != "" {
+		return u.Name
+	}
+
+	return u.Binary
+}
+
 func (u *UpgradeConfig) Upgrade() error {
-	log.Printf("Checking %s version...\n", u.Binary)
+	log.Printf("Checking %s version...\n", u.GetName())
 
 	remote, err := u.FetchLatestVersion()
 	if err != nil {
@@ -40,7 +49,7 @@ func (u *UpgradeConfig) Upgrade() error {
 
 	log.Printf("New version found (%s > %s)\n", remote, local)
 
-	log.Printf("Upgrading %s...\n", u.Binary)
+	log.Printf("Upgrading %s...\n", u.GetName())
 
 	err = u.Installer(remote)
 	if err != nil {
@@ -62,7 +71,7 @@ func (u *UpgradeConfig) Upgrade() error {
 		return errors.New("remote still higher")
 	}
 
-	log.Write(plain.Success, "success", true)
+	log.Writeln(log.Theme(plain.Success), "success", true, true)
 
 	return nil
 }

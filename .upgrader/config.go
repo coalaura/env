@@ -88,6 +88,7 @@ func GetConfigs() []*UpgradeConfig {
 
 		// Coreutils
 		{
+			Name:       "coreutils",
 			Repository: "uutils/coreutils",
 			Prefix:     "",
 

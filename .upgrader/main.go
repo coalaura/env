@@ -35,17 +35,9 @@ func FilterConfigs(configs []*UpgradeConfig, names []string) []*UpgradeConfig {
 	filtered := make([]*UpgradeConfig, 0, len(configs))
 
 	for _, cfg := range configs {
-		binary := strings.ToLower(cfg.Binary)
+		name := strings.ToLower(cfg.GetName())
 
-		if _, ok := allowed[binary]; ok {
-			filtered = append(filtered, cfg)
-
-			continue
-		}
-
-		repo := strings.ToLower(cfg.Repository)
-
-		if _, ok := allowed[repo]; ok {
+		if _, ok := allowed[name]; ok {
 			filtered = append(filtered, cfg)
 
 			continue
