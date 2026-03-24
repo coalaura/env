@@ -1,6 +1,10 @@
 package main
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/coalaura/plain"
+)
 
 type Installer func(*SemVer) error
 
@@ -43,18 +47,22 @@ func (u *UpgradeConfig) Upgrade() error {
 		return err
 	}
 
-	log.Println("Validating upgrade...")
+	log.Print("Validating upgrade...")
 
 	local, err = u.ResolveCurrentVersion()
 	if err != nil {
+		log.Errorln("failed")
+
 		return err
 	}
 
 	if remote.HigherThan(local) {
-		return errors.New("upgrade failed")
+		log.Errorln("failed")
+
+		return errors.New("remote still higher")
 	}
 
-	log.Println("upgrade okay")
+	log.Write(plain.Success, "success", true)
 
 	return nil
 }
