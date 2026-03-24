@@ -214,7 +214,7 @@ function _apply_go_env() {
         export GOAMD64=v1
     else
         export GOAMD64=v3
-    end
+    fi
 
     GO_MODE_STR="cgo"
 
