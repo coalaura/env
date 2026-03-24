@@ -3,12 +3,14 @@
 set -euo pipefail
 
 # rio config
-echo "Copying rio config..."
+if command -v rio >/dev/null 2>&1; then
+	echo "Copying rio config..."
 
-mkdir -p ~/.config/rio/themes
+	mkdir -p ~/.config/rio/themes
 
-cp rio/config.toml ~/.config/rio/config.toml
-cp rio/themes/catppuccin-macchiato.toml ~/.config/rio/themes/catppuccin-macchiato.toml
+	cp rio/config.toml ~/.config/rio/config.toml
+	cp rio/themes/catppuccin-macchiato.toml ~/.config/rio/themes/catppuccin-macchiato.toml
+fi
 
 # starship config
 echo "Copying starship config..."
@@ -31,9 +33,11 @@ echo "Copying .bashrc..."
 cp bash/.bashrc ~/.bashrc
 
 # vscode keybinds.json
-echo "Copying vscode keybinds..."
+if [[ -d "~/.config/Code/User" ]]; then
+	echo "Copying vscode keybinds..."
 
-cp .vscode/keybinds.json ~/.config/Code/User/keybindings.json
+	cp .vscode/keybinds.json ~/.config/Code/User/keybindings.json
+fi
 
 # dependencies
 echo "Checking dependencies..."
