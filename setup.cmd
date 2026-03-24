@@ -34,6 +34,8 @@ if not %errorlevel%==0 (
     del /q "%TEMP%\env_upgrader.exe" 2>nul
 )
 
+call update.cmd
+
 echo Done.
 
 pause >nul
