@@ -1394,7 +1394,10 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias home='cd ~'
 alias cls='clear'
-alias t='command time'
+
+if type -P time >/dev/null 2>&1; then
+	alias t='command time'
+fi
 
 # Auto-correct cd typos
 shopt -s cdspell
