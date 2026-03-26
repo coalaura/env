@@ -985,6 +985,11 @@ commands["unpack"] = function(args)
     return cmd .. string.format("tar.exe -xf %s -C %s", esc_file, esc_dir)
 end
 
+-- pulls a docker compose container
+commands["dockup"] = function()
+    return "docker compose down && docker compose pull && docker compose up -d"
+end
+
 -- download and run vencord installer
 commands["vencord"] = function()
     local tmp = os.getenv("TMP") or os.getenv("TEMP") or utils.home()

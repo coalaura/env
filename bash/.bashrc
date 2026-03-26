@@ -1347,6 +1347,11 @@ function unpack() {
 	)
 }
 
+# pulls a docker compose container
+function dockup() {
+	docker compose down && docker compose pull && docker compose up -d
+}
+
 # download and run vencord installer
 function vencord() {
 	sh -c "$(curl -sS https://vencord.dev/install.sh)"
