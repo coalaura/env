@@ -127,15 +127,15 @@ func InstallTime(ver *SemVer) error {
 	return DownloadFileTo(uri, path)
 }
 
-func InstallOnda(ver *SemVer) error {
+func InstallWtf(ver *SemVer) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/coalaura/onda/releases/download/v%s/onda_v%s_windows_amd64.exe", ver.String(), ver.String())
+	uri := fmt.Sprintf("https://github.com/coalaura/wtf/releases/download/v%s/wtf_v%s_windows_amd64.exe", ver.String(), ver.String())
 
-	path := filepath.Join(home, ".bin", "onda.exe")
+	path := filepath.Join(home, ".bin", "wtf.exe")
 
 	return DownloadFileTo(uri, path)
 }

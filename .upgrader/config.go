@@ -86,16 +86,16 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallTime,
 		},
 
-		// Onda
+		// Wtf
 		{
-			Repository: "coalaura/onda",
+			Repository: "coalaura/wtf",
 			Prefix:     "v",
 
-			Binary: "onda",
-			Path:   GetLocalBinaryPath("onda"),
+			Binary: "wtf",
+			Path:   GetLocalBinaryPath("wtf"),
 			Args:   []string{"--version"},
 
-			Installer: InstallOnda,
+			Installer: InstallWtf,
 		},
 
 		// Coreutils
