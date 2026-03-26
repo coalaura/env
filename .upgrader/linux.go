@@ -53,7 +53,7 @@ func InstallUPX(ver *SemVer) error {
 }
 
 func InstallStarship(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/starship/starship/releases/download/v%s/starship-x86_64-unknown-linux-gnu.tar.gz", ver.String(), ver.String())
+	uri := fmt.Sprintf("https://github.com/starship/starship/releases/download/v%s/starship-x86_64-unknown-linux-gnu.tar.gz", ver.String())
 
 	return InstallSingleBinaryFromTarGz(uri, "starship", "/usr/local/bin/starship")
 }
