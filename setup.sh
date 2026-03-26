@@ -16,7 +16,7 @@ else
 	sudo chmod +x /usr/local/bin/.env_upgrader_tmp
 
 	# skip coreutils
-	TOOLS=(go biome zig upx bun time onda)
+	TOOLS=(go biome zig upx bun time wtf)
 
 	# skip starship if connected via ssh
 	if [[ -z "${SSH_CLIENT:-}" ]]; then
