@@ -55,19 +55,17 @@ function _M.list_workflow_files(dir)
     local function add_matches(pattern)
         local matches = os.globfiles(pattern)
 
-        print("pattern", pattern, #matches)
-
         if not matches then
             return
         end
 
         for _, pt in ipairs(matches) do
-            local pt = path.normalise(path.join(dir, pt))
+            local match = path.normalise(path.join(dir, pt))
 
-            if not seen[pt] then
-                seen[pt] = true
+            if not seen[match] then
+                seen[match] = true
 
-                table.insert(files, pt)
+                table.insert(files, match)
             end
         end
     end

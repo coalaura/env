@@ -181,10 +181,10 @@ commands["dtag"] = function(args)
 
     if handle then
         for line in handle:lines() do
-            local line = utils.trim(line or "")
+            local trimmed = utils.trim(line or "")
 
-            if line ~= "" then
-                table.insert(tags, line)
+            if trimmed ~= "" then
+                table.insert(tags, trimmed)
             end
 
             if #tags >= 5 then
@@ -461,9 +461,9 @@ commands["bench"] = function(args)
 
     -- handle node project
     if utils.is_node(target_dir) then
-        local package = path.join(target_dir, "package.json")
+        local packageJson = path.join(target_dir, "package.json")
 
-        local script = utils.get_package_json_script(package, {"bench", "benchmark"})
+        local script = utils.get_package_json_script(packageJson, {"bench", "benchmark"})
 
         if script then
             utils.printf("[bun/%s] benchmarking %s", script, utils.clean_path(target_dir))
@@ -531,9 +531,9 @@ commands["test"] = function(args)
 
     -- handle node project with test script
     if utils.is_node(target_dir) then
-        local package = path.join(target_dir, "package.json")
+        local packageJson = path.join(target_dir, "package.json")
 
-        local script = utils.get_package_json_script(package, {"test"})
+        local script = utils.get_package_json_script(packageJson, {"test"})
 
         if script then
             utils.printf("[bun/%s] testing %s", script, utils.clean_path(target_dir))
@@ -601,9 +601,9 @@ commands["run"] = function(args)
 
     -- handle node project
     if utils.is_node(target_dir) then
-        local package = path.join(target_dir, "package.json")
+        local packageJson = path.join(target_dir, "package.json")
 
-        local script = utils.get_package_json_script(package, {"dev", "watch", "start", "test"})
+        local script = utils.get_package_json_script(packageJson, {"dev", "watch", "start", "test"})
 
         if script then
             utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
@@ -636,9 +636,9 @@ end
 commands["build"] = function(args)
     local target_dir = os.getcwd()
 
-    local target_os, args = utils.parse_target_os(args)
+    local target_os, cleanArgs = utils.parse_target_os(args)
 
-    local extra_args = utils.format_extra_args(args)
+    local extra_args = utils.format_extra_args(cleanArgs)
 
     -- handle build script
     local build_cmd = path.join(target_dir, "build.cmd")
@@ -710,9 +710,9 @@ commands["build"] = function(args)
 
     -- handle node project
     if utils.is_node(target_dir) then
-        local package = path.join(target_dir, "package.json")
+        local packageJson = path.join(target_dir, "package.json")
 
-        local script = utils.get_package_json_script(package, {"build", "prod"})
+        local script = utils.get_package_json_script(packageJson, {"build", "prod"})
 
         if not script then
             utils.errorf("no script found in package.json")
@@ -839,12 +839,12 @@ commands["ghup"] = function(args)
     local count = 0
 
     for file in handle:lines() do
-        local file = utils.trim(file)
+        local trimmed = utils.trim(file)
 
-        if file ~= "" then
+        if trimmed ~= "" then
             total = total + 1
 
-            local pt = path.join(wf_dir, file)
+            local pt = path.join(wf_dir, trimmed)
             local content = utils.read_file(pt)
 
             if content then
@@ -894,7 +894,7 @@ commands["ghup"] = function(args)
 
                 if changed and new_content ~= content then
                     utils.write_file(pt, new_content)
-                    utils.printf("updated %s", file)
+                    utils.printf("updated %s", trimmed)
 
                     count = count + 1
                 end
@@ -1028,10 +1028,10 @@ clink.onfilterinput(function(text)
 
     local command, arguments = text:match("^(%S+)%s*(.*)$")
 
-    local debug = false
+    local isDebug = false
 
     if command == "debug" then
-        debug = true
+        isDebug = true
 
         command, arguments = (arguments or ""):match("^(%S+)%s*(.*)$")
     end
@@ -1054,7 +1054,7 @@ clink.onfilterinput(function(text)
 
     local result = func(arguments)
 
-    if debug then
+    if isDebug then
         utils.printf("$ %s", result or "n/a")
 
         return ""
