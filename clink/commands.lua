@@ -1051,6 +1051,29 @@ clink.onfilterinput(function(text)
         arguments = nil
     end
 
+    -- handle .command shorthand for local executables
+    local name = command:match("^%.(%w+)$")
+
+    if name then
+        local cwd = os.getcwd()
+
+        for _, ext in ipairs({".exe", ".cmd", ".bat"}) do
+            local full_path = path.join(cwd, name .. ext)
+
+            if os.isfile(full_path) then
+                utils.printf("running .\\%s%s", name, ext)
+
+                local extra = arguments and (" " .. arguments) or ""
+
+                return utils.escape_path(full_path) .. extra
+            end
+        end
+
+        utils.errorf("no executable found for %s", name)
+
+        return ""
+    end
+
     local func = commands[command]
 
     if not func then

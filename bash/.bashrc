@@ -290,6 +290,51 @@ function _apply_go_env() {
     fi
 }
 
+# handle .command shorthand for local executables
+function command_not_found_handle() {
+    local cmd="$1"
+
+    shift
+
+    if [[ "$cmd" =~ ^\.([a-zA-Z0-9_]+)$ ]]; then
+        local name="${BASH_REMATCH[1]}"
+
+        # .sh files first (run with bash)
+        if [[ -f "./${name}.sh" ]]; then
+            printf "\033[37mrunning ./%s.sh\033[0m\n" "$name"
+
+			bash "./${name}.sh" "$@"
+
+            return $?
+        fi
+
+        # executable without extension
+        if [[ -f "./${name}" && -x "./${name}" ]]; then
+            printf "\033[37mrunning ./%s\033[0m\n" "$name"
+
+		    "./${name}" "$@"
+
+		    return $?
+        fi
+
+        printf "\033[33merror: no executable found for .%s\033[0m\n" "$name"
+
+        return 127
+    fi
+
+	# system handler (if it exists)
+    if declare -f _command_not_found_handle >/dev/null 2>&1; then
+        _command_not_found_handle "$cmd" "$@"
+
+		return $?
+    fi
+
+    # default behavior
+    printf "bash: %s: command not found\n" "$cmd"
+
+    return 127
+}
+
 ##
 # Commands
 ##
