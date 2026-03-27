@@ -33,6 +33,25 @@ local function init_openssh()
     })
 end
 
+local function add_to_path(dirs)
+    local changed = false
+    local current = os.getenv("PATH") or ""
+
+    for _, dir in ipairs(dirs) do
+        local escaped = dir:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+
+        if not current:match("[;]" .. escaped .. "[;]") and not current:match("^" .. escaped .. "[;]") and not current:match("[;]" .. escaped .. "$") and current ~= dir then
+            current = current .. ";" .. dir
+
+            changed = true
+        end
+    end
+
+    if changed then
+        os.setenv("PATH", current)
+    end
+end
+
 --
 -- Shell settings
 --
@@ -60,6 +79,12 @@ init_coreutils()
 
 -- initialize openssh
 init_openssh()
+
+-- ensure paths
+add_to_path({
+    path.join(utils.home(), ".zig"),
+    path.join(utils.home(), ".bin"),
+})
 
 -- initialized environment variables
 os.setenv("CGO_ENABLED", "1")
