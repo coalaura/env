@@ -1494,6 +1494,9 @@ export TERM=xterm-256color
 # ignore .cmd extension for complete
 export FIGNORE=".cmd:.exe"
 
+# ensure path
+export PATH="$PATH:/usr/local/zig"
+
 ##
 # CGo settings
 ##
