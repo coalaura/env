@@ -1497,6 +1497,9 @@ export FIGNORE=".cmd:.exe"
 # ensure path
 export PATH="$PATH:/usr/local/zig"
 
+# wtf completions
+eval "$(wtf --completion bash)"
+
 ##
 # CGo settings
 ##
