@@ -172,57 +172,58 @@ commands["dtag"] = function(args)
     end
 
     local escaped_root = utils.escape_path(root)
-    local tags = {}
+    local latest_line = ""
 
     local handle = io.popen(string.format(
-        "git.exe -C %s tag --sort=-creatordate 2>nul",
+        "git.exe -C %s tag -n --sort=-creatordate 2>nul",
         escaped_root
     ))
 
     if handle then
-        for line in handle:lines() do
-            local trimmed = utils.trim(line or "")
-
-            if trimmed ~= "" then
-                table.insert(tags, trimmed)
-            end
-
-            if #tags >= 5 then
-                break
-            end
-        end
+        latest_line = utils.trim(handle:read("*l") or "")
 
         handle:close()
     end
 
-    if #tags == 0 then
+    if latest_line == "" then
         utils.errorf("no tags found")
 
         return
     end
 
-    utils.printf("\x1b[90mlatest:")
+    local tag_name, tag_msg = latest_line:match("^(%S+)%s+(.+)$")
 
-    for _, tag_name in ipairs(tags) do
-        utils.printf("\x1b[90m- %s", tag_name)
+    if not tag_name then
+        tag_name = latest_line
+        tag_msg = "(no tag message)"
     end
 
-    local tag_name = utils.read_line("delete tag: ", "")
+    tag_msg = utils.trim(tag_msg or "")
 
-    tag_name = utils.trim(tag_name)
+    if tag_msg == "" then
+        tag_msg = "(no tag message)"
+    end
 
-    if tag_name == "" then
+    utils.printf("\x1b[90mlatest:\x1b[0m %s", tag_name)
+    utils.printf("    %s", tag_msg)
+    utils.printf("")
+
+    local delete_name = utils.read_line("delete tag: ", "")
+
+    delete_name = utils.trim(delete_name)
+
+    if delete_name == "" then
         utils.errorf("tag name is required")
 
         return
     end
 
-    utils.printf("deleting %s from %s", tag_name, utils.clean_path(root))
+    utils.printf("deleting %s from %s", delete_name, utils.clean_path(root))
 
     local cmd = string.format(
         "git.exe -C %s push origin :refs/tags/%s",
         escaped_root,
-        tag_name
+        delete_name
     )
 
     if not os.execute(cmd) then
@@ -231,7 +232,7 @@ commands["dtag"] = function(args)
         return
     end
 
-    cmd = string.format("git.exe -C %s tag -d %s", escaped_root, tag_name)
+    cmd = string.format("git.exe -C %s tag -d %s", escaped_root, delete_name)
 
     if not os.execute(cmd) then
         utils.errorf("failed to delete local tag")
@@ -239,10 +240,83 @@ commands["dtag"] = function(args)
         return
     end
 
-    utils.successf("deleted and pushed %s", tag_name)
+    utils.successf("deleted and pushed %s", delete_name)
 end
 
 clink.argmatcher("dtag"):addarg(clink.dirmatches)
+
+-- list recent tags with first message lines
+commands["tags"] = function(args)
+    local target_dir = args or os.getcwd()
+
+    local root = utils.git_root(target_dir)
+
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
+
+        return
+    end
+
+    local escaped_root = utils.escape_path(root)
+
+    local handle = io.popen(string.format(
+        "git.exe -C %s tag -n --sort=-creatordate 2>nul",
+        escaped_root
+    ))
+
+    if not handle then
+        utils.errorf("failed to list tags")
+
+        return
+    end
+
+    local lines = {}
+
+    for line in handle:lines() do
+        local trimmed = utils.trim(line or "")
+
+        if trimmed ~= "" then
+            table.insert(lines, trimmed)
+        end
+
+        if #lines >= 5 then
+            break
+        end
+    end
+
+    handle:close()
+
+    if #lines == 0 then
+        utils.errorf("no tags found")
+
+        return
+    end
+
+    utils.printf("\x1b[90mtags:\x1b[0m")
+
+    for _, line in ipairs(lines) do
+        local tag_name, tag_msg = line:match("^(%S+)%s+(.+)$")
+
+        if not tag_name then
+            tag_name = line
+            tag_msg = "(no tag message)"
+        end
+
+        tag_msg = utils.trim(tag_msg or "")
+
+        if tag_msg == "" then
+            tag_msg = "(no tag message)"
+        end
+
+        utils.printf("  %s", tag_name)
+        utils.printf("    %s", tag_msg)
+        utils.printf("")
+    end
+end
+
+clink.argmatcher("tags"):addarg(clink.dirmatches)
 
 -- print git remote origin
 commands["origin"] = function(args)

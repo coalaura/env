@@ -606,33 +606,37 @@ function dtag() {
 	(
 		set -euo pipefail
 
-		local target=$(git_root "${1:-.}")
+		local target
+		target=$(git_root "${1:-.}")
 
-		if [ ! -d "$target/.git" ]; then
+		if [[ ! -d "$target/.git" ]]; then
 			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		local -a tags=()
+		local latest_line="$(git -C "$target" tag -n --sort=-creatordate | head -n 1)"
 
-		readarray -t tags < <(git -C "$target" tag --sort=-creatordate | head -n 5)
-
-		if (( ${#tags[@]} == 0 )); then
+		if [[ -z "$latest_line" ]]; then
 			printf "\033[33merror: no tags found\033[0m\n"
 
 			return 1
 		fi
 
-		printf "\x1b[90mlatest:\033[0m\n"
-
 		local tag_name
+		local tag_msg
 
-		for tag_name in "${tags[@]}"; do
-			printf "\x1b[90m- %s\033[0m\n" "$tag_name"
-		done
+		tag_name="${latest_line%%[[:space:]]*}"
 
-		printf "\n"
+		tag_msg="${latest_line#"$tag_name"}"
+		tag_msg="$(echo "$tag_msg" | xargs)"
+
+		if [[ -z "$tag_msg" || "$tag_msg" == "$latest_line" ]]; then
+			tag_msg="(no tag message)"
+		fi
+
+		printf "\033[90mlatest:\033[0m %s\n" "$tag_name"
+		printf "    %s\n\n" "$tag_msg"
 
 		read -rp "delete tag: " tag_name
 
@@ -659,6 +663,50 @@ function dtag() {
 		fi
 
 		printf "\033[32msuccess: deleted and pushed %s\033[0m\n" "$tag_name"
+	)
+}
+
+# list recent tags with first message lines
+function tags() {
+	(
+		set -euo pipefail
+
+		local target=$(git_root "${1:-.}")
+
+		if [[ ! -d "$target/.git" ]]; then
+			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+
+			return 1
+		fi
+
+		local -a lines=()
+
+		readarray -t lines < <(git -C "$target" tag -n --sort=-creatordate | head -n 5)
+
+		if (( ${#lines[@]} == 0 )); then
+			printf "\033[33merror: no tags found\033[0m\n"
+
+			return 1
+		fi
+
+		printf "\033[90mtags:\033[0m\n"
+
+		local line
+		local tag_name
+		local tag_msg
+
+		for line in "${lines[@]}"; do
+			tag_name="${line%%[[:space:]]*}"
+			tag_msg="${line#"$tag_name"}"
+			tag_msg="$(echo "$tag_msg" | xargs)"
+
+			if [[ -z "$tag_msg" || "$tag_msg" == "$line" ]]; then
+				tag_msg="(no tag message)"
+			fi
+
+			printf "  %s\n" "$tag_name"
+			printf "    %s\n\n" "$tag_msg"
+		done
 	)
 }
 
