@@ -286,7 +286,7 @@ function _apply_go_env() {
         esac
 
         if [[ "$target_os" == "linux" || "$target_os" == "windows" ]]; then
-            GO_LDFLAGS="$GO_LDFLAGS -linkmode external -extldflags '-static'"
+            GO_LDFLAGS="$GO_LDFLAGS -linkmode external -extldflags=-static"
         fi
 
         local is_cross=false
