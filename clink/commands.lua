@@ -86,29 +86,18 @@ commands["tag"] = function(args)
     end
 
     local escaped_root = utils.escape_path(root)
+    local lines = utils.git_tag_lines(root, 1)
 
-    -- last tag name
-    local last_tag = ""
+    if lines and #lines > 0 then
+        local last_tag, last_msg = utils.parse_git_tag_line(lines[1])
 
-    local handle = io.popen(string.format(
-        "git.exe -C %s describe --tags --abbrev=0 2>nul",
-        escaped_root
-    ))
-
-    if handle then
-        last_tag = utils.trim(handle:read("*l") or "")
-
-        handle:close()
+        utils.printf("\x1b[90mcurrent:\x1b[0m %s", last_tag)
+        utils.printf("    %s", last_msg)
+    else
+        utils.printf("\x1b[90mcurrent:\x1b[0m n/a")
     end
 
-    if last_tag == "" then
-        last_tag = "n/a"
-    end
-
-    utils.printf(
-        "\x1b[90mcurrent: %s",
-        last_tag
-    )
+    utils.printf("")
 
     local tag_name = utils.read_line("new tag: ", "")
 
@@ -134,7 +123,12 @@ commands["tag"] = function(args)
 
     utils.printf("tagging %s as %s", utils.clean_path(root), tag_name)
 
-    local cmd = string.format("git.exe -C %s tag -a %s -m \"%s\"", escaped_root, tag_name, escaped_msg)
+    local cmd = string.format(
+        "git.exe -C %s tag -a %s -m \"%s\"",
+        escaped_root,
+        tag_name,
+        escaped_msg
+    )
 
     if not os.execute(cmd) then
         utils.errorf("failed to create tag")
@@ -171,41 +165,18 @@ commands["dtag"] = function(args)
         return
     end
 
-    local escaped_root = utils.escape_path(root)
-    local latest_line = ""
+    local lines = utils.git_tag_lines(root, 1)
 
-    local handle = io.popen(string.format(
-        "git.exe -C %s tag -n --sort=-creatordate 2>nul",
-        escaped_root
-    ))
-
-    if handle then
-        latest_line = utils.trim(handle:read("*l") or "")
-
-        handle:close()
-    end
-
-    if latest_line == "" then
+    if not lines or #lines == 0 then
         utils.errorf("no tags found")
 
         return
     end
 
-    local tag_name, tag_msg = latest_line:match("^(%S+)%s+(.+)$")
+    local current_tag, current_msg = utils.parse_git_tag_line(lines[1])
 
-    if not tag_name then
-        tag_name = latest_line
-        tag_msg = "(no tag message)"
-    end
-
-    tag_msg = utils.trim(tag_msg or "")
-
-    if tag_msg == "" then
-        tag_msg = "(no tag message)"
-    end
-
-    utils.printf("\x1b[90mlatest:\x1b[0m %s", tag_name)
-    utils.printf("    %s", tag_msg)
+    utils.printf("\x1b[90mcurrent:\x1b[0m %s", current_tag)
+    utils.printf("    %s", current_msg)
     utils.printf("")
 
     local delete_name = utils.read_line("delete tag: ", "")
@@ -217,6 +188,8 @@ commands["dtag"] = function(args)
 
         return
     end
+
+    local escaped_root = utils.escape_path(root)
 
     utils.printf("deleting %s from %s", delete_name, utils.clean_path(root))
 
@@ -259,34 +232,13 @@ commands["tags"] = function(args)
         return
     end
 
-    local escaped_root = utils.escape_path(root)
+    local lines, list_err = utils.git_tag_lines(root, 5)
 
-    local handle = io.popen(string.format(
-        "git.exe -C %s tag -n --sort=-creatordate 2>nul",
-        escaped_root
-    ))
-
-    if not handle then
-        utils.errorf("failed to list tags")
+    if not lines then
+        utils.errorf(list_err or "failed to list tags")
 
         return
     end
-
-    local lines = {}
-
-    for line in handle:lines() do
-        local trimmed = utils.trim(line or "")
-
-        if trimmed ~= "" then
-            table.insert(lines, trimmed)
-        end
-
-        if #lines >= 5 then
-            break
-        end
-    end
-
-    handle:close()
 
     if #lines == 0 then
         utils.errorf("no tags found")
@@ -294,21 +246,8 @@ commands["tags"] = function(args)
         return
     end
 
-    utils.printf("\x1b[90mtags:\x1b[0m")
-
     for _, line in ipairs(lines) do
-        local tag_name, tag_msg = line:match("^(%S+)%s+(.+)$")
-
-        if not tag_name then
-            tag_name = line
-            tag_msg = "(no tag message)"
-        end
-
-        tag_msg = utils.trim(tag_msg or "")
-
-        if tag_msg == "" then
-            tag_msg = "(no tag message)"
-        end
+        local tag_name, tag_msg = utils.parse_git_tag_line(line)
 
         utils.printf("  %s", tag_name)
         utils.printf("    %s", tag_msg)

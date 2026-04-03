@@ -35,6 +35,41 @@ function _end_timer() {
     fi
 }
 
+# get recent git tag preview lines
+function _git_tag_lines() {
+	local target="${1:-.}"
+	local count="${2:-1}"
+
+	git -C "$target" tag -n1 --sort=-creatordate | head -n "$count"
+}
+
+# print a parsed git tag preview line
+function _print_tag_preview() {
+	local label="$1"
+	local line="$2"
+
+	local tag_name="${line%%[[:space:]]*}"
+	local tag_msg="${line#"$tag_name"}"
+
+	tag_msg="$(echo "$tag_msg" | xargs)"
+
+	if [[ -z "$tag_name" ]]; then
+		tag_name="n/a"
+	fi
+
+	if [[ -z "$tag_msg" || "$tag_msg" == "$line" ]]; then
+		tag_msg="(no tag message)"
+	fi
+
+	if [[ -n "$label" ]]; then
+		printf "\033[90m%s:\033[0m %s\n" "$label" "$tag_name"
+	else
+		printf "  %s\n" "$tag_name"
+	fi
+
+	printf "    %s\n" "$tag_msg"
+}
+
 # Find the directory containing package main with func main, prioritizing highest level
 function _find_go_main_dir() {
     local root_dir="${1:-.}"
@@ -540,23 +575,23 @@ function tag() {
 	(
 		set -euo pipefail
 
-		local target=$(git_root "${1:-.}")
+		local target="$(git_root "${1:-.}")"
 
-		if [ ! -d "$target/.git" ]; then
+		if [[ ! -d "$target/.git" ]]; then
 			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
 
 			return 1
 		fi
 
-		local last_tag
+		local latest_line="$(_git_tag_lines "$target" 1)"
 
-		last_tag=$(git -C "$target" describe --tags --abbrev=0 2>/dev/null || true)
-
-		if [[ -z "$last_tag" ]]; then
-			last_tag="n/a"
+		if [[ -n "$latest_line" ]]; then
+			_print_tag_preview "current" "$latest_line"
+		else
+			printf "\033[90mcurrent:\033[0m n/a\n"
 		fi
 
-		printf "\x1b[90mcurrent: %s\033[0m\n\n" "$last_tag"
+		printf "\n"
 
 		local tag_name
 		local msg
@@ -606,8 +641,7 @@ function dtag() {
 	(
 		set -euo pipefail
 
-		local target
-		target=$(git_root "${1:-.}")
+		local target="$(git_root "${1:-.}")"
 
 		if [[ ! -d "$target/.git" ]]; then
 			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
@@ -615,7 +649,7 @@ function dtag() {
 			return 1
 		fi
 
-		local latest_line="$(git -C "$target" tag -n --sort=-creatordate | head -n 1)"
+		local latest_line="$(_git_tag_lines "$target" 1)"
 
 		if [[ -z "$latest_line" ]]; then
 			printf "\033[33merror: no tags found\033[0m\n"
@@ -623,20 +657,11 @@ function dtag() {
 			return 1
 		fi
 
+		_print_tag_preview "current" "$latest_line"
+
+		printf "\n"
+
 		local tag_name
-		local tag_msg
-
-		tag_name="${latest_line%%[[:space:]]*}"
-
-		tag_msg="${latest_line#"$tag_name"}"
-		tag_msg="$(echo "$tag_msg" | xargs)"
-
-		if [[ -z "$tag_msg" || "$tag_msg" == "$latest_line" ]]; then
-			tag_msg="(no tag message)"
-		fi
-
-		printf "\033[90mlatest:\033[0m %s\n" "$tag_name"
-		printf "    %s\n\n" "$tag_msg"
 
 		read -rp "delete tag: " tag_name
 
@@ -671,7 +696,7 @@ function tags() {
 	(
 		set -euo pipefail
 
-		local target=$(git_root "${1:-.}")
+		local target="$(git_root "${1:-.}")"
 
 		if [[ ! -d "$target/.git" ]]; then
 			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
@@ -681,7 +706,7 @@ function tags() {
 
 		local -a lines=()
 
-		readarray -t lines < <(git -C "$target" tag -n --sort=-creatordate | head -n 5)
+		readarray -t lines < <(_git_tag_lines "$target" 5)
 
 		if (( ${#lines[@]} == 0 )); then
 			printf "\033[33merror: no tags found\033[0m\n"
@@ -689,23 +714,12 @@ function tags() {
 			return 1
 		fi
 
-		printf "\033[90mtags:\033[0m\n"
-
 		local line
-		local tag_name
-		local tag_msg
 
 		for line in "${lines[@]}"; do
-			tag_name="${line%%[[:space:]]*}"
-			tag_msg="${line#"$tag_name"}"
-			tag_msg="$(echo "$tag_msg" | xargs)"
+			_print_tag_preview "" "$line"
 
-			if [[ -z "$tag_msg" || "$tag_msg" == "$line" ]]; then
-				tag_msg="(no tag message)"
-			fi
-
-			printf "  %s\n" "$tag_name"
-			printf "    %s\n\n" "$tag_msg"
+			printf "\n"
 		done
 	)
 }
@@ -1314,7 +1328,7 @@ ghup() (
 	shopt -s nullglob
 
 	for pt in "$wf_dir"/*.yml "$wf_dir"/*.yaml; do
-		if [[ -f "$pt" ]]; then
+		if [[ ! -f "$pt" ]]; then
 			continue
 		fi
 
@@ -1479,7 +1493,7 @@ function rm() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push git_ssh origin trash goup ghup
+complete -o dirnames -A directory pull push tag dtag tags git_ssh origin trash goup ghup
 complete -F __build_complete build
 
 # various aliases

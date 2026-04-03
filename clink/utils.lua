@@ -102,6 +102,57 @@ function _M.is_git(dir)
     return true
 end
 
+function _M.git_tag_lines(pRoot, pCount)
+    local escaped_root = _M.escape_path(pRoot)
+    local lines = {}
+
+    local handle = io.popen(string.format(
+        "git.exe -C %s tag -n1 --sort=-creatordate 2>nul",
+        escaped_root
+    ))
+
+    if not handle then
+        return nil, "failed to list tags"
+    end
+
+    for line in handle:lines() do
+        local trimmed = _M.trim(line or "")
+
+        if trimmed ~= "" then
+            table.insert(lines, trimmed)
+        end
+
+        if #lines >= (pCount or 1) then
+            break
+        end
+    end
+
+    handle:close()
+
+    return lines
+end
+
+function _M.parse_git_tag_line(pLine)
+    local tag_name, tag_msg = (pLine or ""):match("^(%S+)%s+(.+)$")
+
+    if not tag_name then
+        tag_name = _M.trim(pLine or "")
+        tag_msg = "(no tag message)"
+    end
+
+    tag_msg = _M.trim(tag_msg or "")
+
+    if tag_name == "" then
+        tag_name = "n/a"
+    end
+
+    if tag_msg == "" then
+        tag_msg = "(no tag message)"
+    end
+
+    return tag_name, tag_msg
+end
+
 function _M.is_go(dir)
     return os.isfile(path.join(dir, "go.mod"))
 end
