@@ -62,7 +62,7 @@ function _print_tag_preview() {
 	fi
 
 	if [[ -n "$label" ]]; then
-		printf "\033[90m%s:\033[0m %s\n" "$label" "$tag_name"
+		printf "%s: %s\n" "$label" "$tag_name"
 	else
 		printf "  %s\n" "$tag_name"
 	fi
@@ -591,7 +591,7 @@ function tag() {
 		if [[ -n "$latest_line" ]]; then
 			_print_tag_preview "current" "$latest_line"
 		else
-			printf "\033[90mcurrent:\033[0m n/a\n"
+			printf "current: n/a\n"
 		fi
 
 		printf "\n"

@@ -91,10 +91,10 @@ commands["tag"] = function(args)
     if lines and #lines > 0 then
         local last_tag, last_msg = utils.parse_git_tag_line(lines[1])
 
-        utils.printf("\x1b[90mcurrent:\x1b[0m %s", last_tag)
+        utils.printf("current: %s", last_tag)
         utils.printf("    %s", last_msg)
     else
-        utils.printf("\x1b[90mcurrent:\x1b[0m n/a")
+        utils.printf("current: n/a")
     end
 
     utils.printf("")
@@ -175,7 +175,7 @@ commands["dtag"] = function(args)
 
     local current_tag, current_msg = utils.parse_git_tag_line(lines[1])
 
-    utils.printf("\x1b[90mcurrent:\x1b[0m %s", current_tag)
+    utils.printf("current: %s", current_tag)
     utils.printf("    %s", current_msg)
     utils.printf("")
 
