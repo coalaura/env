@@ -502,8 +502,12 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         env.CGO_ENABLED = "1"
     end
 
+    local tags_str = ""
+
     if #merged_tags > 0 then
-        build_flags = build_flags .. " -tags " .. table.concat(merged_tags, ",")
+        tags_str = " -tags " .. table.concat(merged_tags, ",")
+
+        build_flags = build_flags .. tags_str
     end
 
     if is_compat then
@@ -557,6 +561,7 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         build_flags = build_flags,
         ldflags = ldflags,
         extra_args = _M.trim(table.concat(passthrough, " ")),
+        tags_str = _M.trim(tags_str),
         mode = mode_str,
         is_min = is_min
     }

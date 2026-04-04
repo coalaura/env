@@ -418,7 +418,7 @@ commands["profile"] = function(args)
         end
 
         os.execute(utils.command_with_env(
-            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s ./... > .profile\\bench.txt 2>&1", go_env.extra_args),
+            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s %s ./... > .profile\\bench.txt 2>&1", go_env.tags_str, go_env.extra_args),
             go_env.env
         ))
 
@@ -467,7 +467,7 @@ commands["bench"] = function(args)
         utils.printf("[go] benchmarking %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
         return utils.command_with_env(
-            string.format("go test -run=^$ -bench=. -benchmem %s ./...", go_env.extra_args),
+            string.format("go test -run=^$ -bench=. -benchmem %s %s ./...", go_env.tags_str, go_env.extra_args),
             go_env.env
         )
     end
@@ -537,7 +537,7 @@ commands["test"] = function(args)
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
         return utils.command_with_env(
-            string.format("go test -v %s ./...", go_env.extra_args),
+            string.format("go test -v %s %s ./...", go_env.tags_str, go_env.extra_args),
             go_env.env
         )
     end
@@ -607,7 +607,7 @@ commands["run"] = function(args)
         utils.printf("[go] running %s (mode: %s)", utils.clean_path(main_dir), go_env.mode)
 
         return utils.command_with_env(
-            string.format("go run %s %s", go_env.extra_args, utils.escape_path(main_dir)),
+            string.format("go run %s %s %s", go_env.tags_str, go_env.extra_args, utils.escape_path(main_dir)),
             go_env.env
         )
     end

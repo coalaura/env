@@ -241,8 +241,11 @@ function _apply_go_env() {
         export CGO_ENABLED=1
     fi
 
+    GO_TAGS_ARGS=""
+
     if (( ${#merged_tags[@]} > 0 )); then
         GO_BUILD_FLAGS+=("-tags" "$(IFS=,; echo "${merged_tags[*]}")")
+        GO_TAGS_ARGS="-tags $(IFS=,; echo "${merged_tags[*]}")"
     fi
 
     if [[ "$is_compat" == "true" ]]; then
@@ -870,7 +873,7 @@ function profile() (
 				-mutexprofile=.profile/mutex.prof \
 				-blockprofile=.profile/block.prof \
 				-trace=.profile/trace.out \
-				"${GO_EXTRA_ARGS[@]}" ./... > .profile/bench.txt 2>&1 || true
+				$GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./... > .profile/bench.txt 2>&1 || true
 
 			printf "\033[32msuccess: profile complete\033[0m\n"
 			printf "\033[37m  escape/inline: .profile/escape_analysis.txt\033[0m\n"
@@ -914,7 +917,7 @@ function bench() (
 
 			printf "\033[37m[go] benchmarking %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
 
-			go test -run=^$ -bench=. -benchmem "${GO_EXTRA_ARGS[@]}" ./...
+			go test -run=^$ -bench=. -benchmem $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
 
 			return
 		fi
@@ -980,7 +983,7 @@ function test() (
 
 			printf "\033[37m[go] testing %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
 
-			go test -v "${GO_EXTRA_ARGS[@]}" ./...
+			go test -v $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
 
 			return
 		fi
@@ -1047,7 +1050,7 @@ function run() (
 
 			printf "\033[37m[go] running %s (mode: %s)\033[0m\n" "$main_dir" "$GO_MODE_STR"
 
-			go run "${GO_EXTRA_ARGS[@]}" "$main_dir"
+			go run $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" "$main_dir"
 
 			return
 		fi
