@@ -257,15 +257,27 @@ function _M.start_timer()
     return os.clock()
 end
 
+function _M.subf(format, ...)
+    if not format then
+        return
+    end
+
+    if #{...} > 0 then
+        format = string.format(format, ...)
+    end
+
+    print(string.format("   \x1b[90m-> %s\x1b[0m", format))
+end
+
 function _M.end_timer(start_time, action_name)
     action_name = action_name or "built"
 
     local elapsed = os.clock() - start_time
 
     if elapsed < 1.0 then
-        _M.printf("\x1b[90m- %s in %dms", action_name, math.floor(elapsed * 1000))
+        _M.subf("%s in %dms", action_name, math.floor(elapsed * 1000))
     else
-        _M.printf("\x1b[90m- %s in %.2fs", action_name, elapsed)
+        _M.subf("%s in %.2fs", action_name, elapsed)
     end
 end
 
@@ -675,7 +687,7 @@ function _M.find_go_main_dir(root)
 end
 
 function _M.read_line(prompt, default)
-    io.write(prompt)
+    io.write(string.format("\x1b[35m?\x1b[0m %s", prompt))
     io.flush()
 
     local input = _M.trim(io.read("*l") or "")
@@ -692,7 +704,13 @@ function _M.printf(format, ...)
         format = string.format(format, ...)
     end
 
-    print(string.format("\x1b[37m%s\x1b[0m", format))
+    if format == "" then
+        print("")
+
+        return
+    end
+
+    print(string.format("\x1b[36m::\x1b[0m %s", format))
 end
 
 function _M.successf(format, ...)
@@ -704,7 +722,7 @@ function _M.successf(format, ...)
         format = string.format(format, ...)
     end
 
-    print(string.format("\x1b[32msuccess: %s\x1b[0m", format))
+    print(string.format("\x1b[32m::\x1b[0m %s", format))
 end
 
 function _M.errorf(format, ...)
@@ -716,7 +734,7 @@ function _M.errorf(format, ...)
         format = string.format(format, ...)
     end
 
-    print(string.format("\x1b[33merror: %s\x1b[0m", format))
+    print(string.format("\x1b[31m!!\x1b[0m %s", format))
 end
 
 return _M

@@ -92,7 +92,7 @@ commands["tag"] = function(args)
         local last_tag, last_msg = utils.parse_git_tag_line(lines[1])
 
         utils.printf("current: %s", last_tag)
-        utils.printf("    %s", last_msg)
+        utils.subf("%s", last_msg)
     else
         utils.printf("current: n/a")
     end
@@ -176,7 +176,7 @@ commands["dtag"] = function(args)
     local current_tag, current_msg = utils.parse_git_tag_line(lines[1])
 
     utils.printf("current: %s", current_tag)
-    utils.printf("    %s", current_msg)
+    utils.subf("%s", current_msg)
     utils.printf("")
 
     local delete_name = utils.read_line("delete tag: ", "")
@@ -218,6 +218,113 @@ end
 
 clink.argmatcher("dtag"):addarg(clink.dirmatches)
 
+-- delete, recreate, and push a git tag
+commands["rtag"] = function(args)
+    local target_dir = args or os.getcwd()
+
+    local root = utils.git_root(target_dir)
+
+    local ok, err = utils.is_git(root)
+
+    if not ok then
+        utils.errorf(err)
+
+        return
+    end
+
+    local lines = utils.git_tag_lines(root, 1)
+
+    if not lines or #lines == 0 then
+        utils.errorf("no tags found")
+
+        return
+    end
+
+    local current_tag, current_msg = utils.parse_git_tag_line(lines[1])
+
+    utils.printf("current: %s", current_tag)
+    utils.subf("%s", current_msg)
+    utils.printf("")
+
+    local tag_name = utils.read_line("re-tag: ", "")
+
+    tag_name = utils.trim(tag_name)
+
+    if tag_name == "" then
+        utils.errorf("tag name is required")
+
+        return
+    end
+
+    local escaped_root = utils.escape_path(root)
+
+    -- get existing tag message
+    local handle = io.popen(string.format("git.exe -C %s tag -l --format=\"%%(contents:subject)\" \"%s\" 2>nul", escaped_root, utils.escape_input(tag_name)))
+    local msg = ""
+
+    if handle then
+        msg = utils.trim(handle:read("*a") or "")
+        handle:close()
+    end
+
+    if msg == "" then
+        msg = "update " .. tag_name
+    end
+
+    local escaped_msg = utils.escape_input(msg)
+
+    utils.printf("deleting %s from %s", tag_name, utils.clean_path(root))
+
+    local cmd = string.format(
+        "git.exe -C %s push origin :refs/tags/%s",
+        escaped_root,
+        tag_name
+    )
+
+    if not os.execute(cmd) then
+        utils.errorf("failed to delete remote tag")
+
+        return
+    end
+
+    cmd = string.format("git.exe -C %s tag -d %s", escaped_root, tag_name)
+
+    if not os.execute(cmd) then
+        utils.errorf("failed to delete local tag")
+
+        return
+    end
+
+    utils.printf("tagging %s as %s", utils.clean_path(root), tag_name)
+
+    cmd = string.format(
+        "git.exe -C %s tag -a %s -m \"%s\"",
+        escaped_root,
+        tag_name,
+        escaped_msg
+    )
+
+    if not os.execute(cmd) then
+        utils.errorf("failed to create tag")
+
+        return
+    end
+
+    utils.printf("pushing tag %s", tag_name)
+
+    cmd = string.format("git.exe -C %s push origin %s", escaped_root, tag_name)
+
+    if not os.execute(cmd) then
+        utils.errorf("failed to push tag")
+
+        return
+    end
+
+    utils.successf("re-tagged and pushed %s", tag_name)
+end
+
+clink.argmatcher("rtag"):addarg(clink.dirmatches)
+
 -- list recent tags with first message lines
 commands["tags"] = function(args)
     local target_dir = args or os.getcwd()
@@ -249,8 +356,8 @@ commands["tags"] = function(args)
     for _, line in ipairs(lines) do
         local tag_name, tag_msg = utils.parse_git_tag_line(line)
 
-        utils.printf("  %s", tag_name)
-        utils.printf("    %s", tag_msg)
+        utils.printf("%s", tag_name)
+        utils.subf("%s", tag_msg)
         utils.printf("")
     end
 end
@@ -423,13 +530,13 @@ commands["profile"] = function(args)
         ))
 
         utils.successf("profile complete")
-        utils.printf("  escape/inline: .profile\\escape_analysis.txt")
-        utils.printf("  bce misses:    .profile\\bce.txt")
-        utils.printf("  benchmarks:    .profile\\bench.txt")
-        utils.printf("  cpu profile:   go tool pprof -http=:8080 .profile\\cpu.prof")
-        utils.printf("  mem profile:   go tool pprof -http=:8081 .profile\\mem.prof")
-        utils.printf("  mutex blocks:  go tool pprof -http=:8082 .profile\\mutex.prof")
-        utils.printf("  trace ui:      go tool trace .profile\\trace.out")
+        utils.subf("escape/inline: .profile\\escape_analysis.txt")
+        utils.subf("bce misses:    .profile\\bce.txt")
+        utils.subf("benchmarks:    .profile\\bench.txt")
+        utils.subf("cpu profile:   go tool pprof -http=:8080 .profile\\cpu.prof")
+        utils.subf("mem profile:   go tool pprof -http=:8081 .profile\\mem.prof")
+        utils.subf("mutex blocks:  go tool pprof -http=:8082 .profile\\mutex.prof")
+        utils.subf("trace ui:      go tool trace .profile\\trace.out")
 
         return
     end

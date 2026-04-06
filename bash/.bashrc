@@ -6,33 +6,63 @@
 [[ $- != *i* ]] && return
 
 ##
+# TUI Helpers
+##
+
+function _print_info() {
+	if [[ -z "$1" ]]; then
+		echo ""
+	else
+		printf "\033[36m::\033[0m %s\n" "$1"
+	fi
+}
+
+function _print_success() {
+	printf "\033[32m::\033[0m %s\n" "$1"
+}
+
+function _print_error() {
+	printf "\033[31m!!\033[0m %s\n" "$1"
+}
+
+function _print_sub() {
+	printf "   \033[90m-> %s\033[0m\n" "$1"
+}
+
+function _read_line() {
+	local prompt="$1"
+	local var_name="$2"
+	read -rp $'\033[35m?\033[0m '"$prompt" "$var_name"
+}
+
+##
 # Helper Functions
 ##
 
 # Starts a timer
 function _start_timer() {
-    date +%s%3N 2>/dev/null || echo 0
+	date +%s%3N 2>/dev/null || echo 0
 }
 
 # Stops and prints a started timer
 function _end_timer() {
-    local start_time="$1"
-    local action_name="${2:-built}"
-    local end_time=$(_start_timer)
+	local start_time="$1"
+	local action_name="${2:-built}"
+	local end_time=$(_start_timer)
 
-    if [[ "$start_time" != "0" && "$end_time" != "0" ]]; then
-        local elapsed=$((end_time - start_time))
+	if [[ "$start_time" != "0" && "$end_time" != "0" ]]; then
+		local elapsed=$((end_time - start_time))
 
-        if [[ $elapsed -lt 1000 ]]; then
-            printf "\033[90m- %s in %dms\033[0m\n" "$action_name" "$elapsed"
-        else
-            local sec=$(awk "BEGIN {printf \"%.2f\", $elapsed/1000}")
+		if [[ $elapsed -lt 1000 ]]; then
+			_print_sub "$action_name in ${elapsed}ms"
+		else
+			local sec=$(awk "BEGIN {printf \"%.2f\", $elapsed/1000}")
 
-            printf "\033[90m- %s in %ss\033[0m\n" "$action_name" "$sec"
-        fi
-    else
-        printf "\033[90m- %s\033[0m\n" "$action_name"
-    fi
+			_print_sub "$action_name in ${sec}s"
+		fi
+	else
+		_print_sub "$action_name"
+	fi
 }
 
 # get recent git tag preview lines
@@ -62,90 +92,90 @@ function _print_tag_preview() {
 	fi
 
 	if [[ -n "$label" ]]; then
-		printf "%s: %s\n" "$label" "$tag_name"
+		_print_info "$label: $tag_name"
 	else
-		printf "  %s\n" "$tag_name"
+		_print_info "$tag_name"
 	fi
 
-	printf "    %s\n" "$tag_msg"
+	_print_sub "$tag_msg"
 }
 
 # Find the directory containing package main with func main, prioritizing highest level
 function _find_go_main_dir() {
-    local root_dir="${1:-.}"
+	local root_dir="${1:-.}"
 
-    root_dir=$(realpath "$root_dir")
+	root_dir=$(realpath "$root_dir")
 
-    local has_main_pkg=false
-    local has_main_func=false
+	local has_main_pkg=false
+	local has_main_func=false
 
-    for f in "$root_dir"/*.go; do
-        [[ -f "$f" ]] || continue
+	for f in "$root_dir"/*.go; do
+		[[ -f "$f" ]] || continue
 
-        if grep -q "^package main" "$f" 2>/dev/null; then
-            has_main_pkg=true
+		if grep -q "^package main" "$f" 2>/dev/null; then
+			has_main_pkg=true
 
-            if grep -q "func main(" "$f" 2>/dev/null; then
-                has_main_func=true
+			if grep -q "func main(" "$f" 2>/dev/null; then
+				has_main_func=true
 
-                break
-            fi
-        fi
-    done
+				break
+			fi
+		fi
+	done
 
-    if [[ "$has_main_pkg" == true && "$has_main_func" == true ]]; then
-        echo "$root_dir"
+	if [[ "$has_main_pkg" == true && "$has_main_func" == true ]]; then
+		echo "$root_dir"
 
-        return
-    fi
+		return
+	fi
 
-    # Find all main packages using go list
-    local candidates=()
+	# Find all main packages using go list
+	local candidates=()
 
-    while IFS='|' read -r pkg_name pkg_dir; do
-        [[ "$pkg_name" == "main" ]] || continue
-        [[ -d "$pkg_dir" ]] || continue
+	while IFS='|' read -r pkg_name pkg_dir; do
+		[[ "$pkg_name" == "main" ]] || continue
+		[[ -d "$pkg_dir" ]] || continue
 
-        for f in "$pkg_dir"/*.go; do
-            [[ -f "$f" ]] || continue
+		for f in "$pkg_dir"/*.go; do
+			[[ -f "$f" ]] || continue
 
-            if grep -q "func main(" "$f" 2>/dev/null; then
-                candidates+=("$pkg_dir")
+			if grep -q "func main(" "$f" 2>/dev/null; then
+				candidates+=("$pkg_dir")
 
-			    break
-            fi
-        done
-    done < <(cd "$root_dir" && go list -f '{{.Name}}|{{.Dir}}' ./... 2>/dev/null)
+				break
+			fi
+		done
+	done < <(cd "$root_dir" && go list -f '{{.Name}}|{{.Dir}}' ./... 2>/dev/null)
 
-    if [[ ${#candidates[@]} -eq 0 ]]; then
-        echo "$root_dir"
+	if [[ ${#candidates[@]} -eq 0 ]]; then
+		echo "$root_dir"
 
-        return
-    fi
+		return
+	fi
 
-    # Find shallowest path (fewest slashes = highest level)
-    local main_dir="${candidates[0]}"
-    local min_depth=$(echo "$main_dir" | tr -cd '/' | wc -c)
+	# Find shallowest path (fewest slashes = highest level)
+	local main_dir="${candidates[0]}"
+	local min_depth=$(echo "$main_dir" | tr -cd '/' | wc -c)
 
-    for dir in "${candidates[@]:1}"; do
-        local depth=$(echo "$dir" | tr -cd '/' | wc -c)
+	for dir in "${candidates[@]:1}"; do
+		local depth=$(echo "$dir" | tr -cd '/' | wc -c)
 
 		if [[ $depth -lt $min_depth ]]; then
-            min_depth=$depth
-            main_dir="$dir"
-        elif [[ $depth -eq $min_depth && "$dir" < "$main_dir" ]]; then
-            main_dir="$dir"
-        fi
-    done
+			min_depth=$depth
+			main_dir="$dir"
+		elif [[ $depth -eq $min_depth && "$dir" < "$main_dir" ]]; then
+			main_dir="$dir"
+		fi
+	done
 
-    echo "$main_dir"
+	echo "$main_dir"
 }
 
 # Run go generate for a project
 function _go_generate() {
 	local target="${1:-.}"
 
-	printf "\033[37m[go] generating %s\033[0m\n" "$target"
+	_print_info "[go] generating $target"
 
 	local t0=$(_start_timer)
 
@@ -158,219 +188,219 @@ function _go_generate() {
 
 # Setup Go build environment and parse custom flags
 function _apply_go_env() {
-    local target_os="${1:-linux}"
-    local target_arch="${2:-amd64}"
+	local target_os="${1:-linux}"
+	local target_arch="${2:-amd64}"
 
-    shift 2
+	shift 2
 
-    local is_pure=false
-    local is_compat=false
-    local is_min=false
+	local is_pure=false
+	local is_compat=false
+	local is_min=false
 
-    GO_EXTRA_ARGS=()
+	GO_EXTRA_ARGS=()
 
-    local -a merged_tags=()
-    local -A seen_tags=()
+	local -a merged_tags=()
+	local -A seen_tags=()
 
-    _add_go_tags() {
-        local tag_str="$1"
-        local old_ifs="$IFS"
-        local tag
+	_add_go_tags() {
+		local tag_str="$1"
+		local old_ifs="$IFS"
+		local tag
 
-        IFS=','
+		IFS=','
 
-        for tag in $tag_str; do
-            tag="$(echo "$tag" | xargs)"
+		for tag in $tag_str; do
+			tag="$(echo "$tag" | xargs)"
 
-            if [[ -z "$tag" ]]; then
+			if [[ -z "$tag" ]]; then
 				continue
 			fi
 
-            if [[ -z "${seen_tags[$tag]:-}" ]]; then
-                seen_tags["$tag"]=1
+			if [[ -z "${seen_tags[$tag]:-}" ]]; then
+				seen_tags["$tag"]=1
 
-                merged_tags+=("$tag")
-            fi
-        done
+				merged_tags+=("$tag")
+			fi
+		done
 
-        IFS="$old_ifs"
-    }
+		IFS="$old_ifs"
+	}
 
-    while (( $# > 0 )); do
-        case "$1" in
-            --pure)
-                is_pure=true
-                ;;
-            --compat)
-                is_compat=true
-                ;;
-            --min)
-                is_min=true
-                ;;
-            -tags|--tags)
-                if (( $# > 1 )); then
-                    _add_go_tags "$2"
-                    shift
-                fi
-                ;;
-            -tags=*|--tags=*)
-                _add_go_tags "${1#*=}"
-                ;;
-            *)
-                GO_EXTRA_ARGS+=("$1")
-                ;;
-        esac
+	while (( $# > 0 )); do
+		case "$1" in
+			--pure)
+				is_pure=true
+				;;
+			--compat)
+				is_compat=true
+				;;
+			--min)
+				is_min=true
+				;;
+			-tags|--tags)
+				if (( $# > 1 )); then
+					_add_go_tags "$2"
+					shift
+				fi
+				;;
+			-tags=*|--tags=*)
+				_add_go_tags "${1#*=}"
+				;;
+			*)
+				GO_EXTRA_ARGS+=("$1")
+				;;
+		esac
 
-        shift
-    done
+		shift
+	done
 
-    export GOOS="$target_os"
-    export GOARCH="$target_arch"
-    export GO_MINIFY="$is_min"
+	export GOOS="$target_os"
+	export GOARCH="$target_arch"
+	export GO_MINIFY="$is_min"
 
-    GO_BUILD_FLAGS=("-trimpath" "-pgo=auto" "-buildvcs=false")
-    GO_LDFLAGS="-s -w"
+	GO_BUILD_FLAGS=("-trimpath" "-pgo=auto" "-buildvcs=false")
+	GO_LDFLAGS="-s -w"
 
-    if [[ "$is_pure" == "true" ]]; then
-        export CGO_ENABLED=0
+	if [[ "$is_pure" == "true" ]]; then
+		export CGO_ENABLED=0
 
-        _add_go_tags "netgo,osusergo"
+		_add_go_tags "netgo,osusergo"
 
-        unset CC CXX CGO_CFLAGS CGO_CXXFLAGS CGO_LDFLAGS
-    else
-        export CGO_ENABLED=1
-    fi
+		unset CC CXX CGO_CFLAGS CGO_CXXFLAGS CGO_LDFLAGS
+	else
+		export CGO_ENABLED=1
+	fi
 
-    GO_TAGS_ARGS=""
+	GO_TAGS_ARGS=""
 
-    if (( ${#merged_tags[@]} > 0 )); then
-        GO_BUILD_FLAGS+=("-tags" "$(IFS=,; echo "${merged_tags[*]}")")
-        GO_TAGS_ARGS="-tags $(IFS=,; echo "${merged_tags[*]}")"
-    fi
+	if (( ${#merged_tags[@]} > 0 )); then
+		GO_BUILD_FLAGS+=("-tags" "$(IFS=,; echo "${merged_tags[*]}")")
+		GO_TAGS_ARGS="-tags $(IFS=,; echo "${merged_tags[*]}")"
+	fi
 
-    if [[ "$is_compat" == "true" ]]; then
-        export GOAMD64=v1
-    else
-        export GOAMD64=v3
-    fi
+	if [[ "$is_compat" == "true" ]]; then
+		export GOAMD64=v1
+	else
+		export GOAMD64=v3
+	fi
 
-    GO_MODE_STR="cgo"
+	GO_MODE_STR="cgo"
 
-    if [[ "$is_pure" == "true" ]]; then
-        GO_MODE_STR="pure"
-    fi
+	if [[ "$is_pure" == "true" ]]; then
+		GO_MODE_STR="pure"
+	fi
 
-    if [[ "$is_compat" == "true" ]]; then
-        GO_MODE_STR="${GO_MODE_STR},compat"
-    else
-        GO_MODE_STR="${GO_MODE_STR},opt"
-    fi
+	if [[ "$is_compat" == "true" ]]; then
+		GO_MODE_STR="${GO_MODE_STR},compat"
+	else
+		GO_MODE_STR="${GO_MODE_STR},opt"
+	fi
 
-    if [[ "$is_min" == "true" ]]; then
-        GO_MODE_STR="${GO_MODE_STR},min"
-    fi
+	if [[ "$is_min" == "true" ]]; then
+		GO_MODE_STR="${GO_MODE_STR},min"
+	fi
 
-    if [[ "$CGO_ENABLED" == "1" ]]; then
-        local zig_target=""
-        local host_arch="$(go env GOHOSTARCH 2>/dev/null || uname -m)"
+	if [[ "$CGO_ENABLED" == "1" ]]; then
+		local zig_target=""
+		local host_arch="$(go env GOHOSTARCH 2>/dev/null || uname -m)"
 
-        case "$host_arch" in
-            x86_64) host_arch="amd64" ;;
-            aarch64) host_arch="arm64" ;;
-        esac
+		case "$host_arch" in
+			x86_64) host_arch="amd64" ;;
+			aarch64) host_arch="arm64" ;;
+		esac
 
-        case "$target_os/$target_arch" in
-            linux/amd64)   zig_target="x86_64-linux-musl" ;;
-            linux/arm64)   zig_target="aarch64-linux-musl" ;;
-            windows/amd64) zig_target="x86_64-windows-gnu" ;;
-            windows/arm64) zig_target="aarch64-windows-gnu" ;;
-            darwin/amd64)  zig_target="x86_64-macos-none" ;;
-            darwin/arm64)  zig_target="aarch64-macos-none" ;;
-        esac
+		case "$target_os/$target_arch" in
+			linux/amd64)   zig_target="x86_64-linux-musl" ;;
+			linux/arm64)   zig_target="aarch64-linux-musl" ;;
+			windows/amd64) zig_target="x86_64-windows-gnu" ;;
+			windows/arm64) zig_target="aarch64-windows-gnu" ;;
+			darwin/amd64)  zig_target="x86_64-macos-none" ;;
+			darwin/arm64)  zig_target="aarch64-macos-none" ;;
+		esac
 
-        if [[ "$target_os" == "linux" || "$target_os" == "windows" ]]; then
-            GO_LDFLAGS="$GO_LDFLAGS -linkmode external -extldflags=-static"
-        fi
+		if [[ "$target_os" == "linux" || "$target_os" == "windows" ]]; then
+			GO_LDFLAGS="$GO_LDFLAGS -linkmode external -extldflags=-static"
+		fi
 
-        local is_cross=false
+		local is_cross=false
 
-        if [[ "$target_os" != "linux" ]] || [[ "$target_arch" != "$host_arch" ]]; then
-            is_cross=true
-        fi
+		if [[ "$target_os" != "linux" ]] || [[ "$target_arch" != "$host_arch" ]]; then
+			is_cross=true
+		fi
 
-        if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
-            export CC="zig cc -target $zig_target"
-            export CXX="zig c++ -target $zig_target"
-        else
-            export CC="zig cc"
-            export CXX="zig c++"
-        fi
+		if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
+			export CC="zig cc -target $zig_target"
+			export CXX="zig c++ -target $zig_target"
+		else
+			export CC="zig cc"
+			export CXX="zig c++"
+		fi
 
-        local opt_level="-O3"
+		local opt_level="-O3"
 
-        if [[ "$is_min" == "true" ]]; then
-            opt_level="-Os"
-        fi
+		if [[ "$is_min" == "true" ]]; then
+			opt_level="-Os"
+		fi
 
-        local cflags="-g0 $opt_level -ffunction-sections -fdata-sections"
+		local cflags="-g0 $opt_level -ffunction-sections -fdata-sections"
 
-        if [[ "$target_arch" == "amd64" ]]; then
-            if [[ "$is_compat" == "true" ]]; then
-                cflags="$cflags -march=x86_64"
-            else
-                cflags="$cflags -march=x86_64_v3"
-            fi
-        fi
+		if [[ "$target_arch" == "amd64" ]]; then
+			if [[ "$is_compat" == "true" ]]; then
+				cflags="$cflags -march=x86_64"
+			else
+				cflags="$cflags -march=x86_64_v3"
+			fi
+		fi
 
-        export CGO_CFLAGS="$cflags"
-        export CGO_CXXFLAGS="$cflags"
-        export CGO_LDFLAGS="-Wl,--gc-sections"
-    fi
+		export CGO_CFLAGS="$cflags"
+		export CGO_CXXFLAGS="$cflags"
+		export CGO_LDFLAGS="-Wl,--gc-sections"
+	fi
 }
 
 # handle .command shorthand for local executables
 function command_not_found_handle() {
-    local cmd="$1"
+	local cmd="$1"
 
-    shift
+	shift
 
-    if [[ "$cmd" =~ ^\.([a-zA-Z0-9_]+)$ ]]; then
-        local name="${BASH_REMATCH[1]}"
+	if [[ "$cmd" =~ ^\.([a-zA-Z0-9_]+)$ ]]; then
+		local name="${BASH_REMATCH[1]}"
 
-        # .sh files first (run with bash)
-        if [[ -f "./${name}.sh" ]]; then
-            printf "\033[37mrunning ./%s.sh\033[0m\n" "$name"
+		# .sh files first (run with bash)
+		if [[ -f "./${name}.sh" ]]; then
+			_print_info "running ./${name}.sh"
 
 			bash "./${name}.sh" "$@"
 
-            return $?
-        fi
+			return $?
+		fi
 
-        # executable without extension
-        if [[ -f "./${name}" && -x "./${name}" ]]; then
-            printf "\033[37mrunning ./%s\033[0m\n" "$name"
+		# executable without extension
+		if [[ -f "./${name}" && -x "./${name}" ]]; then
+			_print_info "running ./${name}"
 
-		    "./${name}" "$@"
+			"./${name}" "$@"
 
-		    return $?
-        fi
+			return $?
+		fi
 
-        printf "\033[33merror: no executable found for .%s\033[0m\n" "$name"
+		_print_error "no executable found for .${name}"
 
-        return 127
-    fi
+		return 127
+	fi
 
 	# system handler (if it exists)
-    if declare -f _command_not_found_handle >/dev/null 2>&1; then
-        _command_not_found_handle "$cmd" "$@"
+	if declare -f _command_not_found_handle >/dev/null 2>&1; then
+		_command_not_found_handle "$cmd" "$@"
 
 		return $?
-    fi
+	fi
 
-    # default behavior
-    printf "bash: %s: command not found\n" "$cmd"
+	# default behavior
+	printf "bash: %s: command not found\n" "$cmd"
 
-    return 127
+	return 127
 }
 
 ##
@@ -390,7 +420,7 @@ function update() {
 		set -euo pipefail
 
 		function print_time() {
-			echo "[$(date '+%H:%M:%S')] - $1"
+			printf "\033[90m[\033[0m\033[36m$(date '+%H:%M:%S')\033[0m\033[90m] ->\033[0m %s\n" "$1"
 		}
 
 		function get_space() {
@@ -520,12 +550,12 @@ function pull() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
 
-		printf "\033[37mpulling %s\033[0m\n" "$target"
+		_print_info "pulling $target"
 
 		git -C "$target" pull --rebase
 	)
@@ -539,17 +569,17 @@ function push() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
 
-		printf "\033[37mchecking %s\033[0m\n" "$target"
+		_print_info "checking $target"
 
 		git -C "$target" add *
 
 		if git -C "$target" diff-index --quiet HEAD -- 2>/dev/null; then
-			printf "\033[33merror: nothing to commit\033[0m\n"
+			_print_error "nothing to commit"
 
 			return 0
 		fi
@@ -558,7 +588,7 @@ function push() {
 
 		local msg
 
-		read -rp "message: " msg
+		_read_line "message: " msg
 
 		msg="$(echo "$msg" | xargs)"
 
@@ -566,7 +596,7 @@ function push() {
 			msg="update"
 		fi
 
-		printf "\033[37mpushing %s\033[0m\n" "$target"
+		_print_info "pushing $target"
 
 		git -C "$target" commit -m "$msg"
 		git -C "$target" push
@@ -581,7 +611,7 @@ function tag() {
 		local target="$(git_root "${1:-.}")"
 
 		if [[ ! -d "$target/.git" ]]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
@@ -591,51 +621,51 @@ function tag() {
 		if [[ -n "$latest_line" ]]; then
 			_print_tag_preview "current" "$latest_line"
 		else
-			printf "current: n/a\n"
+			_print_info "current: n/a"
 		fi
 
-		printf "\n"
+		_print_info ""
 
 		local tag_name
 		local msg
 
-		read -rp "new tag: " tag_name
+		_read_line "new tag: " tag_name
 
 		tag_name="$(echo "$tag_name" | xargs)"
 
 		if [[ -z "$tag_name" ]]; then
-			printf "\033[33merror: tag name is required\033[0m\n"
+			_print_error "tag name is required"
 
 			return 1
 		fi
 
-		read -rp "message: " msg
+		_read_line "message: " msg
 
 		msg="$(echo "$msg" | xargs)"
 
 		if [[ -z "$msg" ]]; then
-			printf "\033[33merror: message is required\033[0m\n"
+			_print_error "message is required"
 
 			return 1
 		fi
 
-		printf "\033[37mtagging %s as %s\033[0m\n" "$target" "$tag_name"
+		_print_info "tagging $target as $tag_name"
 
 		if ! git -C "$target" tag -a "$tag_name" -m "$msg"; then
-			printf "\033[33merror: failed to create tag\033[0m\n"
+			_print_error "failed to create tag"
 
 			return 1
 		fi
 
-		printf "\033[37mpushing tag %s\033[0m\n" "$tag_name"
+		_print_info "pushing tag $tag_name"
 
 		if ! git -C "$target" push origin "$tag_name"; then
-			printf "\033[33merror: failed to push tag\033[0m\n"
+			_print_error "failed to push tag"
 
 			return 1
 		fi
 
-		printf "\033[32msuccess: tagged and pushed %s\033[0m\n" "$tag_name"
+		_print_success "tagged and pushed $tag_name"
 	)
 }
 
@@ -647,7 +677,7 @@ function dtag() {
 		local target="$(git_root "${1:-.}")"
 
 		if [[ ! -d "$target/.git" ]]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
@@ -655,43 +685,121 @@ function dtag() {
 		local latest_line="$(_git_tag_lines "$target" 1)"
 
 		if [[ -z "$latest_line" ]]; then
-			printf "\033[33merror: no tags found\033[0m\n"
+			_print_error "no tags found"
 
 			return 1
 		fi
 
 		_print_tag_preview "current" "$latest_line"
 
-		printf "\n"
+		_print_info ""
 
 		local tag_name
 
-		read -rp "delete tag: " tag_name
+		_read_line "delete tag: " tag_name
 
 		tag_name="$(echo "$tag_name" | xargs)"
 
 		if [[ -z "$tag_name" ]]; then
-			printf "\033[33merror: tag name is required\033[0m\n"
+			_print_error "tag name is required"
 
 			return 1
 		fi
 
-		printf "\033[37mdeleting %s from %s\033[0m\n" "$tag_name" "$target"
+		_print_info "deleting $tag_name from $target"
 
 		if ! git -C "$target" push origin ":refs/tags/$tag_name"; then
-			printf "\033[33merror: failed to delete remote tag\033[0m\n"
+			_print_error "failed to delete remote tag"
 
 			return 1
 		fi
 
 		if ! git -C "$target" tag -d "$tag_name"; then
-			printf "\033[33merror: failed to delete local tag\033[0m\n"
+			_print_error "failed to delete local tag"
 
 			return 1
 		fi
 
-		printf "\033[32msuccess: deleted and pushed %s\033[0m\n" "$tag_name"
+		_print_success "deleted and pushed $tag_name"
 	)
+}
+
+# delete, recreate, and push a git tag
+function rtag() {
+    (
+        set -euo pipefail
+
+        local target="$(git_root "${1:-.}")"
+
+        if [[ ! -d "$target/.git" ]]; then
+            _print_error "$target is not a git repository"
+
+            return 1
+        fi
+
+        local latest_line="$(_git_tag_lines "$target" 1)"
+
+        if [[ -z "$latest_line" ]]; then
+            _print_error "no tags found"
+
+            return 1
+        fi
+
+        _print_tag_preview "current" "$latest_line"
+
+        _print_info ""
+
+        local tag_name
+
+        _read_line "re-tag: " tag_name
+
+        tag_name="$(echo "$tag_name" | xargs)"
+
+        if [[ -z "$tag_name" ]]; then
+            _print_error "tag name is required"
+
+            return 1
+        fi
+
+        # get existing tag message
+        local msg="$(git -C "$target" tag -l --format='%(contents:subject)' "$tag_name" | xargs)"
+
+        if [[ -z "$msg" ]]; then
+            msg="update $tag_name"
+        fi
+
+        _print_info "deleting $tag_name from $target"
+
+        if ! git -C "$target" push origin ":refs/tags/$tag_name"; then
+            _print_error "failed to delete remote tag"
+
+            return 1
+        fi
+
+        if ! git -C "$target" tag -d "$tag_name"; then
+            _print_error "failed to delete local tag"
+
+            return 1
+        fi
+
+        _print_info "tagging $target as $tag_name"
+
+        if ! git -C "$target" tag -a "$tag_name" -m "$msg"; then
+            _print_error "failed to create tag"
+
+            return 1
+        fi
+
+        _print_info "pushing tag $tag_name"
+
+        if ! git -C "$target" push origin "$tag_name"; then
+            _print_error "failed to push tag"
+
+            return 1
+        fi
+
+        _print_success "re-tagged and pushed $tag_name"
+    )
 }
 
 # list recent tags with first message lines
@@ -702,7 +810,7 @@ function tags() {
 		local target="$(git_root "${1:-.}")"
 
 		if [[ ! -d "$target/.git" ]]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
@@ -712,7 +820,7 @@ function tags() {
 		readarray -t lines < <(_git_tag_lines "$target" 5)
 
 		if (( ${#lines[@]} == 0 )); then
-			printf "\033[33merror: no tags found\033[0m\n"
+			_print_error "no tags found"
 
 			return 1
 		fi
@@ -721,8 +829,7 @@ function tags() {
 
 		for line in "${lines[@]}"; do
 			_print_tag_preview "" "$line"
-
-			printf "\n"
+			_print_info ""
 		done
 	)
 }
@@ -735,7 +842,7 @@ function origin() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
@@ -743,12 +850,12 @@ function origin() {
 		local url=$(git -C "$target" remote get-url origin 2>/dev/null)
 
 		if [[ -z "$url" ]]; then
-			printf "\033[33merror: failed to get remote\033[0m\n"
+			_print_error "failed to get remote"
 
 			return 1
 		fi
 
-		printf "\033[37morigin: %s\033[0m\n" "$url"
+		_print_info "origin: $url"
 	)
 }
 
@@ -760,37 +867,37 @@ function trash() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
 
 		local confirm
 
-		read -rp "trash everything in $(basename "$target")? [y/N] " confirm
+		_read_line "trash everything in $(basename "$target")? [y/N] " confirm
 
 		if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-			printf "\033[33maborted\033[0m\n"
 
+			_print_info "aborted"
 			return 1
 		fi
 
-		printf "\033[37maborting pending operations...\033[0m\n"
+		_print_info "aborting pending operations..."
 
 		git -C "$target" rebase --abort 2>/dev/null || true
 		git -C "$target" merge --abort 2>/dev/null || true
 		git -C "$target" cherry-pick --abort 2>/dev/null || true
 		git -C "$target" bisect reset 2>/dev/null || true
 
-		printf "\033[37mresetting...\033[0m\n"
+		_print_info "resetting..."
 
 		git -C "$target" reset --hard
 
-		printf "\033[37mcleaning...\033[0m\n"
+		_print_info "cleaning..."
 
 		git -C "$target" clean -fd
 
-		printf "\033[32msuccess: cleaned\033[0m\n"
+		_print_success "cleaned"
 	)
 }
 
@@ -802,7 +909,7 @@ function git_ssh() {
 		local target=$(git_root "${1:-.}")
 
 		if [ ! -d "$target/.git" ]; then
-			printf "\033[33merror: %s is not a git repository\033[0m\n" "$target"
+			_print_error "$target is not a git repository"
 
 			return 1
 		fi
@@ -810,7 +917,7 @@ function git_ssh() {
 		local http=$(git -C "$target" remote get-url origin 2>/dev/null)
 
 		if [[ -z "$http" ]]; then
-			printf "\033[33merror: failed to get remote\033[0m\n"
+			_print_error "failed to get remote"
 
 			return 1
 		fi
@@ -822,14 +929,14 @@ function git_ssh() {
 		local ssh=$(echo "$http" | sed -E 's#^https://github\.com/([^/]+)/(.+)\.git#git@github.com:\1/\2.git#')
 
 		if [[ "$http" == "$ssh" ]]; then
-			printf "\033[33merror: already an ssh remote\033[0m\n"
+			_print_error "already an ssh remote"
 
 			return 1
 		fi
 
 		git -C "$target" remote set-url origin "$ssh"
 
-		printf "\033[32msuccess: set remote to %s\033[0m\n" "$ssh"
+		_print_success "set remote to $ssh"
 	)
 }
 
@@ -856,12 +963,12 @@ function profile() (
 			_go_generate "$target"
 
 			if [[ -n "$focus" ]]; then
-				printf "\033[37m[go] profiling %s (focus: %s, mode: %s)\033[0m\n" "$target" "$focus" "$GO_MODE_STR"
+				_print_info "[go] profiling $target (focus: $focus, mode: $GO_MODE_STR)"
 
 				go build -gcflags="-m -m" ./... 2>&1 | grep -i "$focus" > .profile/escape_analysis.txt || true
 				go build -gcflags="-d=ssa/check_bce/debug=1" ./... 2>&1 | grep -i "$focus" > .profile/bce.txt || true
 			else
-				printf "\033[37m[go] profiling %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
+				_print_info "[go] profiling $target (mode: $GO_MODE_STR)"
 
 				go build -gcflags="-m" ./... > .profile/escape_analysis.txt 2>&1 || true
 				go build -gcflags="-d=ssa/check_bce/debug=1" ./... > .profile/bce.txt 2>&1 || true
@@ -875,19 +982,19 @@ function profile() (
 				-trace=.profile/trace.out \
 				$GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./... > .profile/bench.txt 2>&1 || true
 
-			printf "\033[32msuccess: profile complete\033[0m\n"
-			printf "\033[37m  escape/inline: .profile/escape_analysis.txt\033[0m\n"
-			printf "\033[37m  bce misses:    .profile/bce.txt\033[0m\n"
-			printf "\033[37m  benchmarks:    .profile/bench.txt\033[0m\n"
-			printf "\033[37m  cpu profile:   go tool pprof -http=:8080 .profile/cpu.prof\033[0m\n"
-			printf "\033[37m  mem profile:   go tool pprof -http=:8081 .profile/mem.prof\033[0m\n"
-			printf "\033[37m  mutex blocks:  go tool pprof -http=:8082 .profile/mutex.prof\033[0m\n"
-			printf "\033[37m  trace ui:      go tool trace .profile/trace.out\033[0m\n"
+			_print_success "profile complete"
+			_print_sub "escape/inline: .profile/escape_analysis.txt"
+			_print_sub "bce misses:    .profile/bce.txt"
+			_print_sub "benchmarks:    .profile/bench.txt"
+			_print_sub "cpu profile:   go tool pprof -http=:8080 .profile/cpu.prof"
+			_print_sub "mem profile:   go tool pprof -http=:8081 .profile/mem.prof"
+			_print_sub "mutex blocks:  go tool pprof -http=:8082 .profile/mutex.prof"
+			_print_sub "trace ui:      go tool trace .profile/trace.out"
 
 			return
 		fi
 
-		printf "\033[33merror: %s is not a recognized profile project\033[0m\n" "$target"
+		_print_error "$target is not a recognized profile project"
 	)
 )
 
@@ -901,7 +1008,7 @@ function bench() (
 
 		# handle bench script
 		if [[ -f "$target/bench.sh" ]]; then
-			printf "\033[37m[bench.sh] benchmarking %s\033[0m\n" "$target"
+			_print_info "[bench.sh] benchmarking $target"
 
 			chmod +x ./bench.sh 2>/dev/null
 
@@ -915,7 +1022,7 @@ function bench() (
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
 
-			printf "\033[37m[go] benchmarking %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
+			_print_info "[go] benchmarking $target (mode: $GO_MODE_STR)"
 
 			go test -run=^$ -bench=. -benchmem $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
 
@@ -934,7 +1041,7 @@ function bench() (
 			done < "$target/package.json"
 
 			if [[ -n "$script" ]]; then
-				printf "\033[37m[bun/%s] benchmarking %s\033[0m\n" "$script" "$target"
+				_print_info "[bun/$script] benchmarking $target"
 
 				bun run "$script" "${extra_args[@]}"
 
@@ -944,7 +1051,7 @@ function bench() (
 			# fallback standalone bench files
 			for file in "bench.js" "bench.ts" "benchmark.js" "benchmark.ts"; do
 				if [[ -f "$target/$file" ]]; then
-					printf "\033[37m[bun/%s] benchmarking %s\033[0m\n" "$file" "$target"
+					_print_info "[bun/$file] benchmarking $target"
 
 					bun "$file" "${extra_args[@]}"
 
@@ -953,7 +1060,7 @@ function bench() (
 			done
 		fi
 
-		printf "\033[33merror: %s is not a recognized benchmark project\033[0m\n" "$target"
+		_print_error "$target is not a recognized benchmark project"
 	)
 )
 
@@ -967,7 +1074,7 @@ function test() (
 
 		# handle test script
 		if [[ -f "$target/test.sh" ]]; then
-			printf "\033[37m[test.sh] testing %s\033[0m\n" "$target"
+			_print_info "[test.sh] testing $target"
 
 			chmod +x ./test.sh 2>/dev/null
 
@@ -981,7 +1088,7 @@ function test() (
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
 
-			printf "\033[37m[go] testing %s (mode: %s)\033[0m\n" "$target" "$GO_MODE_STR"
+			_print_info "[go] testing $target (mode: $GO_MODE_STR)"
 
 			go test -v $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
 
@@ -1001,7 +1108,7 @@ function test() (
 			done < "$target/package.json"
 
 			if [[ -n "$script" ]]; then
-				printf "\033[37m[bun/%s] testing %s\033[0m\n" "$script" "$target"
+				_print_info "[bun/$script] testing $target"
 
 				bun run "$script" "${extra_args[@]}"
 
@@ -1010,7 +1117,7 @@ function test() (
 
 			# fallback to bun test if test files exist
 			if compgen -G "$target/*.{test,spec}.{js,ts,jsx,tsx}" >/dev/null 2>&1; then
-				printf "\033[37m[bun test] testing %s\033[0m\n" "$target"
+				_print_info "[bun test] testing $target"
 
 				bun test "${extra_args[@]}"
 
@@ -1018,7 +1125,7 @@ function test() (
 			fi
 		fi
 
-		printf "\033[33merror: %s is not a recognized test project\033[0m\n" "$target"
+		_print_error "$target is not a recognized test project"
 	)
 )
 
@@ -1032,7 +1139,7 @@ function run() (
 
 		# handle run script
 		if [[ -f "$target/run.sh" ]]; then
-			printf "\033[37m[run.sh] running %s\033[0m\n" "$target"
+			_print_info "[run.sh] running $target"
 
 			chmod +x ./run.sh 2>/dev/null
 
@@ -1048,7 +1155,7 @@ function run() (
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
 
-			printf "\033[37m[go] running %s (mode: %s)\033[0m\n" "$main_dir" "$GO_MODE_STR"
+			_print_info "[go] running $main_dir (mode: $GO_MODE_STR)"
 
 			go run $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" "$main_dir"
 
@@ -1069,7 +1176,7 @@ function run() (
 			done < "$target/package.json"
 
 			if [[ -n "$script" ]]; then
-				printf "\033[37m[bun/%s] running %s\033[0m\n" "$script" "$target"
+				_print_info "[bun/$script] running $target"
 
 				bun run "$script" "${extra_args[@]}"
 
@@ -1080,7 +1187,7 @@ function run() (
 		# handle single node files
 		for file in "index.js" "main.js" "app.js"; do
 			if [[ -f "$target/$file" ]]; then
-				printf "\033[37m[bun/%s] running %s\033[0m\n" "$file" "$target"
+				_print_info "[bun/$file] running $target"
 
 				bun "$file" "${extra_args[@]}"
 
@@ -1088,7 +1195,7 @@ function run() (
 			fi
 		done
 
-		printf "\033[33merror: %s is not a recognized project\033[0m\n" "$target"
+		_print_error "$target is not a recognized project"
 	)
 )
 
@@ -1136,7 +1243,7 @@ function build() (
 
 		# handle build script
 		if [[ -f "$target/build.sh" ]]; then
-			printf "\033[37m[build.sh] building %s\033[0m\n" "$target"
+			_print_info "[build.sh] building $target"
 
 			chmod +x ./build.sh 2>/dev/null
 
@@ -1159,7 +1266,7 @@ function build() (
 			_apply_go_env "$target_os" "$target_arch" "${extra_args[@]}"
 			_go_generate "$target"
 
-			printf "\033[37m[go/%s/%s] building %s (mode: %s)\033[0m\n" "$target_os" "$base" "$main_dir" "$GO_MODE_STR"
+			_print_info "[go/$target_os/$base] building $main_dir (mode: $GO_MODE_STR)"
 
 			local t0=$(_start_timer)
 
@@ -1175,7 +1282,7 @@ function build() (
 
 			if [[ "$GO_MINIFY" == "true" ]]; then
 				if command -v upx &> /dev/null; then
-					printf "\033[37m[upx] compressing %s\033[0m\n" "$base"
+					_print_info "[upx] compressing $base"
 
 					local t1=$(_start_timer)
 
@@ -1183,7 +1290,7 @@ function build() (
 
 					_end_timer "$t1" "compressed"
 				else
-					printf "\033[33mwarning: upx not found, skipping compression\033[0m\n"
+					_print_info "upx not found, skipping compression"
 				fi
 			fi
 
@@ -1202,12 +1309,12 @@ function build() (
 			done < "$target/package.json"
 
 			if [[ -z "$script" ]]; then
-				printf "\033[33merror: no script found in package.json\033[0m\n"
+				_print_error "no script found in package.json"
 
 				return
 			fi
 
-			printf "\033[37m[bun/%s] building %s\033[0m\n" "$script" "$target"
+			_print_info "[bun/$script] building $target"
 
 			local t0=$(_start_timer)
 
@@ -1224,22 +1331,22 @@ function build() (
 			return
 		fi
 
-		printf "\033[33merror: %s is not a recognized project\033[0m\n" "$target"
+		_print_error "$target is not a recognized project"
 	)
 )
 
 __build_complete() {
-    local cur="${COMP_WORDS[COMP_CWORD]}"
+	local cur="${COMP_WORDS[COMP_CWORD]}"
 
-    COMPREPLY=()
+	COMPREPLY=()
 
-    local -a os_tokens=(win windows lin linux dar darwin)
+	local -a os_tokens=(win windows lin linux dar darwin)
 
-    local t
+	local t
 
-    for t in "${os_tokens[@]}"; do
-        [[ $t == "$cur"* ]] && COMPREPLY+=( "$t" )
-    done
+	for t in "${os_tokens[@]}"; do
+		[[ $t == "$cur"* ]] && COMPREPLY+=( "$t" )
+	done
 }
 
 # auto-fix/lint a project
@@ -1262,18 +1369,18 @@ function fix() (
 
 		case "$target_type" in
 			go)
-				printf "\033[37m[go] fixing %s\033[0m\n" "$target"
+				_print_info "[go] fixing $target"
 
 				go fix ./...
 				go fmt ./...
 				;;
 			js)
-				printf "\033[37m[biome] fixing %s\033[0m\n" "$target"
+				_print_info "[biome] fixing $target"
 
 				biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
 				;;
 			*)
-				printf "\033[33merror: unknown or undetected project type to fix\033[0m\n"
+				_print_error "unknown or undetected project type to fix"
 
 				return 1
 				;;
@@ -1291,7 +1398,7 @@ function goup() {
 		target=$(realpath "$target")
 
 		if [ ! -f "$target/go.mod" ]; then
-			printf "\033[33merror: %s is not a go project\033[0m\n" "$target"
+			_print_error "$target is not a go project"
 
 			return 1
 		fi
@@ -1300,13 +1407,13 @@ function goup() {
 
 		go -C "$target" mod edit -go "$gv"
 
-		printf "\033[32msuccess: set go version to %s\033[0m\n" "$gv"
+		_print_success "set go version to $gv"
 
 		go -C "$target" get -u ./...
 
 		go -C "$target" mod tidy
 
-		printf "\033[32msuccess: updated packages\033[0m\n"
+		_print_success "updated packages"
 	)
 }
 
@@ -1320,7 +1427,7 @@ ghup() (
 	local wf_dir="$target_dir/.github/workflows"
 
 	if [[ ! -d "$wf_dir" ]]; then
-		printf "\033[33merror: no workflows directory found at %s\033[0m\n" "$wf_dir"
+		_print_error "no workflows directory found at $wf_dir"
 
 		return 1
 	fi
@@ -1366,18 +1473,18 @@ ghup() (
 
 		if [[ "$new_content" != "$content" ]]; then
 			printf '%s' "$new_content" > "$pt"
-			printf "\033[37mupdated %s\033[0m\n" "$(basename "$pt")"
+			_print_info "updated $(basename "$pt")"
 
 			((count += 1))
 		fi
 	done
 
 	if (( total == 0 )); then
-		printf "\033[37mno workflows found\033[0m\n"
+		_print_info "no workflows found"
 	elif (( count == 0 )); then
-		printf "\033[37mall actions are up to date (%d files checked)\033[0m\n" "$total"
+		_print_info "all actions are up to date ($total files checked)"
 	else
-		printf "\033[32msuccess: updated actions in %d/%d workflow(s)\033[0m\n" "$count" "$total"
+		_print_success "updated actions in $count/$total workflow(s)"
 	fi
 )
 
@@ -1390,12 +1497,12 @@ function tunnel() {
 		local port="${2:-}"
 
 		if [[ -z "$host" || -z "$port" ]]; then
-			printf "\033[33merror: usage: tunnel <host> <port>\033[0m\n"
+			_print_error "usage: tunnel <host> <port>"
 
 			return 1
 		fi
 
-		printf "\033[37mtunneling port %s to %s\033[0m\n" "$port" "$host"
+		_print_info "tunneling port $port to $host"
 
 		ssh -N -L "$port:localhost:$port" "$host"
 	)
@@ -1410,20 +1517,20 @@ function unpack() {
 		local dir="${2:-.}"
 
 		if [[ -z "$file" ]]; then
-			printf "\033[33merror: usage: unpack <archive> [target_dir]\033[0m\n"
+			_print_error "usage: unpack <archive> [target_dir]"
 
 			return 1
 		fi
 
 		if [[ ! -f "$file" ]]; then
-			printf "\033[33merror: file '%s' not found\033[0m\n" "$file"
+			_print_error "file '$file' not found"
 
 			return 1
 		fi
 
 		mkdir -p "$dir"
 
-		printf "\033[37munpacking %s to %s\033[0m\n" "$file" "$dir"
+		_print_info "unpacking $file to $dir"
 
 		local base_file=$(basename "$file")
 
@@ -1447,13 +1554,13 @@ function unpack() {
 				zstd -dqc "$file" -o "$dir/${base_file%.zst}"
 				;;
 			*)
-				printf "\033[33merror: unsupported or unrecognized archive format '%s'\033[0m\n" "$file"
+				_print_error "unsupported or unrecognized archive format '$file'"
 
 				return 1
 				;;
 		esac
 
-		printf "\033[32msuccess: unpacked\033[0m\n"
+		_print_success "unpacked"
 	)
 }
 
@@ -1480,7 +1587,7 @@ function rm() {
 		case "$arg" in
 			-*) ;;
 			/*)
-				printf "\033[33merror: absolute path in rm: %s\033[0m\n" "$arg"
+				_print_error "absolute path in rm: $arg"
 				return 1
 				;;
 		esac
@@ -1496,7 +1603,7 @@ function rm() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push tag dtag tags git_ssh origin trash goup ghup
+complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup ghup
 complete -F __build_complete build
 
 # various aliases
