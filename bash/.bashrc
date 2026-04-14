@@ -557,6 +557,21 @@ function update() {
 	)
 }
 
+# restart docker compose project in current directory (stop, pull, up -d)
+function dcr() {
+	local compose_file="$(find . -maxdepth 1 -name 'compose.yml' -o -name 'compose.yaml' -o -name 'docker-compose.yml' -o -name 'docker-compose.yaml' | head -1)"
+
+	if [[ -z "$compose_file" ]]; then
+		_print_error "no compose file"
+
+		return 1
+	fi
+
+	_print_info "pulling $compose_file"
+
+	docker compose -f "$compose_file" down && docker compose -f "$compose_file" pull && docker compose -f "$compose_file" up -d
+}
+
 # pull a given repo
 function pull() {
 	(
