@@ -438,6 +438,8 @@ function update() {
 			(
 				cd "$HOME/env" || exit 1
 
+				git pull
+
 				sudo bash setup.sh
 			)
 		fi
