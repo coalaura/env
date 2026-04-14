@@ -430,6 +430,19 @@ function update() {
 		read -r used_before < <(get_space)
 
 		##
+		# env update
+		##
+		if [[ -f "$HOME/env" ]]; then
+			print_time "env update"
+
+			(
+				cd "$HOME/env" || exit 1
+
+				sudo bash setup.sh
+			)
+		fi
+
+		##
 		# arch (pacman, paru, yay)
 		##
 		if command -v pacman &> /dev/null; then
