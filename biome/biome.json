@@ -146,5 +146,20 @@
 				"organizeImports": "on"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"**/components/**/*.js",
+				"**/pages/**/*.js"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"useConsistentObjectDefinitions": "off"
+					}
+				}
+			}
+		}
+	]
 }
