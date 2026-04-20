@@ -67,6 +67,7 @@
 				"noAssignInExpressions": "info",
 				"noAsyncPromiseExecutor": "off",
 				"noApproximativeNumericConstant": "off",
+				"useIterableCallbackReturn": "off",
 				"noSparseArray": "warn",
 				"noDoubleEquals": {
 					"level": "error",
