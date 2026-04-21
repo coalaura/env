@@ -1,3 +1,4 @@
+---@diagnostic disable-file banned-symbol
 local utils = require("utils")
 
 --

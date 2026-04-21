@@ -22,6 +22,7 @@
 -- SOFTWARE.
 --
 
+---@diagnostic disable-next-line shadow-global
 local json = {_version = "0.1.2"}
 
 -------------------------------------------------------------------------------

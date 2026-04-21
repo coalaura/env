@@ -36,8 +36,6 @@ if not %errorlevel%==0 (
 
 call update.cmd
 
-pause >nul
-
 :END
 
 endlocal

@@ -1,3 +1,4 @@
+---@diagnostic disable-next-line shadow-global
 local json = require("json")
 
 local _M = {}
@@ -23,29 +24,43 @@ function _M.exists(pt)
     return os.isdir(pt) or os.isfile(pt)
 end
 
-function _M.read_file(pt)
-    local file = io.open(pt, "rb")
+function _M.join(...)
+    local final = false
 
-    if not file then
+    for _, part in ipairs({...}) do
+        if final then
+            final = path.join(final, part)
+        else
+            final = part
+        end
+    end
+
+    return final
+end
+
+function _M.read_file(pt)
+    local handle = io.open(pt, "rb")
+
+    if not handle then
         return nil
     end
 
-    local content = file:read("*a")
+    local content = handle:read("*a")
 
-    file:close()
+    handle:close()
 
     return content
 end
 
 function _M.write_file(pt, data)
-    local file = io.open(pt, "w")
+    local handle = io.open(pt, "w")
 
-    if not file then
+    if not handle then
         return
     end
 
-    file:write(data)
-    file:close()
+    handle:write(data)
+    handle:close()
 end
 
 function _M.list_workflow_files(dir)
@@ -604,11 +619,11 @@ function _M.get_package_json_script(pt, allowed)
 end
 
 function _M.get_first_existing_file(dir, allowed)
-    for _, file in ipairs(allowed) do
-        local pt = path.join(dir, file)
+    for _, filename in ipairs(allowed) do
+        local pt = path.join(dir, filename)
 
         if os.isfile(pt) then
-            return file
+            return filename
         end
     end
 
@@ -621,8 +636,8 @@ function _M.find_go_main_dir(root)
     local handle = io.popen(string.format("dir /b \"%s\\*.go\" 2>nul", root))
 
     if handle then
-        for file in handle:lines() do
-            local content = _M.read_file(path.join(root, file)) or ""
+        for filename in handle:lines() do
+            local content = _M.read_file(path.join(root, filename)) or ""
 
             if content:match("package%s+main") and content:match("func%s+main%s*%(") then
                 handle:close()
@@ -651,8 +666,8 @@ function _M.find_go_main_dir(root)
             local dir_handle = io.popen(string.format("dir /b \"%s\\*.go\" 2>nul", pkg_dir))
 
             if dir_handle then
-                for file in dir_handle:lines() do
-                    local content = _M.read_file(path.join(pkg_dir, file)) or ""
+                for filename in dir_handle:lines() do
+                    local content = _M.read_file(path.join(pkg_dir, filename)) or ""
 
                     if content:match("func%s+main%s*%(") then
                         table.insert(candidates, pkg_dir)

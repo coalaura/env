@@ -958,8 +958,8 @@ commands["ghup"] = function(args)
     local total = 0
     local count = 0
 
-    for file in handle:lines() do
-        local trimmed = utils.trim(file)
+    for filename in handle:lines() do
+        local trimmed = utils.trim(filename)
 
         if trimmed ~= "" then
             total = total + 1
@@ -1064,41 +1064,41 @@ commands["unpack"] = function(args)
         return
     end
 
-    local file = false
-    local dir = false
+    local filename = false
+    local dirname = false
 
     if args:sub(1, 1) == '"' then
-        file, dir = args:match('^"([^"]+)"%s*(.*)$')
+        filename, dirname = args:match('^"([^"]+)"%s*(.*)$')
     elseif args:sub(1, 1) == "'" then
-        file, dir = args:match("^'([^']+)'%s*(.*)$")
+        filename, dirname = args:match("^'([^']+)'%s*(.*)$")
     else
-        file, dir = args:match("^(%S+)%s*(.*)$")
+        filename, dirname = args:match("^(%S+)%s*(.*)$")
     end
 
-    if not file or file == "" then
-        file = args
+    if not filename or filename == "" then
+        filename = args
     end
 
-    dir = utils.trim(dir or "")
+    dirname = utils.trim(dirname or "")
 
-    if dir == "" then
-        dir = "."
+    if dirname == "" then
+        dirname = "."
     end
 
-    if not os.isfile(file) then
-        utils.errorf("file '%s' not found", file)
+    if not os.isfile(filename) then
+        utils.errorf("file '%s' not found", filename)
 
         return
     end
 
-    local esc_file = utils.escape_path(file)
-    local esc_dir = utils.escape_path(dir)
+    local esc_file = utils.escape_path(filename)
+    local esc_dir = utils.escape_path(dirname)
 
-    utils.printf("unpacking %s to %s", utils.clean_path(file), utils.clean_path(dir))
+    utils.printf("unpacking %s to %s", utils.clean_path(filename), utils.clean_path(dirname))
 
     local cmd = ""
 
-    if dir ~= "." then
+    if dirname ~= "." then
         cmd = string.format("mkdir %s 2>nul & ", esc_dir)
     end
 
@@ -1142,6 +1142,7 @@ end
 
 -- trigger terminal bell
 commands["beep"] = function()
+    ---@diagnostic disable-next-line banned-symbol
     print("\7")
 end
 
@@ -1185,7 +1186,7 @@ clink.onfilterinput(function(text)
 
                 local extra = arguments and (" " .. arguments) or ""
 
-                return utils.escape_path(full_path) .. extra
+                return "call " .. utils.escape_path(full_path) .. extra
             end
         end
 

@@ -27,6 +27,7 @@ if not exist "%LOCALAPPDATA%\clink" (
 
 copy /y "clink\clink_settings" "%LOCALAPPDATA%\clink\clink_settings" >nul
 copy /y "clink\commands.lua" "%LOCALAPPDATA%\clink\commands.lua" >nul
+copy /y "clink\completions.lua" "%LOCALAPPDATA%\clink\completions.lua" >nul
 copy /y "clink\init.lua" "%LOCALAPPDATA%\clink\init.lua" >nul
 copy /y "clink\json.lua" "%LOCALAPPDATA%\clink\json.lua" >nul
 copy /y "clink\utils.lua" "%LOCALAPPDATA%\clink\utils.lua" >nul
@@ -76,7 +77,9 @@ if exist "%APPDATA%\Code\User" (
 
 echo Done.
 
-if %0 == "%~0" (
+echo %CMDCMDLINE% | findstr /i /c:" /c" >nul
+
+if %errorlevel% equ 0 (
     pause >nul
 )
 
