@@ -1,9 +1,4 @@
 {
-	"Lua.diagnostics.globals": [
-        "clink",
-        "path",
-        "rl"
-    ],
     "lugo.environment.knownGlobals": [
         "path",
         "clink",
