@@ -701,6 +701,109 @@ function _M.find_go_main_dir(root)
     return candidates[1]
 end
 
+function _M.run_go_test_colorized(cmd, env)
+    local full_cmd = _M.command_with_env(cmd .. " 2>&1", env)
+
+    local handle = io.popen(full_cmd)
+
+    if not handle then
+        _M.errorf("failed to run tests")
+
+        return false
+    end
+
+    for line in handle:lines() do
+        local matched = false
+
+        -- "=== RUN   TestName"
+        local run_test = line:match("^=== RUN%s+(.*)")
+
+        if run_test then
+            line = string.format("   \x1b[90m-> run: \x1b[0m \x1b[36m%s\x1b[0m", run_test)
+
+            matched = true
+        end
+
+        -- "--- PASS: TestName (0.00s)"
+        if not matched then
+            local pass_test, pass_time = line:match("^%s*%-%-%- PASS:%s+(%S+)%s+(%(.+%))")
+             if pass_test then
+                line = string.format("   \x1b[32m-> pass:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", pass_test, pass_time)
+
+                matched = true
+            end
+        end
+
+        -- "--- FAIL: TestName (0.00s)" or "    --- FAIL: SubTest (0.00s)"
+        if not matched then
+            local fail_test, fail_time = line:match("^%s*%-%-%- FAIL:%s+(%S+)%s+(%(.+%))")
+
+            if fail_test then
+                line = string.format("   \x1b[31m-> fail:\x1b[0m \x1b[31;1m%s\x1b[0m \x1b[90m%s\x1b[0m", fail_test, fail_time)
+
+                matched = true
+            end
+        end
+
+        -- "--- SKIP: TestName (0.00s)"
+        if not matched then
+            local skip_test, skip_time = line:match("^%s*%-%-%- SKIP:%s+(%S+)%s+(%(.+%))")
+
+            if skip_test then
+                line = string.format("   \x1b[33m-> skip:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", skip_test, skip_time)
+
+                matched = true
+            end
+        end
+
+        -- "ok      package/name   0.00s"
+        if not matched then
+            local ok_pkg, ok_time = line:match("^ok%s+(%S+)%s+(.*)")
+
+            if ok_pkg then
+                line = string.format("\x1b[32m::\x1b[0m \x1b[32mok\x1b[0m     %s \x1b[90m%s\x1b[0m", ok_pkg, ok_time)
+
+                matched = true
+            end
+        end
+
+        -- "FAIL    package/name   0.00s"
+        if not matched then
+            local fail_pkg, fail_time = line:match("^FAIL%s+(%S+)%s+(.*)")
+
+            if fail_pkg then
+                line = string.format("\x1b[31m!!\x1b[0m \x1b[31;1mFAIL\x1b[0m   %s \x1b[90m%s\x1b[0m", fail_pkg, fail_time)
+
+                matched = true
+            end
+        end
+
+        -- "?       package/name   [no test files]"
+        if not matched then
+            local q_pkg, q_time = line:match("^%?%s+(%S+)%s+(.*)")
+
+            if q_pkg then
+                line = string.format("\x1b[33m::\x1b[0m \x1b[33m?\x1b[0m      %s \x1b[90m%s\x1b[0m", q_pkg, q_time)
+
+                matched = true
+            end
+        end
+
+        -- Global final result flags
+        if not matched then
+            if line == "PASS" then
+                line = "\x1b[32;1mPASS\x1b[0m"
+            elseif line == "FAIL" then
+                line = "\x1b[31;1mFAIL\x1b[0m"
+            end
+        end
+
+        print(line)
+    end
+
+    return handle:close()
+end
+
 function _M.read_line(prompt, default)
     io.write(string.format("\x1b[35m?\x1b[0m %s", prompt))
     io.flush()

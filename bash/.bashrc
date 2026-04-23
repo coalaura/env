@@ -32,6 +32,7 @@ function _print_sub() {
 function _read_line() {
 	local prompt="$1"
 	local var_name="$2"
+
 	read -rp $'\033[35m?\033[0m '"$prompt" "$var_name"
 }
 
@@ -39,12 +40,12 @@ function _read_line() {
 # Helper Functions
 ##
 
-# Starts a timer
+# starts a timer
 function _start_timer() {
 	date +%s%3N 2>/dev/null || echo 0
 }
 
-# Stops and prints a started timer
+# stops and prints a started timer
 function _end_timer() {
 	local start_time="$1"
 	local action_name="${2:-built}"
@@ -100,7 +101,7 @@ function _print_tag_preview() {
 	_print_sub "$tag_msg"
 }
 
-# Find the directory containing package main with func main, prioritizing highest level
+# find the directory containing package main with func main, prioritizing highest level
 function _find_go_main_dir() {
 	local root_dir="${1:-.}"
 
@@ -129,7 +130,7 @@ function _find_go_main_dir() {
 		return
 	fi
 
-	# Find all main packages using go list
+	# find all main packages using go list
 	local candidates=()
 
 	while IFS='|' read -r pkg_name pkg_dir; do
@@ -153,7 +154,7 @@ function _find_go_main_dir() {
 		return
 	fi
 
-	# Find shallowest path (fewest slashes = highest level)
+	# find shallowest path (fewest slashes = highest level)
 	local main_dir="${candidates[0]}"
 	local min_depth=$(echo "$main_dir" | tr -cd '/' | wc -c)
 
@@ -171,7 +172,7 @@ function _find_go_main_dir() {
 	echo "$main_dir"
 }
 
-# Run go generate for a project
+# run go generate for a project
 function _go_generate() {
 	local target="${1:-.}"
 
@@ -186,7 +187,7 @@ function _go_generate() {
 	_end_timer "$t0" "generated"
 }
 
-# Setup Go build environment and parse custom flags
+# setup Go build environment and parse custom flags
 function _apply_go_env() {
 	local target_os="${1:-linux}"
 	local target_arch="${2:-amd64}"
@@ -356,6 +357,35 @@ function _apply_go_env() {
 		export CGO_CXXFLAGS="$cflags"
 		export CGO_LDFLAGS="-Wl,--gc-sections"
 	fi
+}
+
+# colorize go test output matching the lua implementation
+function _run_go_test_colorized() {
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		line="${line%$'\r'}"
+
+		if [[ "$line" =~ ^===[[:space:]]RUN[[:space:]]+(.*) ]]; then
+			printf "   \033[90m-> run: \033[0m \033[36m%s\033[0m\n" "${BASH_REMATCH[1]}"
+		elif [[ "$line" =~ ^[[:space:]]*---[[:space:]]PASS:[[:space:]]+([^[:space:]]+)[[:space:]]+(\(.*\)) ]]; then
+			printf "   \033[32m-> pass:\033[0m \033[36m%s\033[0m \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+		elif [[ "$line" =~ ^[[:space:]]*---[[:space:]]FAIL:[[:space:]]+([^[:space:]]+)[[:space:]]+(\(.*\)) ]]; then
+			printf "   \033[31m-> fail:\033[0m \033[31;1m%s\033[0m \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+		elif [[ "$line" =~ ^[[:space:]]*---[[:space:]]SKIP:[[:space:]]+([^[:space:]]+)[[:space:]]+(\(.*\)) ]]; then
+			printf "   \033[33m-> skip:\033[0m \033[36m%s\033[0m \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+		elif [[ "$line" =~ ^ok[[:space:]]+([^[:space:]]+)[[:space:]]+(.*) ]]; then
+			printf "\033[32m::\033[0m \033[32mok\033[0m     %s \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+		elif [[ "$line" =~ ^FAIL[[:space:]]+([^[:space:]]+)[[:space:]]+(.*) ]]; then
+			printf "\033[31m!!\033[0m \033[31;1mFAIL\033[0m   %s \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+		elif [[ "$line" =~ ^\?[[:space:]]+([^[:space:]]+)[[:space:]]+(.*) ]]; then
+			printf "\033[33m::\033[0m \033[33m?\033[0m      %s \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+		elif [[ "$line" == "PASS" ]]; then
+			printf "\033[32;1mPASS\033[0m\n"
+		elif [[ "$line" == "FAIL" ]]; then
+			printf "\033[31;1mFAIL\033[0m\n"
+		else
+			printf "%s\n" "$line"
+		fi
+	done
 }
 
 # handle .command shorthand for local executables

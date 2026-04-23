@@ -643,10 +643,11 @@ commands["test"] = function(args)
 
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
-        return utils.command_with_env(
-            string.format("go test -v %s %s ./...", go_env.tags_str, go_env.extra_args),
-            go_env.env
-        )
+        local cmd = string.format("go test -v %s %s ./...", go_env.tags_str, go_env.extra_args)
+
+        utils.run_go_test_colorized(cmd, go_env.env)
+
+        return ""
     end
 
     -- handle node project with test script
