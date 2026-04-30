@@ -323,19 +323,27 @@ function _apply_go_env() {
 			GO_LDFLAGS="$GO_LDFLAGS -linkmode external -extldflags=-static"
 		fi
 
-		local is_cross=false
+		local cc_cmd="zig cc"
+		local cxx_cmd="zig c++"
 
-		if [[ "$target_os" != "linux" ]] || [[ "$target_arch" != "$host_arch" ]]; then
-			is_cross=true
+		if [[ -n "$zig_target" ]]; then
+			cc_cmd="$cc_cmd -target $zig_target"
+			cxx_cmd="$cxx_cmd -target $zig_target"
 		fi
 
-		if [[ "$is_cross" == "true" && -n "$zig_target" ]]; then
-			export CC="zig cc -target $zig_target"
-			export CXX="zig c++ -target $zig_target"
-		else
-			export CC="zig cc"
-			export CXX="zig c++"
+		local arch_flag=""
+		if [[ "$target_arch" == "amd64" ]]; then
+			if [[ "$is_compat" == "true" ]]; then
+				arch_flag="-march=x86_64"
+			else
+				arch_flag="-march=x86_64_v3"
+			fi
+			cc_cmd="$cc_cmd $arch_flag"
+			cxx_cmd="$cxx_cmd $arch_flag"
 		fi
+
+		export CC="$cc_cmd"
+		export CXX="$cxx_cmd"
 
 		local opt_level="-O3"
 
@@ -345,12 +353,8 @@ function _apply_go_env() {
 
 		local cflags="-g0 $opt_level -ffunction-sections -fdata-sections"
 
-		if [[ "$target_arch" == "amd64" ]]; then
-			if [[ "$is_compat" == "true" ]]; then
-				cflags="$cflags -march=x86_64"
-			else
-				cflags="$cflags -march=x86_64_v3"
-			fi
+		if [[ -n "$arch_flag" ]]; then
+			cflags="$cflags $arch_flag"
 		fi
 
 		export CGO_CFLAGS="$cflags"
