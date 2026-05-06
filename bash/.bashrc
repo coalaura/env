@@ -547,12 +547,7 @@ function update() {
 		##
 		if command -v docker &> /dev/null; then
 			print_time "docker system prune"
-			sudo docker system prune --all --force --volumes > /dev/null 2>&1 || true
-
-			for cid in $(sudo docker ps -q 2>/dev/null || true); do
-				print_time "docker clean container $cid"
-				sudo docker exec "$cid" sh -c "rm -rf /tmp/* /tmp/.[!.]* /tmp/..?* /var/tmp/* /var/tmp/.[!.]* /var/tmp/..?*" > /dev/null 2>&1 || true
-			done
+			sudo docker system prune --force > /dev/null 2>&1 || true
 		fi
 
 		##
