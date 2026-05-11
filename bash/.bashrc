@@ -466,7 +466,7 @@ function update() {
 		##
 		# env update
 		##
-		if [[ -f "$HOME/env" ]]; then
+		if [[ -d "$HOME/env" ]]; then
 			print_time "env update"
 
 			(
