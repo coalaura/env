@@ -10,8 +10,10 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 - `clink/`: lua scripts and settings for clink
 - `fonts/`: required/nice fonts
 - `git/`: git configuration and better defaults
+- `go/`: go configurations like staticcheck
 - `rio/`: rio configuration and catppuccin themes
 - `starship/`: starship prompt config
+- `workflows/`: ci workflows commonly used
 - `background.png`: clean catppuccin wallpaper
 
 ## Usage
