@@ -36,7 +36,7 @@ func ParseSemVer(str string, allowSuffix bool) (*SemVer, error) {
 	for i, r := range str {
 		if (r < '0' || r > '9') && (!digit || r != '.') {
 			if digit {
-				if allowSuffix && index == 2 {
+				if allowSuffix && index >= 1 {
 					break
 				}
 
