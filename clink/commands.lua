@@ -1011,6 +1011,8 @@ commands["ghup"] = function(args)
             local content = utils.read_file(pt)
 
             if content then
+                content = content:gsub("\r", "")
+
                 local new_content = content
                 local changed = false
 
