@@ -860,6 +860,7 @@ end
 clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
 
 -- vet/analyze a project for issues
+-- vet/analyze a project for issues
 commands["vet"] = function(args)
     local target_dir = os.getcwd()
 
@@ -873,19 +874,31 @@ commands["vet"] = function(args)
         end
     end
 
+    local cmd = ""
+
     if target_type == "go" then
         utils.printf("[go] vetting %s", utils.clean_path(target_dir))
 
-        return "go vet ./... && staticcheck ./..."
+        cmd = "go vet ./... && staticcheck ./..."
     elseif target_type == "js" then
         utils.printf("[biome] vetting %s", utils.clean_path(target_dir))
 
         local config = path.join(utils.home(), "biome.json")
 
-        return string.format("biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+        cmd = string.format("biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+    else
+        utils.errorf("unknown or undetected project type to vet")
+
+        return
     end
 
-    utils.errorf("unknown or undetected project type to vet")
+    local result = os.execute(cmd)
+
+    if result == true or result == 0 then
+        utils.successf("no issues found")
+    end
+
+    return ""
 end
 
 -- auto-fix/lint a project
@@ -1083,7 +1096,17 @@ commands["tunnel"] = function(args)
 
     utils.printf("tunneling port %s to %s", port, host)
 
-    return string.format("ssh -N -L %s:localhost:%s %s", port, port, utils.escape_input(host))
+    local cmd = string.format("ssh -f -N -o ExitOnForwardFailure=yes -L %s:localhost:%s %s", port, port, utils.escape_input(host))
+
+    local result = os.execute(cmd)
+
+    if result == true or result == 0 then
+        utils.successf("tunnel opened successfully")
+    else
+        utils.errorf("failed to open tunnel")
+    end
+
+    return ""
 end
 
 -- unzips or untars an archive to a target directory

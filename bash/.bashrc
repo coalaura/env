@@ -1426,17 +1426,18 @@ function vet() (
 			fi
 		fi
 
+		local status=0
+
 		case "$target_type" in
 			go)
 				_print_info "[go] vetting $target"
 
-				go vet ./...
-				staticcheck ./...
+				go vet ./... && staticcheck ./... || status=$?
 				;;
 			js)
 				_print_info "[biome] vetting $target"
 
-				biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
+				biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" || status=$?
 				;;
 			*)
 				_print_error "unknown or undetected project type to vet"
@@ -1444,6 +1445,12 @@ function vet() (
 				return 1
 				;;
 		esac
+
+		if [[ $status -eq 0 ]]; then
+			_print_success "no issues found"
+		else
+			return $status
+		fi
 	)
 )
 
@@ -1602,7 +1609,13 @@ function tunnel() {
 
 		_print_info "tunneling port $port to $host"
 
-		ssh -N -L "$port:localhost:$port" "$host"
+		if ssh -f -N -o ExitOnForwardFailure=yes -L "$port:localhost:$port" "$host"; then
+			_print_success "tunnel opened successfully"
+		else
+			_print_error "failed to open tunnel"
+
+			return 1
+		fi
 	)
 }
 
