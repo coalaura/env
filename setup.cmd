@@ -12,6 +12,11 @@ if not %errorlevel%==0 (
     goto :END
 )
 
+:: pull repo
+echo Pulling...
+
+git pull
+
 :: default binary folder
 if not exist "%USERPROFILE%\.bin" (
     mkdir "%USERPROFILE%\.bin"

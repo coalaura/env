@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+echo "Pulling..."
+
+git pull
+
 echo "Loading upgrader..."
 
 sudo curl -fsSL -o /usr/local/bin/.env_upgrader_tmp "https://coalaura.github.io/env/upgrader_linux"
