@@ -7,16 +7,18 @@ import (
 )
 
 type SemVer struct {
-	Major int64
-	Minor int64
-	Patch int64
+	Major    int64
+	Minor    int64
+	Patch    int64
+	HasPatch bool
 }
 
 func NewEmptySemVer() *SemVer {
 	return &SemVer{
-		Major: 0,
-		Minor: 0,
-		Patch: 0,
+		Major:    0,
+		Minor:    0,
+		Patch:    0,
+		HasPatch: true,
 	}
 }
 
@@ -76,24 +78,34 @@ func ParseSemVer(str string, allowSuffix bool) (*SemVer, error) {
 		return nil, err
 	}
 
-	var patch int64
+	var (
+		patch    int64
+		hasPatch bool
+	)
 
 	if patchB.Len() > 0 {
 		patch, err = strconv.ParseInt(patchB.String(), 10, 64)
 		if err != nil {
 			return nil, err
 		}
+
+		hasPatch = true
 	}
 
 	return &SemVer{
-		Major: major,
-		Minor: minor,
-		Patch: patch,
+		Major:    major,
+		Minor:    minor,
+		Patch:    patch,
+		HasPatch: hasPatch,
 	}, nil
 }
 
 func (s *SemVer) String() string {
-	return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
+	if s.HasPatch {
+		return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
+	}
+
+	return fmt.Sprintf("%d.%d", s.Major, s.Minor)
 }
 
 func (s *SemVer) String2() string {

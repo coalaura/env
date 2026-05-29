@@ -146,11 +146,11 @@ func InstallStaticcheck(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/dominikh/go-tools/releases/download/%s/staticcheck_windows_amd64.zip", ver.String())
+	uri := fmt.Sprintf("https://github.com/dominikh/go-tools/releases/download/%s/staticcheck_windows_amd64.tar.gz", ver.String())
 
 	path := filepath.Join(home, ".bin", "staticcheck.exe")
 
-	return InstallSingleBinaryFromZip(uri, "staticcheck.exe", path)
+	return InstallSingleBinaryFromTarGz(uri, "staticcheck.exe", path)
 }
 
 func InstallCoreutils(ver *SemVer) error {
