@@ -15,12 +15,12 @@ else
 
 	sudo chmod +x /usr/local/bin/.env_upgrader_tmp
 
-	# skip coreutils
-	TOOLS=(go biome zig upx bun time wtf)
+	# skip coreutils (only needed on windows)
+	TOOLS=(go time wtf)
 
-	# skip starship if connected via ssh
+	# skip development tools, if connected via ssh
 	if [[ -z "${SSH_CLIENT:-}" ]]; then
-		TOOLS+=(starship)
+		TOOLS+=(starship zig upx bun biome staticcheck)
 	fi
 
 	sudo /usr/local/bin/.env_upgrader_tmp "${TOOLS[@]}"

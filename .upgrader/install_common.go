@@ -102,7 +102,7 @@ func GetLinuxBinDir() string {
 }
 
 func GetWindowsBinDir() (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return "", err
 	}

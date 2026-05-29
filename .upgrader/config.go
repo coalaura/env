@@ -74,6 +74,18 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallBiome,
 		},
 
+		// Staticcheck
+		{
+			Repository: "dominikh/go-tools",
+			Prefix:     "",
+
+			Binary: "staticcheck",
+			Path:   GetLocalBinaryPath("staticcheck"),
+			Args:   []string{"-version"},
+
+			Installer: InstallStaticcheck,
+		},
+
 		// Time
 		{
 			Repository: "coalaura/time",

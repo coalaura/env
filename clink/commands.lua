@@ -859,6 +859,35 @@ end
 
 clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
 
+-- vet/analyze a project for issues
+commands["vet"] = function(args)
+    local target_dir = os.getcwd()
+
+    local target_type = utils.trim(args or ""):lower()
+
+    if target_type == "" then
+        if utils.is_go(target_dir) then
+            target_type = "go"
+        elseif utils.is_node(target_dir) then
+            target_type = "js"
+        end
+    end
+
+    if target_type == "go" then
+        utils.printf("[go] vetting %s", utils.clean_path(target_dir))
+
+        return "go vet ./... && staticcheck ./..."
+    elseif target_type == "js" then
+        utils.printf("[biome] vetting %s", utils.clean_path(target_dir))
+
+        local config = path.join(utils.home(), "biome.json")
+
+        return string.format("biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+    end
+
+    utils.errorf("unknown or undetected project type to vet")
+end
+
 -- auto-fix/lint a project
 commands["fix"] = function(args)
     local target_dir = os.getcwd()

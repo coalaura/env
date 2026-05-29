@@ -70,7 +70,7 @@ func InstallZig(ver *SemVer) error {
 }
 
 func InstallUPX(ver *SemVer) error {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func InstallUPX(ver *SemVer) error {
 }
 
 func InstallStarship(ver *SemVer) error {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func InstallBun(ver *SemVer) error {
 }
 
 func InstallBiome(ver *SemVer) error {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func InstallBiome(ver *SemVer) error {
 }
 
 func InstallTime(ver *SemVer) error {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func InstallTime(ver *SemVer) error {
 }
 
 func InstallWtf(ver *SemVer) error {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}
@@ -140,8 +140,21 @@ func InstallWtf(ver *SemVer) error {
 	return DownloadFileTo(uri, path)
 }
 
+func InstallStaticcheck(ver *SemVer) error {
+	home, err := UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("https://github.com/dominikh/go-tools/releases/download/%s/staticcheck_windows_amd64.zip", ver.String())
+
+	path := filepath.Join(home, ".bin", "staticcheck.exe")
+
+	return InstallSingleBinaryFromZip(uri, "staticcheck.exe", path)
+}
+
 func InstallCoreutils(ver *SemVer) error {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}

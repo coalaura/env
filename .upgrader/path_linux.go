@@ -3,7 +3,6 @@
 package main
 
 import (
-	"os"
 	"path/filepath"
 )
 
@@ -16,7 +15,7 @@ func GetZigBinaryPath() string {
 }
 
 func GetBunBinaryPath() string {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return "bun"
 	}

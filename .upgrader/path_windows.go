@@ -12,7 +12,7 @@ func GetGoBinaryPath() string {
 }
 
 func GetZigBinaryPath() string {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return "zig.exe"
 	}
@@ -21,7 +21,7 @@ func GetZigBinaryPath() string {
 }
 
 func GetLocalBinaryPath(name string) string {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return name + ".exe"
 	}
@@ -30,7 +30,7 @@ func GetLocalBinaryPath(name string) string {
 }
 
 func GetBunBinaryPath() string {
-	home, err := os.UserHomeDir()
+	home, err := UserHomeDir()
 	if err != nil {
 		return "bun.exe"
 	}

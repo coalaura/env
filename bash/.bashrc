@@ -1408,6 +1408,45 @@ __build_complete() {
 	done
 }
 
+# vet/analyze a project for issues
+function vet() (
+	(
+		set -euo pipefail
+
+		local target="$(realpath ".")"
+
+		local target_type="${1:-}"
+		target_type="${target_type,,}"
+
+		if [[ -z "$target_type" ]]; then
+			if [[ -f "$target/go.mod" ]]; then
+				target_type="go"
+			elif [[ -f "$target/package.json" ]]; then
+				target_type="js"
+			fi
+		fi
+
+		case "$target_type" in
+			go)
+				_print_info "[go] vetting $target"
+
+				go vet ./...
+				staticcheck ./...
+				;;
+			js)
+				_print_info "[biome] vetting $target"
+
+				biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
+				;;
+			*)
+				_print_error "unknown or undetected project type to vet"
+
+				return 1
+				;;
+		esac
+	)
+)
+
 # auto-fix/lint a project
 function fix() (
 	(

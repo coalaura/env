@@ -34,6 +34,12 @@ if command -v biome >/dev/null 2>&1; then
 	cp biome/biome.json ~/biome.json
 fi
 
+# go staticcheck config
+if command -v go >/dev/null 2>&1; then
+	echo "Copying staticcheck config..."
+	cp go/staticcheck.conf ~/staticcheck.conf
+fi
+
 # .bashrc
 echo "Copying .bashrc..."
 

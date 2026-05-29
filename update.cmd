@@ -68,6 +68,15 @@ if %errorlevel%==0 (
     copy /y "biome\biome.json" "D:\biome.json" >nul
 )
 
+:: go staticcheck config
+where go >nul 2>&1
+
+if %errorlevel%==0 (
+    echo Copying staticcheck config...
+
+    copy /y "go\staticcheck.conf" "%USERPROFILE%\staticcheck.conf" >nul
+)
+
 :: vscode keybinds.json
 if exist "%APPDATA%\Code\User" (
     echo Copying vscode keybinds...

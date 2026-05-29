@@ -124,6 +124,12 @@ func InstallWtf(ver *SemVer) error {
 	return os.Chmod("/usr/local/bin/wtf", 0755)
 }
 
+func InstallStaticcheck(ver *SemVer) error {
+	uri := fmt.Sprintf("https://github.com/dominikh/go-tools/releases/download/%s/staticcheck_linux_amd64.tar.gz", ver.String())
+
+	return InstallSingleBinaryFromTarGz(uri, "staticcheck", "/usr/local/bin/staticcheck")
+}
+
 func InstallCoreutils(ver *SemVer) error {
 	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String(), ver.String())
 
