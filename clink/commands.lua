@@ -264,6 +264,7 @@ commands["rtag"] = function(args)
 
     if handle then
         msg = utils.trim(handle:read("*a") or "")
+
         handle:close()
     end
 
@@ -980,16 +981,16 @@ clink.argmatcher("goup"):addarg(clink.dirmatches)
 commands["ghup"] = function(args)
     local target_dir = args or os.getcwd()
 
-    local gh_dir = path.join(target_dir, ".github")
-    local wf_dir = path.join(gh_dir, "workflows")
+    local githubDir = path.join(target_dir, ".github")
+    local workflowDir = path.join(githubDir, "workflows")
 
-    if not os.isdir(wf_dir) then
-        utils.errorf("no workflows directory found at %s", utils.clean_path(wf_dir))
+    if not os.isdir(workflowDir) then
+        utils.errorf("no workflows directory found at %s", utils.clean_path(workflowDir))
 
         return
     end
 
-    local cmd = string.format("cmd /c \"cd /d \"%s\" && dir /b /a-d *.yml *.yaml 2>nul\"", wf_dir:gsub('"', '""'))
+    local cmd = string.format("cmd /c \"cd /d \"%s\" && dir /b /a-d *.yml *.yaml 2>nul\"", workflowDir:gsub('"', '""'))
     local handle = io.popen(cmd)
 
     if not handle then
@@ -1001,14 +1002,39 @@ commands["ghup"] = function(args)
     local total = 0
     local count = 0
 
+    local rules = {
+        -- Version bumps
+        { action = "actions/checkout", old = "12345", new = "6" },
+        { action = "actions/setup-go", old = "12345", new = "6" },
+        { action = "actions/cache", old = "1234", new = "5" },
+        { action = "actions/cache/restore", old = "1234", new = "5" },
+        { action = "actions/cache/save", old = "1234", new = "5" },
+        { action = "oven-sh/setup-bun", old = "1", new = "2" },
+        { action = "biomejs/setup-biome", old = "1", new = "2" },
+        { action = "actions/github-script", old = "123456", new = "7" },
+        { action = "actions/upload-artifact", old = "45", new = "6" },
+        { action = "actions/download-artifact", old = "4567", new = "8" },
+        {
+            action = "actions/setup-node",
+            old = "12345",
+            new = "6",
+            cond = function(content)
+                return not content:match("always%-auth%s*:")
+            end
+        },
+
+        -- Deprecations / replacements
+        { action = "goto-bus-stop/setup-zig", replace_with = "mlugg/setup-zig@v2" }
+    }
+
     for filename in handle:lines() do
         local trimmed = utils.trim(filename)
 
         if trimmed ~= "" then
             total = total + 1
 
-            local pt = path.join(wf_dir, trimmed)
-            local content = utils.read_file(pt)
+            local workflowPath = path.join(workflowDir, trimmed)
+            local content = utils.read_file(workflowPath)
 
             if content then
                 content = content:gsub("\r", "")
@@ -1019,46 +1045,66 @@ commands["ghup"] = function(args)
                 local function bump(action, old_majors, new_major)
                     local escaped = utils.escape_pattern(action)
 
-                    -- Match action@vX followed by non-dot/non-digit
-                    local p1 = string.format("(%s@v)([%s])([^%%.%%d])", escaped, old_majors)
-                    local r1 = string.format("%%1%s%%3", new_major)
+                    -- Match action@vX in the middle of lines
+                    local pattern_inline = string.format("(%s@v)([%s])([^%%.%%d])", escaped, old_majors)
+                    local replace_inline = string.format("%%1%s%%3", new_major)
 
-                    local c1, n1 = new_content:gsub(p1, r1)
+                    local content_inline, matches_inline = new_content:gsub(pattern_inline, replace_inline)
 
-                    if n1 > 0 then
-                        new_content = c1
+                    if matches_inline > 0 then
+                        new_content = content_inline
                         changed = true
                     end
 
-                    -- Match action@vX at EOF
-                    local p2 = string.format("(%s@v)([%s])$", escaped, old_majors)
-                    local r2 = string.format("%%1%s", new_major)
+                    -- Match action@vX at the end of the file (EOF)
+                    local pattern_eof = string.format("(%s@v)([%s])$", escaped, old_majors)
+                    local replace_eof = string.format("%%1%s", new_major)
 
-                    local c2, n2 = new_content:gsub(p2, r2)
+                    local content_eof, matches_eof = new_content:gsub(pattern_eof, replace_eof)
 
-                    if n2 > 0 then
-                        new_content = c2
+                    if matches_eof > 0 then
+                        new_content = content_eof
                         changed = true
                     end
                 end
 
-                bump("actions/checkout", "12345", "6")
-                bump("actions/setup-go", "12345", "6")
-                bump("actions/cache", "1234", "5")
-                bump("actions/cache/restore", "1234", "5")
-                bump("actions/cache/save", "1234", "5")
-                bump("oven-sh/setup-bun", "1", "2")
-                bump("biomejs/setup-biome", "1", "2")
-                bump("actions/github-script", "123456", "7")
-                bump("actions/upload-artifact", "45", "6")
-                bump("actions/download-artifact", "4567", "8")
+                for _, rule in ipairs(rules) do
+                    if not rule.cond or rule.cond(new_content) then
+                        if rule.replace_with then
+                            local escaped = utils.escape_pattern(rule.action)
+                            local replaced_content, match_count
 
-                if not new_content:match("always%-auth%s*:") then
-                    bump("actions/setup-node", "12345", "6")
+                            -- Match versioned action (e.g., action@v1)
+                            replaced_content, match_count = new_content:gsub(escaped .. "@[%w%-_%.%/]+", rule.replace_with)
+
+                            if match_count > 0 then
+                                new_content = replaced_content
+                                changed = true
+                            end
+
+                            -- Match unversioned action inline
+                            replaced_content, match_count = new_content:gsub(escaped .. "([^%w%-_%.%/])", rule.replace_with .. "%1")
+
+                            if match_count > 0 then
+                                new_content = replaced_content
+                                changed = true
+                            end
+
+                            -- Match unversioned action at EOF
+                            replaced_content, match_count = new_content:gsub(escaped .. "$", rule.replace_with)
+
+                            if match_count > 0 then
+                                new_content = replaced_content
+                                changed = true
+                            end
+                        else
+                            bump(rule.action, rule.old, rule.new)
+                        end
+                    end
                 end
 
                 if changed and new_content ~= content then
-                    utils.write_file(pt, new_content)
+                    utils.write_file(workflowPath, new_content)
                     utils.printf("updated %s", trimmed)
 
                     count = count + 1

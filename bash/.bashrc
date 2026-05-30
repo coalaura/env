@@ -1523,7 +1523,7 @@ function goup() {
 }
 
 # update github actions in workflows
-ghup() (
+function ghup() (
 	set -euo pipefail
 
 	local target_dir="${1:-.}"
@@ -1537,59 +1537,89 @@ ghup() (
 		return 1
 	fi
 
-	local total=0
-	local count=0
+	local total_workflows=0
+	local updated_workflows=0
 
 	shopt -s nullglob
 
-	for pt in "$wf_dir"/*.yml "$wf_dir"/*.yaml; do
-		if [[ ! -f "$pt" ]]; then
+	bump() {
+		local action="$1"
+		local old_majors="$2"
+		local new_major="$3"
+
+		perl -0pe "s{(\Q$action\E\@v)[$old_majors](?![.\d])}{\${1}$new_major}g"
+	}
+
+	replace() {
+		local action="$1"
+		local replacement="$2"
+
+		# Match action@version OR action as a word boundaries (not followed by characters that can be part of action names)
+		perl -0pe "s{\Q$action\E(\@[a-zA-Z0-9_\-\.\/]+)?(?![a-zA-Z0-9_\-\.\/])}{$replacement}g"
+	}
+
+	local -a rules=(
+		# Format: "type|action|param1|param2|condition"
+		# Version bumps: "bump|action_name|old_majors|new_major"
+		"bump|actions/checkout|1-5|6"
+		"bump|actions/setup-go|1-5|6"
+		"bump|actions/cache|1-4|5"
+		"bump|actions/cache/restore|1-4|5"
+		"bump|actions/cache/save|1-4|5"
+		"bump|oven-sh/setup-bun|1|2"
+		"bump|biomejs/setup-biome|1|2"
+		"bump|actions/github-script|1-6|7"
+		"bump|actions/upload-artifact|4-5|6"
+		"bump|actions/download-artifact|4-7|8"
+		"bump|actions/setup-node|1-5|6|node_cond"
+
+		# Deprecations / replacements: "replace|old_action|replacement_with_version"
+		"replace|goto-bus-stop/setup-zig|mlugg/setup-zig@v2"
+	)
+
+	for workflow_path in "$wf_dir"/*.yml "$wf_dir"/*.yaml; do
+		if [[ ! -f "$workflow_path" ]]; then
 			continue
 		fi
 
-		((total += 1))
+		((total_workflows += 1))
 
-		local content="$(cat "$pt")"
-
+		local content="$(cat "$workflow_path")"
 		local new_content="$content"
 
-		bump() {
-			local action="$1"
-			local old_majors="$2"
-			local new_major="$3"
+		for rule in "${rules[@]}"; do
+			local type action param1 param2 cond
 
-			perl -0pe "s{(\Q$action\E\@v)[$old_majors](?![.\d])}{\${1}$new_major}g"
-		}
+			IFS='|' read -r type action param1 param2 cond <<< "$rule"
 
-		new_content="$(printf '%s' "$new_content" | bump "actions/checkout" "1-5" "6")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/setup-go" "1-5" "6")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/cache" "1-4" "5")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/cache/restore" "1-4" "5")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/cache/save" "1-4" "5")"
-		new_content="$(printf '%s' "$new_content" | bump "oven-sh/setup-bun" "1" "2")"
-		new_content="$(printf '%s' "$new_content" | bump "biomejs/setup-biome" "1" "2")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/github-script" "1-6" "7")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/upload-artifact" "4-5" "6")"
-		new_content="$(printf '%s' "$new_content" | bump "actions/download-artifact" "4-7" "8")"
+			if [[ "$cond" == "node_cond" ]]; then
+				if grep -Eq '^[[:space:]-]*always-auth[[:space:]]*:' <<< "$new_content"; then
+					continue
+				fi
+			fi
 
-		if ! grep -Eq '^[[:space:]-]*always-auth[[:space:]]*:' <<< "$new_content"; then
-			new_content="$(printf '%s' "$new_content" | bump "actions/setup-node" "1-5" "6")"
-		fi
+			if [[ "$type" == "bump" ]]; then
+				new_content="$(printf '%s' "$new_content" | bump "$action" "$param1" "$param2")"
+			elif [[ "$type" == "replace" ]]; then
+				new_content="$(printf '%s' "$new_content" | replace "$action" "$param1")"
+			fi
+		done
 
 		if [[ "$new_content" != "$content" ]]; then
-			printf '%s' "$new_content" > "$pt"
-			_print_info "updated $(basename "$pt")"
+			printf '%s' "$new_content" > "$workflow_path"
 
-			((count += 1))
+			_print_info "updated $(basename "$workflow_path")"
+
+			((updated_workflows += 1))
 		fi
 	done
 
-	if (( total == 0 )); then
+	if (( total_workflows == 0 )); then
 		_print_info "no workflows found"
-	elif (( count == 0 )); then
-		_print_info "all actions are up to date ($total files checked)"
+	elif (( updated_workflows == 0 )); then
+		_print_info "all actions are up to date ($total_workflows files checked)"
 	else
-		_print_success "updated actions in $count/$total workflow(s)"
+		_print_success "updated actions in $updated_workflows/$total_workflows workflow(s)"
 	fi
 )
 
