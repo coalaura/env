@@ -474,7 +474,7 @@ function update() {
 
 				git pull
 
-				sudo bash setup.sh
+				sudo --preserve-env=SSH_CLIENT bash setup.sh
 			)
 		fi
 
