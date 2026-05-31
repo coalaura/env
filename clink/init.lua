@@ -17,7 +17,8 @@ local function init_coreutils()
     for line in pipe:lines() do
         local cmd = line:match("^%s*(.-)%s*$")
 
-        if cmd and cmd ~= "" and cmd ~= "coreutils" then
+        -- skip rm (custom command in commands.lua)
+        if cmd and cmd ~= "" and cmd ~= "coreutils" and cmd ~= "rm" then
             os.setalias(cmd, string.format("coreutils %s $*", cmd))
         end
     end

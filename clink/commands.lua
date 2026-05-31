@@ -1247,6 +1247,36 @@ commands["beep"] = function()
     print("\7")
 end
 
+-- safer rm that confirms folder deletes
+commands["rm"] = function(args)
+    if not args or args == "" then
+        return "coreutils rm"
+    end
+
+    for argument in args:gmatch("%S+") do
+        if argument:sub(1, 1) ~= "-" then
+            local clean_arg = argument:match('^"(.+)"$') or argument:match("^'(.+)'$") or argument
+
+            if os.isdir(clean_arg) then
+                local reply = utils.read_line(
+                    string.format("\x1b[33m??\x1b[0m remove \x1b[36m%s\x1b[0m? [y/N] ", clean_arg),
+                    "n"
+                )
+
+                if reply ~= "y" and reply ~= "Y" then
+                    utils.errorf("rm aborted")
+
+                    return ""
+                end
+            end
+        end
+    end
+
+    return string.format("coreutils rm %s", args)
+end
+
+clink.argmatcher("rm"):addarg(clink.filematches)
+
 -- Command handler
 clink.onfilterinput(function(text)
     if not text then
