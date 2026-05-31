@@ -1732,14 +1732,14 @@ function rm() {
 		if [ -d "$arg" ] && [ ! -L "$arg" ]; then
 			path="$(cd -- "$arg" && pwd -P)" || return 1
 
-			printf "rm directory: %s? [y/N] " "$path" > /dev/tty
+			_print_error "remove \033[36m$path\033[0m: %s? [y/N] "
 
-			read -r reply < /dev/tty
+			read -r reply
 
 			case "$reply" in
 				[yY]) ;;
 				*)
-					_print_error "rm aborted: $path"
+					_print_error "rm aborted"
 
 					return 1
 					;;
