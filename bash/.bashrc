@@ -33,7 +33,7 @@ function _read_line() {
 	local prompt="$1"
 	local var_name="$2"
 
-	read -rp $'\033[35m?\033[0m '"$prompt" "$var_name"
+	read -rp $'\033[33m??\033[0m '"$prompt" "$var_name"
 }
 
 ##
@@ -1732,7 +1732,7 @@ function rm() {
 		if [ -d "$arg" ] && [ ! -L "$arg" ]; then
 			path="$(cd -- "$arg" && pwd -P)" || return 1
 
-			printf "\033[33m??\033[0m remove \033[36m%s\033[0m? [y/N] " "$path"
+			_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N]" reply
 
 			read -r reply
 

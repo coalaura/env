@@ -1259,7 +1259,7 @@ commands["rm"] = function(args)
 
             if os.isdir(clean_arg) then
                 local reply = utils.read_line(
-                    string.format("\x1b[33m??\x1b[0m remove \x1b[36m%s\x1b[0m? [y/N] ", clean_arg),
+                    string.format("remove \x1b[36m%s\x1b[0m? [y/N] ", clean_arg),
                     "n"
                 )
 

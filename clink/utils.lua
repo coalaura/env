@@ -805,7 +805,7 @@ function _M.run_go_test_colorized(cmd, env)
 end
 
 function _M.read_line(prompt, default)
-    io.write(string.format("\x1b[35m?\x1b[0m %s", prompt))
+    io.write(string.format("\x1b[33m??\x1b[0m %s", prompt))
     io.flush()
 
     local input = _M.trim(io.read("*l") or "")
