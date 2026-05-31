@@ -1734,8 +1734,6 @@ function rm() {
 
 			_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N]" reply
 
-			read -r reply
-
 			case "$reply" in
 				[yY]) ;;
 				*)
