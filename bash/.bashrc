@@ -1720,18 +1720,31 @@ function beep() {
 	printf '\a'
 }
 
-# safer rm that blocks absolute paths
+# safer rm that confirms folder deletes
 function rm() {
-	local arg
+	local arg path reply
 
 	for arg in "$@"; do
 		case "$arg" in
-			-*) ;;
-			/*)
-				_print_error "absolute path in rm: $arg"
-				return 1
-				;;
+			-*) continue ;;
 		esac
+
+		if [ -d "$arg" ] && [ ! -L "$arg" ]; then
+			path="$(cd -- "$arg" && pwd -P)" || return 1
+
+			printf "rm directory: %s? [y/N] " "$path" > /dev/tty
+
+			read -r reply < /dev/tty
+
+			case "$reply" in
+				[yY]) ;;
+				*)
+					_print_error "rm aborted: $path"
+
+					return 1
+					;;
+			esac
+		fi
 	done
 
 	command rm "$@"
