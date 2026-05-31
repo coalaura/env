@@ -1732,7 +1732,7 @@ function rm() {
 		if [ -d "$arg" ] && [ ! -L "$arg" ]; then
 			path="$(cd -- "$arg" && pwd -P)" || return 1
 
-			_print_error "remove \033[36m$path\033[0m: %s? [y/N] "
+			printf "\033[31m!!\033[0m remove \033[36m%s\033[0m: %s? [y/N] " "$path"
 
 			read -r reply
 
