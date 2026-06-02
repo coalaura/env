@@ -55,6 +55,11 @@ echo "Copying .bashrc..."
 
 cp bash/.bashrc ~/.bashrc
 
+# .inputrc
+echo "Copying .inputrc..."
+
+cp bash/.inputrc ~/.inputrc
+
 # vscode keybinds.json
 if [[ -d "$HOME/.config/Code/User" ]]; then
 	echo "Copying vscode keybinds..."

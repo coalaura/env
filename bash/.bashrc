@@ -259,7 +259,7 @@ function _apply_go_env() {
 	export GOARCH="$target_arch"
 	export GO_MINIFY="$is_min"
 
-	GO_BUILD_FLAGS=("-trimpath" "-pgo=auto" "-buildvcs=false")
+	GO_BUILD_FLAGS=("-trimpath" "-buildvcs=false")
 	GO_LDFLAGS="-s -w"
 
 	if [[ "$is_pure" == "true" ]]; then
@@ -363,7 +363,7 @@ function _apply_go_env() {
 	fi
 }
 
-# colorize go test output matching the lua implementation
+# colorize go test output
 function _run_go_test_colorized() {
 	while IFS= read -r line || [[ -n "$line" ]]; do
 		line="${line%$'\r'}"
@@ -392,13 +392,37 @@ function _run_go_test_colorized() {
 	done
 }
 
+# safely prepend to path
+function path_prepend() {
+	local dir="$1"
+
+	[[ -d "$dir" ]] || return
+
+	case ":$PATH:" in
+		*":$dir:"*) ;;
+		*) PATH="$dir:$PATH" ;;
+	esac
+}
+
+# safely append to path
+function path_append() {
+	local dir="$1"
+
+	[[ -d "$dir" ]] || return
+
+	case ":$PATH:" in
+		*":$dir:"*) ;;
+		*) PATH="$PATH:$dir" ;;
+	esac
+}
+
 # handle .command shorthand for local executables
 function command_not_found_handle() {
 	local cmd="$1"
 
 	shift
 
-	if [[ "$cmd" =~ ^\.([a-zA-Z0-9_]+)$ ]]; then
+	if [[ "$cmd" =~ ^\.([a-zA-Z0-9_-]+)$ ]]; then
 		local name="${BASH_REMATCH[1]}"
 
 		# .sh files first (run with bash)
@@ -638,7 +662,7 @@ function push() {
 
 		_print_info "checking $target"
 
-		git -C "$target" add *
+		git -C "$target" add -A
 
 		if git -C "$target" diff-index --quiet HEAD -- 2>/dev/null; then
 			_print_error "nothing to commit"
@@ -788,80 +812,80 @@ function dtag() {
 
 # delete, recreate, and push a git tag
 function rtag() {
-    (
-        set -euo pipefail
+	(
+		set -euo pipefail
 
-        local target="$(git_root "${1:-.}")"
+		local target="$(git_root "${1:-.}")"
 
-        if [[ ! -d "$target/.git" ]]; then
-            _print_error "$target is not a git repository"
+		if [[ ! -d "$target/.git" ]]; then
+			_print_error "$target is not a git repository"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        local latest_line="$(_git_tag_lines "$target" 1)"
+		local latest_line="$(_git_tag_lines "$target" 1)"
 
-        if [[ -z "$latest_line" ]]; then
-            _print_error "no tags found"
+		if [[ -z "$latest_line" ]]; then
+			_print_error "no tags found"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        _print_tag_preview "current" "$latest_line"
+		_print_tag_preview "current" "$latest_line"
 
-        _print_info ""
+		_print_info ""
 
-        local tag_name
+		local tag_name
 
-        _read_line "re-tag: " tag_name
+		_read_line "re-tag: " tag_name
 
-        tag_name="$(echo "$tag_name" | xargs)"
+		tag_name="$(echo "$tag_name" | xargs)"
 
-        if [[ -z "$tag_name" ]]; then
-            _print_error "tag name is required"
+		if [[ -z "$tag_name" ]]; then
+			_print_error "tag name is required"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        # get existing tag message
-        local msg="$(git -C "$target" tag -l --format='%(contents:subject)' "$tag_name" | xargs)"
+		# get existing tag message
+		local msg="$(git -C "$target" tag -l --format='%(contents:subject)' "$tag_name" | xargs)"
 
-        if [[ -z "$msg" ]]; then
-            msg="update $tag_name"
-        fi
+		if [[ -z "$msg" ]]; then
+			msg="update $tag_name"
+		fi
 
-        _print_info "deleting $tag_name from $target"
+		_print_info "deleting $tag_name from $target"
 
-        if ! git -C "$target" push origin ":refs/tags/$tag_name"; then
-            _print_error "failed to delete remote tag"
+		if ! git -C "$target" push origin ":refs/tags/$tag_name"; then
+			_print_error "failed to delete remote tag"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        if ! git -C "$target" tag -d "$tag_name"; then
-            _print_error "failed to delete local tag"
+		if ! git -C "$target" tag -d "$tag_name"; then
+			_print_error "failed to delete local tag"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        _print_info "tagging $target as $tag_name"
+		_print_info "tagging $target as $tag_name"
 
-        if ! git -C "$target" tag -a "$tag_name" -m "$msg"; then
-            _print_error "failed to create tag"
+		if ! git -C "$target" tag -a "$tag_name" -m "$msg"; then
+			_print_error "failed to create tag"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        _print_info "pushing tag $tag_name"
+		_print_info "pushing tag $tag_name"
 
-        if ! git -C "$target" push origin "$tag_name"; then
-            _print_error "failed to push tag"
+		if ! git -C "$target" push origin "$tag_name"; then
+			_print_error "failed to push tag"
 
-            return 1
-        fi
+			return 1
+		fi
 
-        _print_success "re-tagged and pushed $tag_name"
-    )
+		_print_success "re-tagged and pushed $tag_name"
+	)
 }
 
 # list recent tags with first message lines
@@ -1021,8 +1045,8 @@ function profile() (
 		if [[ -f "$target/go.mod" ]]; then
 			rm -rf .profile && mkdir -p .profile
 
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
 			if [[ -n "$focus" ]]; then
 				_print_info "[go] profiling $target (focus: $focus, mode: $GO_MODE_STR)"
@@ -1081,8 +1105,8 @@ function bench() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
 			_print_info "[go] benchmarking $target (mode: $GO_MODE_STR)"
 
@@ -1147,12 +1171,12 @@ function test() (
 
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
 			_print_info "[go] testing $target (mode: $GO_MODE_STR)"
 
-			go test -v $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
+			go test -v $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./... 2>&1 | _run_go_test_colorized
 
 			return
 		fi
@@ -1214,8 +1238,8 @@ function run() (
 		if [[ -f "$target/go.mod" ]]; then
 			local main_dir=$(_find_go_main_dir "$target")
 
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 			_go_generate "$target"
+			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
 			_print_info "[go] running $main_dir (mode: $GO_MODE_STR)"
 
@@ -1325,8 +1349,8 @@ function build() (
 				base="$base.exe"
 			fi
 
-			_apply_go_env "$target_os" "$target_arch" "${extra_args[@]}"
 			_go_generate "$target"
+			_apply_go_env "$target_os" "$target_arch" "${extra_args[@]}"
 
 			_print_info "[go/$target_os/$base] building $main_dir (mode: $GO_MODE_STR)"
 
@@ -1725,14 +1749,23 @@ function beep() {
 
 # safer rm that confirms folder deletes
 function rm() {
-	local arg path reply
+	local arg path reply parsing_opts=true
 
 	for arg in "$@"; do
-		case "$arg" in
-			-*) continue ;;
-		esac
+		if [[ "$parsing_opts" == true ]]; then
+			case "$arg" in
+				--)
+					parsing_opts=false
 
-		if [ -d "$arg" ] && [ ! -L "$arg" ]; then
+					continue
+					;;
+				-*)
+					continue
+					;;
+			esac
+		fi
+
+		if [[ -d "$arg" && ! -L "$arg" ]]; then
 			path="$(cd -- "$arg" && pwd -P)" || return 1
 
 			_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N] " reply
@@ -1767,6 +1800,8 @@ alias ls='ls --color=auto'
 alias ll='ls -l'
 alias la='ls -la'
 alias tidy='go mod tidy'
+alias mkdir='mkdir -p'
+alias ports='ss -tulpn'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias home='cd ~'
@@ -1776,56 +1811,56 @@ if type -P time >/dev/null 2>&1; then
 	alias t='command time'
 fi
 
-# Auto-correct cd typos
+# auto-correct cd typos
 shopt -s cdspell
-# Auto-correct completion typos
+# auto-correct completion typos
 shopt -s dirspell
-# Update window size
+# update window size
 shopt -s checkwinsize
-# Enable ** globbing
+# enable ** globbing
 shopt -s globstar
-# Extended pattern matching
+# extended pattern matching
 shopt -s extglob
-# Append to history
+# append to history
 shopt -s histappend
-# Multi-line commands in one history entry
+# multi-line commands in one history entry
 shopt -s cmdhist
+# cd into a directory just by its name
+shopt -s autocd
+# match globs case-insensitively
+shopt -s nocaseglob
+# warn about running jobs before exit
+shopt -s checkjobs
 
-# Better completion
-bind 'TAB:menu-complete'
-
-bind 'set completion-ignore-case on'
-bind 'set show-all-if-ambiguous on'
-bind 'set colored-stats on'
-bind 'set colored-completion-prefix on'
-bind 'set menu-complete-display-prefix on'
-bind 'set mark-symlinked-directories on'
-
-# History search with arrow keys
-bind '"\e[A": history-search-backward'
-bind '"\e[B": history-search-forward'
-
-# Better history
+# better history
 export HISTCONTROL=ignoreboth:erasedups
 export HISTIGNORE="ssh-add *:password *:secret *"
 export HISTSIZE=50000
 export HISTFILESIZE=100000
-
-# path additions
-export PATH="$PATH:$HOME/.bun/bin"
-export PATH="$PATH:/usr/local/go/bin"
+export HISTTIMEFORMAT="%F %T "
 
 # so ssh/etc properly detect the terminal
 export TERM=xterm-256color
+
+# default editor, nano ontop
+export EDITOR=nano
 
 # ignore .cmd extension for complete
 export FIGNORE=".cmd:.exe"
 
 # ensure path
-export PATH="$PATH:/usr/local/zig"
+path_prepend "$HOME/.bun/bin"
+path_prepend "/usr/local/zig"
+path_prepend "/usr/local/go/bin"
+
+
+# write history immediately so multiple terminals share it
+PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
 
 # wtf completions
-eval "$(wtf --completion bash)"
+if command -v wtf >/dev/null 2>&1; then
+	eval "$(wtf --completion bash)"
+fi
 
 ##
 # CGo settings
@@ -1863,7 +1898,9 @@ fi
 # Git settings
 ##
 
-git config --global --replace-all include.path "~/.config/.gitconfig_env" "^~/.config/.gitconfig_env$"
+if ! git config --global --get-all include.path | grep -Fxq "~/.config/.gitconfig_env"; then
+	git config --global --add include.path "~/.config/.gitconfig_env"
+fi
 
 ##
 # Startup

@@ -1,0 +1,61 @@
+# ~/.inputrc
+# by coalaura
+
+$include /etc/inputrc
+
+##
+# Completion
+##
+
+# ignore case in completions
+set completion-ignore-case on
+# treat - and _ as equivalent in completion
+set completion-map-case on
+# show completions immediately if ambiguous
+set show-all-if-ambiguous on
+# don't page completion lists
+set page-completions off
+# colorize file types in completions
+set colored-stats on
+# colorize the matching part of completion prefix
+set colored-completion-prefix on
+# show common prefix before cycling menu
+set menu-complete-display-prefix on
+# add trailing slash to symlinked directories
+set mark-symlinked-directories on
+# add file type indicators to completions
+set visible-stats on
+# skip typing redundant matched characters
+set skip-completed-text on
+# increase threshold for completion warnings
+set completion-query-items 500
+
+##
+# General readline stuff
+#
+
+# no terminal bell
+set bell-style none
+# don't clobber the variable form on path completion
+set expand-tilde off
+
+##
+# Key Bindings
+#
+
+# cycle completions with Tab
+TAB: menu-complete
+# cycle completions backward with Shift-Tab
+"\e[Z": menu-complete-backward
+# delete word backward with Ctrl-Backspace
+"\C-?": backward-kill-word
+# delete word forward with Ctrl-Delete
+"\e[3;5~": kill-word
+# move backward one word with Ctrl-Left
+"\e[1;5D": backward-word
+# move forward one word with Ctrl-Right
+"\e[1;5C": forward-word
+# search history backward using input prefix
+"\e[A": history-search-backward
+# search history forward using input prefix
+"\e[B": history-search-forward
