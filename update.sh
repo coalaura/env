@@ -40,6 +40,11 @@ if command -v go >/dev/null 2>&1; then
 	cp go/staticcheck.conf ~/staticcheck.conf
 fi
 
+# .bash_profile
+echo "Copying .bash_profile..."
+
+cp bash/.bash_profile ~/.bash_profile
+
 # .bashrc
 echo "Copying .bashrc..."
 

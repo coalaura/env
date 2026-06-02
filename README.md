@@ -5,7 +5,7 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 ## Structure
 
 - `.vscode/`: `keybinds.json` for vscode
-- `bash/`: `.bashrc` for linux
+- `bash/`: `.bashrc` and `.bash_profile` for linux
 - `biome/`: biome config
 - `clink/`: lua scripts and settings for clink
 - `fonts/`: required/nice fonts
