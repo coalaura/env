@@ -448,6 +448,11 @@ function git_root() {
 	git -C "$path" rev-parse --show-toplevel 2>/dev/null || echo "$path"
 }
 
+# check nginx config and restart
+function ngx() {
+	nginx -t && service nginx restart
+}
+
 # perform system maintenance and updates
 function update() {
 	(
