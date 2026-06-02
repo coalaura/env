@@ -45,6 +45,11 @@ echo "Copying .bash_profile..."
 
 cp bash/.bash_profile ~/.bash_profile
 
+# .profile
+echo "Copying .profile..."
+
+cp bash/.profile ~/.profile
+
 # .bashrc
 echo "Copying .bashrc..."
 
