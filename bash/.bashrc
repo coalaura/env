@@ -472,9 +472,7 @@ function update() {
 			(
 				cd "$HOME/env" || exit 1
 
-				git pull
-
-				sudo --preserve-env=SSH_CLIENT bash setup.sh
+				sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK bash setup.sh
 			)
 		fi
 
