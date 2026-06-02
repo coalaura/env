@@ -297,7 +297,7 @@ function _M.end_timer(start_time, action_name)
 end
 
 function _M.command_ok(result)
-	return result == true or result == 0
+    return result == true or result == 0
 end
 
 function _M.go_generate(dir, env)
@@ -306,14 +306,17 @@ function _M.go_generate(dir, env)
     local t0 = _M.start_timer()
 
     local cmd = string.format(
-		"go -C %s generate ./...",
-		_M.escape_path(dir)
-	)
+        "go -C %s generate ./...",
+        _M.escape_path(dir)
+    )
 
-    local gen_result = os.execute(_M.command_with_env(
-        cmd,
-        env
-    ))
+    local final_cmd = cmd
+
+    if env then
+        final_cmd = _M.command_with_env(cmd, env)
+    end
+
+    local gen_result = os.execute(final_cmd)
 
     if not _M.command_ok(gen_result) then
         return false
@@ -323,6 +326,7 @@ function _M.go_generate(dir, env)
 
     return true
 end
+
 
 local function escape_cmd_set_value(v)
     v = tostring(v)
@@ -516,7 +520,7 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         GOARCH = target_arch,
     }
 
-    local build_flags = "-trimpath -pgo=auto -buildvcs=false"
+    local build_flags = "-trimpath -buildvcs=false"
     local ldflags = "-s -w"
 
     if is_pure then
@@ -727,7 +731,8 @@ function _M.run_go_test_colorized(cmd, env)
         -- "--- PASS: TestName (0.00s)"
         if not matched then
             local pass_test, pass_time = line:match("^%s*%-%-%- PASS:%s+(%S+)%s+(%(.+%))")
-             if pass_test then
+
+            if pass_test then
                 line = string.format("   \x1b[32m-> pass:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", pass_test, pass_time)
 
                 matched = true
@@ -802,6 +807,73 @@ function _M.run_go_test_colorized(cmd, env)
     end
 
     return handle:close()
+end
+
+function _M.split_args(pArgs)
+    local out = {}
+    local argument = ""
+    local quote = false
+    local escaped = false
+
+    pArgs = pArgs or ""
+
+    for i = 1, #pArgs do
+        local ch = pArgs:sub(i, i)
+
+        if escaped then
+            argument = argument .. ch
+            escaped = false
+        elseif ch == "^" then
+            escaped = true
+        elseif quote then
+            if ch == quote then
+                quote = nil
+            else
+                argument = argument .. ch
+            end
+        elseif ch == '"' or ch == "'" then
+            quote = ch
+        elseif ch:match("%s") then
+            if argument ~= "" then
+                table.insert(out, argument)
+
+                argument = ""
+            end
+        else
+            argument = argument .. ch
+        end
+    end
+
+    if escaped then
+        argument = argument .. "^"
+    end
+
+    if argument ~= "" then
+        table.insert(out, argument)
+    end
+
+    return out
+end
+
+function _M.has_command(pCommand)
+    local handle = io.popen(string.format("where %s 2>nul", pCommand))
+
+    if not handle then
+        return false
+    end
+
+    local line = handle:read("*l")
+
+    handle:close()
+
+    return line ~= nil and line ~= ""
+end
+
+function _M.path_has(pCurrent, pDir)
+    local current = ";" .. (pCurrent or ""):lower() .. ";"
+    local dir = (pDir or ""):lower():gsub("[/\\]+$", "")
+
+    return current:find(";" .. dir:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. ";") ~= nil
 end
 
 function _M.read_line(prompt, default)

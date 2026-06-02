@@ -51,7 +51,7 @@ commands["push"] = function(args)
 
     utils.printf("checking %s", utils.clean_path(root))
 
-    os.execute(string.format("git.exe -C %s -A", escaped_root))
+    os.execute(string.format("git.exe -C %s add -A", escaped_root))
 
     if os.execute(string.format("git.exe -C %s diff-index --quiet HEAD -- 2>nul", escaped_root)) then
         utils.errorf("nothing to commit")
@@ -65,7 +65,7 @@ commands["push"] = function(args)
 
     utils.printf("pushing %s", utils.clean_path(root))
 
-    os.execute(string.format("git.exe -C %s commit -am \"%s\"", escaped_root, utils.escape_input(msg)))
+    os.execute(string.format("git.exe -C %s commit -m \"%s\"", escaped_root, utils.escape_input(msg)))
     os.execute(string.format("git.exe -C %s push", escaped_root))
 end
 
@@ -504,14 +504,14 @@ commands["profile"] = function(args)
     local extra_args = utils.format_extra_args(args)
 
     if utils.is_go(target_dir) then
+        if not utils.go_generate(target_dir) then
+            return
+        end
+
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
         os.execute("rmdir /s /q .profile 2>nul")
         os.execute("mkdir .profile 2>nul")
-
-        if not utils.go_generate(target_dir, go_env.env) then
-            return
-        end
 
         if focus ~= "" then
             utils.printf("[go] profiling %s (focus: %s)", utils.clean_path(target_dir), focus)
@@ -566,11 +566,11 @@ commands["bench"] = function(args)
 
     -- handle go project
     if utils.is_go(target_dir) then
-        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
-
-        if not utils.go_generate(target_dir, go_env.env) then
+        if not utils.go_generate(target_dir) then
             return
         end
+
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
         utils.printf("[go] benchmarking %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -636,11 +636,11 @@ commands["test"] = function(args)
 
     -- handle go project
     if utils.is_go(target_dir) then
-        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
-
-        if not utils.go_generate(target_dir, go_env.env) then
+        if not utils.go_generate(target_dir) then
             return
         end
+
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -706,12 +706,12 @@ commands["run"] = function(args)
 
     -- handle go project
     if utils.is_go(target_dir) then
-        local main_dir = utils.find_go_main_dir(target_dir)
-        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
-
-        if not utils.go_generate(target_dir, go_env.env) then
+        if not utils.go_generate(target_dir) then
             return
         end
+
+        local main_dir = utils.find_go_main_dir(target_dir)
+        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
         utils.printf("[go] running %s (mode: %s)", utils.clean_path(main_dir), go_env.mode)
 
@@ -784,11 +784,11 @@ commands["build"] = function(args)
             base = base .. ".exe"
         end
 
-        local go_env = utils.prepare_go_env(target_os, "amd64", extra_args)
-
-        if not utils.go_generate(target_dir, go_env.env) then
+        if not utils.go_generate(target_dir) then
             return
         end
+
+        local go_env = utils.prepare_go_env(target_os, "amd64", extra_args)
 
         utils.printf("[go/%s/%s] building %s (mode: %s)", target_os, base, utils.clean_path(main_dir), go_env.mode)
 
@@ -1165,25 +1165,14 @@ commands["unpack"] = function(args)
         return
     end
 
-    local filename = false
-    local dirname = false
-
-    if args:sub(1, 1) == '"' then
-        filename, dirname = args:match('^"([^"]+)"%s*(.*)$')
-    elseif args:sub(1, 1) == "'" then
-        filename, dirname = args:match("^'([^']+)'%s*(.*)$")
-    else
-        filename, dirname = args:match("^(%S+)%s*(.*)$")
-    end
+    local parsed = utils.split_args(args)
+    local filename = parsed[1]
+    local dirname = parsed[2] or "."
 
     if not filename or filename == "" then
-        filename = args
-    end
+        utils.errorf("usage: unpack <archive> [target_dir]")
 
-    dirname = utils.trim(dirname or "")
-
-    if dirname == "" then
-        dirname = "."
+        return
     end
 
     if not os.isfile(filename) then
@@ -1192,23 +1181,110 @@ commands["unpack"] = function(args)
         return
     end
 
+    local lower = filename:lower()
     local esc_file = utils.escape_path(filename)
     local esc_dir = utils.escape_path(dirname)
+    local base = path.getbasename(filename)
 
     utils.printf("unpacking %s to %s", utils.clean_path(filename), utils.clean_path(dirname))
 
-    local cmd = ""
+    local mkdir = string.format("if not exist %s mkdir %s", esc_dir, esc_dir)
 
-    if dirname ~= "." then
-        cmd = string.format("mkdir %s 2>nul & ", esc_dir)
+    if lower:match("%.tar%.") or
+        lower:match("%.tgz$") or
+        lower:match("%.tbz2$") or
+        lower:match("%.txz$") or
+        lower:match("%.tar$") or
+        lower:match("%.zip$")
+    then
+        return string.format(
+            "%s && tar.exe -xf %s -C %s",
+            mkdir,
+            esc_file,
+            esc_dir
+        )
     end
 
-    return cmd .. string.format("tar.exe -xf %s -C %s", esc_file, esc_dir)
-end
+    if lower:match("%.gz$") then
+        local out = base:gsub("%.gz$", "")
 
--- pulls a docker compose container
-commands["dockup"] = function()
-    return "docker compose down && docker compose pull && docker compose up -d"
+        if utils.has_command("gzip.exe") then
+            return string.format(
+                "%s && gzip.exe -dkc %s > %s",
+                mkdir,
+                esc_file,
+                utils.escape_path(path.join(dirname, out))
+            )
+        end
+
+        if utils.has_command("coreutils.exe") then
+            return string.format(
+                "%s && coreutils gzip -dkc %s > %s",
+                mkdir,
+                esc_file,
+                utils.escape_path(path.join(dirname, out))
+            )
+        end
+
+        utils.errorf("gzip not found")
+
+        return ""
+    end
+
+    if lower:match("%.bz2$") then
+        local out = base:gsub("%.bz2$", "")
+
+        if utils.has_command("bzip2.exe") then
+            return string.format(
+                "%s && bzip2.exe -dkc %s > %s",
+                mkdir,
+                esc_file,
+                utils.escape_path(path.join(dirname, out))
+            )
+        end
+
+        utils.errorf("bzip2 not found")
+
+        return ""
+    end
+
+    if lower:match("%.xz$") then
+        local out = base:gsub("%.xz$", "")
+
+        if utils.has_command("xz.exe") then
+            return string.format(
+                "%s && xz.exe -dkc %s > %s",
+                mkdir,
+                esc_file,
+                utils.escape_path(path.join(dirname, out))
+            )
+        end
+
+        utils.errorf("xz not found")
+
+        return ""
+    end
+
+    if lower:match("%.zst$") then
+        local out = base:gsub("%.zst$", "")
+
+        if utils.has_command("zstd.exe") then
+            return string.format(
+                "%s && zstd.exe -dqc %s -o %s",
+                mkdir,
+                esc_file,
+                utils.escape_path(path.join(dirname, out))
+            )
+        end
+
+        utils.errorf("zstd not found")
+
+        return ""
+    end
+
+    utils.errorf("unsupported or unrecognized archive format '%s'", filename)
+
+    return ""
 end
 
 -- download and run vencord installer
@@ -1253,21 +1329,32 @@ commands["rm"] = function(args)
         return "coreutils rm"
     end
 
-    for argument in args:gmatch("%S+") do
-        if argument:sub(1, 1) ~= "-" then
-            local clean_arg = argument:match('^"(.+)"$') or argument:match("^'(.+)'$") or argument
+    local parsed = utils.split_args(args)
+    local parsing_opts = true
 
-            if os.isdir(clean_arg) then
-                local reply = utils.read_line(
-                    string.format("remove \x1b[36m%s\x1b[0m? [y/N] ", clean_arg),
-                    "n"
-                )
+    for _, argument in ipairs(parsed) do
+        local continue = false
 
-                if reply ~= "y" and reply ~= "Y" then
-                    utils.errorf("rm aborted")
+        if parsing_opts then
+            if argument == "--" then
+                parsing_opts = false
 
-                    return ""
-                end
+                continue = true
+            elseif argument:sub(1, 1) == "-" then
+                continue = true
+            end
+        end
+
+        if not continue and os.isdir(argument) then
+            local reply = utils.read_line(
+                string.format("remove \x1b[36m%s\x1b[0m? [y/N] ", argument),
+                "n"
+            )
+
+            if reply ~= "y" and reply ~= "Y" then
+                utils.errorf("rm aborted")
+
+                return ""
             end
         end
     end
@@ -1304,7 +1391,7 @@ clink.onfilterinput(function(text)
     end
 
     -- handle .command shorthand for local executables
-    local name = command:match("^%.(%w+)$")
+    local name = command:match("^%.([%w_%-]+)$")
 
     if name then
         local cwd = os.getcwd()

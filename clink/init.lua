@@ -36,23 +36,50 @@ local function init_openssh()
 end
 
 local function add_to_path(dirs)
-    local changed = false
     local current = os.getenv("PATH") or ""
+    local parts = {}
 
-    for _, dir in ipairs(dirs) do
-        local escaped = dir:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
-
-        if not current:match("[;]" .. escaped .. "[;]") and not current:match("^" .. escaped .. "[;]") and not current:match("[;]" .. escaped .. "$") and current ~= dir then
-            current = current .. ";" .. dir
-
-            changed = true
+    for part in current:gmatch("[^;]+") do
+        if part ~= "" then
+            table.insert(parts, part)
         end
     end
 
-    if changed then
-        os.setenv("PATH", current)
+    for i = #dirs, 1, -1 do
+        local dir = dirs[i]
+
+        if dir and dir ~= "" and os.isdir(dir) and not utils.path_has(current, dir) then
+            table.insert(parts, 1, dir)
+
+            current = dir .. ";" .. current
+        end
     end
+
+    os.setenv("PATH", table.concat(parts, ";"))
 end
+
+local function ensure_git_include()
+    local wanted = "~/.config/.gitconfig_env"
+    local handle = io.popen("git config --global --get-all include.path 2>nul")
+
+    if handle then
+        for line in handle:lines() do
+            if utils.trim(line) == wanted then
+                handle:close()
+
+                return
+            end
+        end
+
+        handle:close()
+    end
+
+    os.execute(string.format(
+        "git config --global --add include.path \"%s\"",
+        wanted
+    ))
+end
+
 
 --
 -- Shell settings
@@ -84,8 +111,8 @@ init_openssh()
 
 -- ensure paths
 add_to_path({
-    path.join(utils.home(), ".zig"),
     path.join(utils.home(), ".bin"),
+    path.join(utils.home(), ".zig"),
 })
 
 -- initialized environment variables
@@ -123,7 +150,7 @@ end)
 -- Git settings
 --
 
-os.execute("git config --global --replace-all include.path \"~/.config/.gitconfig_env\" \"^~/.config/.gitconfig_env$\"")
+ensure_git_include()
 
 --
 -- Startup
