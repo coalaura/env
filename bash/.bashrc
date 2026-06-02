@@ -1825,8 +1825,6 @@ shopt -s extglob
 shopt -s histappend
 # multi-line commands in one history entry
 shopt -s cmdhist
-# cd into a directory just by its name
-shopt -s autocd
 # match globs case-insensitively
 shopt -s nocaseglob
 # warn about running jobs before exit
