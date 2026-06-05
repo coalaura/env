@@ -76,7 +76,7 @@ program = "bash"
 keys = [
 	{ key = "v", with = "control", action = "none" },
 	{ key = "w", with = "control", esc = "\u0003\r\nexit\r\n" },
-	{ key = "q", with = "control", esc = "\u0003\r\nexit\r\n" },
+	{ key = "q", with = "control", action = "Quit" },
 	{ key = "n", with = "control", action = "CreateWindow" },
 	{ key = "c", with = "alt", esc = "\u0003\r\nclear\r\n" }
 ]
