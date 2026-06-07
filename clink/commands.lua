@@ -1145,7 +1145,7 @@ commands["tunnel"] = function(args)
     utils.printf("starting tunnel :%s to %s:%s...", port, host, port)
 
     return string.format(
-        "ssh -N -o ExitOnForwardFailure=yes -o PermitLocalCommand=yes -o LocalCommand=\"printf '\\x1b[32m::\\x1b[0m tunnel opened on port %s\\n'\" -L %s:localhost:%s %s",
+        "ssh -N -o ExitOnForwardFailure=yes -o PermitLocalCommand=yes -o LocalCommand=\"echo \x1b[32m::\x1b[0m tunnel opened on port %s\" -L %s:localhost:%s %s",
         port, port, port, utils.escape_input(host)
     )
 end
