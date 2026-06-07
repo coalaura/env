@@ -1664,12 +1664,13 @@ function tunnel() {
 			return 1
 		fi
 
-		_print_info "tunneling port $port to $host"
+		_print_info "starting tunnel :$port to $host:$port..."
 
-		if ssh -f -N -o ExitOnForwardFailure=yes -L "$port:localhost:$port" "$host"; then
-			_print_success "tunnel opened successfully"
+		# Run in foreground without -f. Use LocalCommand to format the success message after connecting.
+		if ssh -N -o ExitOnForwardFailure=yes -o PermitLocalCommand=yes -o LocalCommand="printf '\033[32m::\033[0m tunnel opened on port $port\n'" -L "$port:localhost:$port" "$host"; then
+			_print_success "tunnel closed cleanly"
 		else
-			_print_error "failed to open tunnel"
+			_print_error "failed to open tunnel or closed with error"
 
 			return 1
 		fi

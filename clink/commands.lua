@@ -1142,19 +1142,12 @@ commands["tunnel"] = function(args)
         return
     end
 
-    utils.printf("tunneling port %s to %s", port, host)
+    utils.printf("starting tunnel :%s to %s:%s...", port, host, port)
 
-    local cmd = string.format("ssh -f -N -o ExitOnForwardFailure=yes -L %s:localhost:%s %s", port, port, utils.escape_input(host))
-
-    local result = os.execute(cmd)
-
-    if result == true or result == 0 then
-        utils.successf("tunnel opened successfully")
-    else
-        utils.errorf("failed to open tunnel")
-    end
-
-    return ""
+    return string.format(
+        "ssh -N -o ExitOnForwardFailure=yes -o PermitLocalCommand=yes -o LocalCommand=\"printf '\\x1b[32m::\\x1b[0m tunnel opened on port %s\\n'\" -L %s:localhost:%s %s",
+        port, port, port, utils.escape_input(host)
+    )
 end
 
 -- unzips or untars an archive to a target directory
