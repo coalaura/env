@@ -1748,6 +1748,32 @@ function beep() {
 	printf '\a'
 }
 
+# fix directory and file permissions for web hosting
+function perms() {
+	(
+		set -euo pipefail
+
+		local target="${1:-.}"
+		target=$(realpath "$target")
+
+		if [[ ! -d "$target" ]]; then
+			_print_error "'$target' is not a directory"
+
+			return 1
+		fi
+
+		_print_info "fixing permissions in $target"
+
+		_print_sub "directories -> 755"
+		find "$target" -type d -exec chmod 755 {} +
+
+		_print_sub "files -> 644"
+		find "$target" -type f -exec chmod 644 {} +
+
+		_print_success "permissions updated"
+	)
+}
+
 # safer rm that confirms folder deletes
 function rm() {
 	local arg path reply parsing_opts=true
@@ -1792,7 +1818,7 @@ function rm() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup ghup
+complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup ghup perms
 complete -F __build_complete build
 
 # various aliases
