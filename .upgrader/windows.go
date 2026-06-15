@@ -146,7 +146,7 @@ func InstallVet(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet_v%s_windows_amd64.exe", ver.String(), ver.String())
+	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet_windows_amd64.exe", ver.String())
 
 	path := filepath.Join(home, ".bin", "vet.exe")
 
