@@ -1341,9 +1341,24 @@ function build() (
 		# handle go project
 		if [[ -f "$target/go.mod" ]]; then
 			local main_dir=$(_find_go_main_dir "$target")
+
 			local base="$(basename "$target")"
 
-			base="${base//[[:space:]]/}"
+			# drop the last extension if there is a dot
+			if [[ "$base" == *.* ]]; then
+				base="${base%.*}"
+			fi
+
+			# normalize hyphens and remaining dots to underscores
+			base="${base//[-.]/_}"
+
+			# remove any remaining invalid characters
+			base="${base//[^a-zA-Z0-9_]/}"
+
+			# Fallback if the name becomes empty
+			if [[ -z "$base" ]]; then
+				base="app"
+			fi
 
 			if [[ "$target_os" == "windows" ]]; then
 				base="$base.exe"

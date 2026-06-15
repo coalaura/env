@@ -247,13 +247,24 @@ end
 
 function _M.basename(pt)
     pt = path.normalise(pt)
-
     pt = pt:gsub("[/\\]+$", "")
-    pt = pt:gsub("[^%w/\\-]+", "")
 
     local base = path.getbasename(pt)
 
-    base = base:gsub("[ \t\\/]", "")
+    if not base or base == "" then
+        return false
+    end
+
+    -- if there's a dot, discard the last part (e.g. .sh)
+    if base:find("%.") then
+        base = base:gsub("%.[^%.]*$", "")
+    end
+
+    -- normalize hyphens and remaining dots to underscores
+    base = base:gsub("[%-%.]", "_")
+
+    -- clean up any remaining invalid characters (spaces, etc.)
+    base = base:gsub("[^%w_]", "")
 
     if base == "" then
         return false
@@ -574,6 +585,10 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
 
         local cflags = "-g0 " .. opt_level .. " -ffunction-sections -fdata-sections"
 
+        if zig_target then
+            cflags = cflags .. " -target " .. zig_target
+        end
+
         if target_arch == "amd64" then
             if is_compat then
                 cflags = cflags .. " -march=x86_64"
@@ -584,7 +599,12 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
 
         env.CGO_CFLAGS = cflags
         env.CGO_CXXFLAGS = cflags
-        env.CGO_LDFLAGS = "-Wl,--gc-sections"
+
+        if zig_target then
+            env.CGO_LDFLAGS = "-Wl,--gc-sections -target " .. zig_target
+        else
+            env.CGO_LDFLAGS = "-Wl,--gc-sections"
+        end
     end
 
     return {
