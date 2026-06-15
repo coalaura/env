@@ -1459,7 +1459,7 @@ function vet() (
 			go)
 				_print_info "[go] vetting $target"
 
-				go vet ./... && staticcheck ./... || status=$?
+				vet ./... || status=$?
 				;;
 			js)
 				_print_info "[biome] vetting $target"

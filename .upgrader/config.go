@@ -74,16 +74,16 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallBiome,
 		},
 
-		// Staticcheck
+		// Vet
 		{
-			Repository: "dominikh/go-tools",
-			Prefix:     "",
+			Repository: "coalaura/vet",
+			Prefix:     "v",
 
-			Binary: "staticcheck",
-			Path:   GetLocalBinaryPath("staticcheck"),
-			Args:   []string{"-version"},
+			Binary: "vet",
+			Path:   GetLocalBinaryPath("vet"),
+			Args:   []string{"--version"},
 
-			Installer: InstallStaticcheck,
+			Installer: InstallVet,
 		},
 
 		// Time

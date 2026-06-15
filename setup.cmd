@@ -34,7 +34,7 @@ if not %errorlevel%==0 (
 ) else (
     echo Running upgrader...
     
-	"%TEMP%\env_upgrader.exe" go zig upx starship bun biome staticcheck time wtf coreutils
+	"%TEMP%\env_upgrader.exe" go zig upx starship bun biome vet time wtf coreutils
 
     del /q "%TEMP%\env_upgrader.exe" 2>nul
 )

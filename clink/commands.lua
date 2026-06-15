@@ -880,7 +880,7 @@ commands["vet"] = function(args)
     if target_type == "go" then
         utils.printf("[go] vetting %s", utils.clean_path(target_dir))
 
-        cmd = "go vet ./... && staticcheck ./..."
+        cmd = "vet ./..."
     elseif target_type == "js" then
         utils.printf("[biome] vetting %s", utils.clean_path(target_dir))
 

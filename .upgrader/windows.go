@@ -140,17 +140,17 @@ func InstallWtf(ver *SemVer) error {
 	return DownloadFileTo(uri, path)
 }
 
-func InstallStaticcheck(ver *SemVer) error {
+func InstallVet(ver *SemVer) error {
 	home, err := UserHomeDir()
 	if err != nil {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/dominikh/go-tools/releases/download/%s/staticcheck_windows_amd64.tar.gz", ver.String())
+	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet_v%s_windows_amd64.exe", ver.String(), ver.String())
 
-	path := filepath.Join(home, ".bin", "staticcheck.exe")
+	path := filepath.Join(home, ".bin", "vet.exe")
 
-	return InstallSingleBinaryFromTarGz(uri, "staticcheck.exe", path)
+	return DownloadFileTo(uri, path)
 }
 
 func InstallCoreutils(ver *SemVer) error {

@@ -24,7 +24,7 @@ else
 
 	# skip development tools, if connected via ssh
 	if [[ -z "${SSH_CLIENT:-}" ]]; then
-		TOOLS+=(starship zig upx bun biome staticcheck)
+		TOOLS+=(starship zig upx bun biome vet)
 	fi
 
 	sudo /usr/local/bin/.env_upgrader_tmp "${TOOLS[@]}"
