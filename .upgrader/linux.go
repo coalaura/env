@@ -125,7 +125,7 @@ func InstallWtf(ver *SemVer) error {
 }
 
 func InstallVet(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet_linux_amd64", ver.String())
+	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet-linux-amd64", ver.String())
 
 	err := DownloadFileTo(uri, "/usr/local/bin/vet")
 	if err != nil {
