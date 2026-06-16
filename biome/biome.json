@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
 	"files": {
 		"includes": [
 			"**/*.js",
@@ -69,6 +69,7 @@
 				"noApproximativeNumericConstant": "off",
 				"useIterableCallbackReturn": "off",
 				"noSparseArray": "warn",
+				"noShadow": "warn",
 				"noDoubleEquals": {
 					"level": "error",
 					"fix": "safe",
@@ -108,9 +109,6 @@
 			},
 			"security": {
 				"noSecrets": "off"
-			},
-			"nursery": {
-				"noShadow": "warn"
 			}
 		}
 	},
