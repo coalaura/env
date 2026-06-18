@@ -1768,8 +1768,14 @@ function perms() {
 	(
 		set -euo pipefail
 
-		local target="${1:-.}"
-		target=$(realpath "$target")
+		if [[ $# -eq 0 ]]; then
+			_print_error "usage: perms <directory>"
+
+			return 1
+		fi
+
+		local target
+		target=$(realpath "$1")
 
 		if [[ ! -d "$target" ]]; then
 			_print_error "'$target' is not a directory"
