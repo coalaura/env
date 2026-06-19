@@ -132,6 +132,7 @@ os.setalias("..", "cd ..")
 os.setalias("...", "cd ..\\..")
 os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
 os.setalias("t", utils.binary("time.exe", " $*"))
+os.setalias("prun", "php artisan serve --port=80")
 
 -- handle ..\ or ...\
 clink.onfilterinput(function(text)

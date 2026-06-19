@@ -1854,6 +1854,7 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias home='cd ~'
 alias cls='clear'
+alias prun='php artisan serve --port=80'
 
 if type -P time >/dev/null 2>&1; then
 	alias t='command time'
