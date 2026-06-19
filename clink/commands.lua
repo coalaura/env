@@ -861,7 +861,6 @@ end
 clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
 
 -- vet/analyze a project for issues
--- vet/analyze a project for issues
 commands["vet"] = function(args)
     local target_dir = os.getcwd()
 
