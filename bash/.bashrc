@@ -1924,6 +1924,29 @@ export CXX="zig c++"
 # SSH Agent
 ##
 
+# WSL only key sync
+if [[ -n "$WSL_DISTRO_NAME" || -n "$WSL_INTEROP" ]]; then
+    WIN_PROFILE_WIN=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')
+
+	if [[ -n "$WIN_PROFILE_WIN" ]]; then
+        export USERPROFILE=$(wslpath "$WIN_PROFILE_WIN")
+
+        WIN_KEY="$USERPROFILE/.ssh/keys/github"
+    fi
+
+    WSL_KEY_DIR="$HOME/.ssh/keys"
+    WSL_KEY="$WSL_KEY_DIR/github"
+
+    if [[ -f "$WIN_KEY" && ! -f "$WSL_KEY" ]]; then
+        mkdir -p "$WSL_KEY_DIR"
+
+        cp "$WIN_KEY" "$WSL_KEY"
+
+        chmod 700 "$HOME/.ssh" "$WSL_KEY_DIR"
+        chmod 600 "$WSL_KEY"
+    fi
+fi
+
 # ensure ssh-agent is running
 SSH_AGENT_FILE="$HOME/.ssh/.agent-env"
 
