@@ -1259,7 +1259,7 @@ function bench() (
 					fi
 				done
 
-				_print_error "$target is not a recognized node bench project"
+				_print_error "$target is not a recognized js bench project"
 
 				return 1
 				;;
@@ -1333,7 +1333,7 @@ function test() (
 					return
 				fi
 
-				_print_error "$target is not a recognized node test project"
+				_print_error "$target is not a recognized js test project"
 
 				return 1
 				;;
@@ -1374,11 +1374,13 @@ function run() (
 					_print_info "[php] running artisan serve"
 
 					php artisan serve --port=80 "${pass_args[@]}"
-				else
-					_print_error "No artisan file found for PHP project"
 
-					return 1
+					return
 				fi
+
+				_print_error "$target is not a recognized js project"
+
+				return 1
 				;;
 			go)
 				local main_dir=$(_find_go_main_dir "$target")
@@ -1423,7 +1425,7 @@ function run() (
 					fi
 				done
 
-				_print_error "$target is not a recognized node project"
+				_print_error "$target is not a recognized js project"
 
 				return 1
 				;;

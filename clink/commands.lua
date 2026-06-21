@@ -604,7 +604,7 @@ commands["bench"] = function(args)
             end
         end
 
-        utils.errorf("%s is not a recognized node bench project", utils.clean_path(target_dir))
+        utils.errorf("%s is not a recognized js bench project", utils.clean_path(target_dir))
 
         return ""
     else
@@ -674,7 +674,7 @@ commands["test"] = function(args)
             end
         end
 
-        utils.errorf("%s is not a recognized node test project", utils.clean_path(target_dir))
+        utils.errorf("%s is not a recognized js test project", utils.clean_path(target_dir))
 
         return ""
     else
@@ -714,11 +714,11 @@ commands["run"] = function(args)
             utils.printf("[php] running artisan serve")
 
             return string.format("php artisan serve --port=80 %s", pass_args)
-        else
-            utils.errorf("No artisan file found for PHP project")
-
-            return ""
         end
+
+        utils.errorf("%s is not a recognized php project", utils.clean_path(target_dir))
+
+        return ""
     elseif target_lang == "go" then
         if not utils.go_generate(target_dir) then
             return ""
@@ -754,7 +754,7 @@ commands["run"] = function(args)
             return string.format("bun %s %s", script, pass_args)
         end
 
-        utils.errorf("%s is not a recognized node project", utils.clean_path(target_dir))
+        utils.errorf("%s is not a recognized js project", utils.clean_path(target_dir))
 
         return ""
     else
