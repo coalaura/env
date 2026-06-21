@@ -495,13 +495,21 @@ function update() {
 		##
 		# env update
 		##
-		if [[ -d "$HOME/env" ]]; then
-			print_time "env update"
+		local env_dir=""
+
+		if [[ -n "${USERPROFILE:-}" && -d "$USERPROFILE/env" ]]; then
+			env_dir="$USERPROFILE/env"
+		elif [[ -d "$HOME/env" ]]; then
+			env_dir="$HOME/env"
+		fi
+
+		if [[ -n "$env_dir" ]]; then
+			print_time "env update ($env_dir)"
 
 			(
-				cd "$HOME/env" || exit 1
+				cd "$env_dir" || exit 1
 
-				sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK bash setup.sh
+				sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK,USERPROFILE,HOME bash setup.sh
 			)
 		fi
 
@@ -1797,39 +1805,66 @@ function perms() {
 
 # safer rm that confirms folder deletes
 function rm() {
-	local arg path reply parsing_opts=true
+	(
+		local arg path reply parsing_opts=true
 
-	for arg in "$@"; do
-		if [[ "$parsing_opts" == true ]]; then
-			case "$arg" in
-				--)
-					parsing_opts=false
+		for arg in "$@"; do
+			if [[ "$parsing_opts" == true ]]; then
+				case "$arg" in
+					--)
+						parsing_opts=false
 
-					continue
-					;;
-				-*)
-					continue
-					;;
-			esac
+						continue
+						;;
+					-*)
+						continue
+						;;
+				esac
+			fi
+
+			if [[ -d "$arg" && ! -L "$arg" ]]; then
+				path="$(cd -- "$arg" && pwd -P)" || return 1
+
+				_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N] " reply
+
+				case "$reply" in
+					[yY]) ;;
+					*)
+						_print_error "rm aborted"
+
+						return 1
+						;;
+				esac
+			fi
+		done
+
+		command rm "$@"
+	)
+}
+
+# update env
+function envup() {
+	(
+		set -euo pipefail
+
+		local env_dir=""
+
+		if [[ -n "${USERPROFILE:-}" && -d "$USERPROFILE/env" ]]; then
+			env_dir="$USERPROFILE/env"
+		elif [[ -d "$HOME/env" ]]; then
+			env_dir="$HOME/env"
+		else
+			_print_error "env directory not found"
+
+			return 1
 		fi
 
-		if [[ -d "$arg" && ! -L "$arg" ]]; then
-			path="$(cd -- "$arg" && pwd -P)" || return 1
+		_print_info "updating env in $env_dir"
 
-			_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N] " reply
+		cd "$env_dir"
 
-			case "$reply" in
-				[yY]) ;;
-				*)
-					_print_error "rm aborted"
-
-					return 1
-					;;
-			esac
-		fi
-	done
-
-	command rm "$@"
+		sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK,USERPROFILE,HOME bash setup.sh
+	)
 }
 
 ##

@@ -1356,6 +1356,21 @@ end
 
 clink.argmatcher("rm"):addarg(clink.filematches)
 
+-- update env
+commands["envup"] = function()
+    local env_dir = path.join(utils.home(), "env")
+
+    if not os.isdir(env_dir) then
+        utils.errorf("env directory not found")
+
+        return
+    end
+
+    utils.printf("updating env in %s", utils.clean_path(env_dir))
+
+    return string.format("cd /d %s && setup.cmd", utils.escape_path(env_dir))
+end
+
 -- Command handler
 clink.onfilterinput(function(text)
     if not text then
