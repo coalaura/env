@@ -1924,26 +1924,29 @@ export CXX="zig c++"
 # SSH Agent
 ##
 
-# WSL only key sync
+# WSL only key sync (also sets $USERPROFILE in WSL)
 if [[ -n "$WSL_DISTRO_NAME" || -n "$WSL_INTEROP" ]]; then
-    WIN_PROFILE_WIN=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')
+    if [[ -z "${USERPROFILE:-}" ]]; then
+        WIN_PROFILE_WIN=$(cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')
 
-	if [[ -n "$WIN_PROFILE_WIN" ]]; then
-        export USERPROFILE=$(wslpath "$WIN_PROFILE_WIN")
-
-        WIN_KEY="$USERPROFILE/.ssh/keys/github"
+        if [[ -n "$WIN_PROFILE_WIN" ]]; then
+            export USERPROFILE=$(wslpath "$WIN_PROFILE_WIN")
+        fi
     fi
 
-    WSL_KEY_DIR="$HOME/.ssh/keys"
-    WSL_KEY="$WSL_KEY_DIR/github"
+    if [[ -n "${USERPROFILE:-}" ]]; then
+        WIN_KEY="$USERPROFILE/.ssh/keys/github"
+        WSL_KEY_DIR="$HOME/.ssh/keys"
+        WSL_KEY="$WSL_KEY_DIR/github"
 
-    if [[ -f "$WIN_KEY" && ! -f "$WSL_KEY" ]]; then
-        mkdir -p "$WSL_KEY_DIR"
+        if [[ -f "$WIN_KEY" && ! -f "$WSL_KEY" ]]; then
+            mkdir -p "$WSL_KEY_DIR"
 
-        cp "$WIN_KEY" "$WSL_KEY"
+            cp "$WIN_KEY" "$WSL_KEY"
 
-        chmod 700 "$HOME/.ssh" "$WSL_KEY_DIR"
-        chmod 600 "$WSL_KEY"
+			chmod 700 "$HOME/.ssh" "$WSL_KEY_DIR"
+            chmod 600 "$WSL_KEY"
+        fi
     fi
 fi
 
