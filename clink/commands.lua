@@ -549,28 +549,31 @@ end
 commands["bench"] = function(args)
     local target_dir = os.getcwd()
 
-    local extra_args = utils.format_extra_args(args)
+    local parsed = utils.parse_args("bench", {"go", "js"}, false, false, args)
 
-    -- handle bench script
-    local bench_cmd = path.join(target_dir, "bench.cmd")
-
-    if os.isfile("bench.cmd") then
-        utils.printf("[bench.cmd] benchmarking %s", utils.clean_path(target_dir))
-
-        return string.format(
-            "call %s %s",
-            utils.escape_path(bench_cmd),
-            extra_args
-        )
+    if not parsed then
+        return ""
     end
 
-    -- handle go project
-    if utils.is_go(target_dir) then
+    local target_lang = parsed.lang
+    local pass_args = utils.format_extra_args(parsed.pass)
+
+    if not target_lang or target_lang == "" then
+        target_lang = utils.detect_lang("bench", target_dir)
+    end
+
+    if target_lang == "script" then
+        local bench_cmd = path.join(target_dir, "bench.cmd")
+
+        utils.printf("[bench.cmd] benchmarking %s", utils.clean_path(target_dir))
+
+        return string.format("call %s %s", utils.escape_path(bench_cmd), pass_args)
+    elseif target_lang == "go" then
         if not utils.go_generate(target_dir) then
-            return
+            return ""
         end
 
-        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+        local go_env = utils.prepare_go_env("windows", "amd64", pass_args)
 
         utils.printf("[go] benchmarking %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -578,69 +581,68 @@ commands["bench"] = function(args)
             string.format("go test -run=^$ -bench=. -benchmem %s %s ./...", go_env.tags_str, go_env.extra_args),
             go_env.env
         )
-    end
+    elseif target_lang == "js" then
+        if utils.is_node(target_dir) then
+            local packageJson = path.join(target_dir, "package.json")
+            local script = utils.get_package_json_script(packageJson, {"bench", "benchmark"})
 
-    -- handle node project
-    if utils.is_node(target_dir) then
-        local packageJson = path.join(target_dir, "package.json")
+            if script then
+                utils.printf("[bun/%s] benchmarking %s", script, utils.clean_path(target_dir))
 
-        local script = utils.get_package_json_script(packageJson, {"bench", "benchmark"})
-
-        if script then
-            utils.printf("[bun/%s] benchmarking %s", script, utils.clean_path(target_dir))
-
-            return string.format(
-                "bun run %s %s",
-                script,
-                extra_args
-            )
+                return string.format("bun run %s %s", script, pass_args)
+            end
         end
 
-        -- fallback to standalone bench files
+        -- fallback standalone bench files
         local patterns = {"bench.js", "bench.ts", "benchmark.js", "benchmark.ts"}
 
         for _, pattern in ipairs(patterns) do
             if os.isfile(path.join(target_dir, pattern)) then
                 utils.printf("[bun] benchmarking %s", utils.clean_path(target_dir))
 
-                return string.format(
-                    "bun %s %s",
-                    pattern,
-                    extra_args
-                )
+                return string.format("bun %s %s", pattern, pass_args)
             end
         end
-    end
 
-    utils.errorf("%s is not a recognized benchmark project", utils.clean_path(target_dir))
+        utils.errorf("%s is not a recognized node bench project", utils.clean_path(target_dir))
+
+        return ""
+    else
+        utils.errorf("%s is not a recognized benchmark project", utils.clean_path(target_dir))
+
+        return ""
+    end
 end
 
 -- test a project
 commands["test"] = function(args)
     local target_dir = os.getcwd()
 
-    local extra_args = utils.format_extra_args(args)
+    local parsed = utils.parse_args("test", {"go", "js"}, false, false, args)
 
-    -- handle test script
-    local test_cmd = path.join(target_dir, "test.cmd")
-
-    if os.isfile("test.cmd") then
-        utils.printf("[test.cmd] testing %s", utils.clean_path(target_dir))
-
-        return string.format(
-            "call %s %s",
-            utils.escape_path(test_cmd),
-            extra_args
-        )
+    if not parsed then
+        return ""
     end
 
-    -- handle go project
-    if utils.is_go(target_dir) then
+    local target_lang = parsed.lang
+    local pass_args = utils.format_extra_args(parsed.pass)
+
+    if not target_lang or target_lang == "" then
+        target_lang = utils.detect_lang("test", target_dir)
+    end
+
+    if target_lang == "script" then
+        local test_cmd = path.join(target_dir, "test.cmd")
+
+        utils.printf("[test.cmd] testing %s", utils.clean_path(target_dir))
+
+        return string.format("call %s %s", utils.escape_path(test_cmd), pass_args)
+    elseif target_lang == "go" then
         if not utils.go_generate(target_dir) then
-            return
+            return ""
         end
 
-        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+        local go_env = utils.prepare_go_env("windows", "amd64", pass_args)
 
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -649,22 +651,16 @@ commands["test"] = function(args)
         utils.run_go_test_colorized(cmd, go_env.env)
 
         return ""
-    end
+    elseif target_lang == "js" then
+        if utils.is_node(target_dir) then
+            local packageJson = path.join(target_dir, "package.json")
+            local script = utils.get_package_json_script(packageJson, {"test"})
 
-    -- handle node project with test script
-    if utils.is_node(target_dir) then
-        local packageJson = path.join(target_dir, "package.json")
+            if script then
+                utils.printf("[bun/%s] testing %s", script, utils.clean_path(target_dir))
 
-        local script = utils.get_package_json_script(packageJson, {"test"})
-
-        if script then
-            utils.printf("[bun/%s] testing %s", script, utils.clean_path(target_dir))
-
-            return string.format(
-                "bun run %s %s",
-                script,
-                extra_args
-            )
+                return string.format("bun run %s %s", script, pass_args)
+            end
         end
 
         -- fallback to bun test if test files exist
@@ -674,44 +670,62 @@ commands["test"] = function(args)
             if os.isfile(path.join(target_dir, pattern)) then
                 utils.printf("[bun test] testing %s", utils.clean_path(target_dir))
 
-                return string.format(
-                    "bun test %s",
-                    extra_args
-                )
+                return string.format("bun test %s", pass_args)
             end
         end
-    end
 
-    utils.errorf("%s is not a recognized test project", utils.clean_path(target_dir))
+        utils.errorf("%s is not a recognized node test project", utils.clean_path(target_dir))
+
+        return ""
+    else
+        utils.errorf("%s is not a recognized test project", utils.clean_path(target_dir))
+
+        return ""
+    end
 end
 
 -- run a project
 commands["run"] = function(args)
     local target_dir = os.getcwd()
 
-    local extra_args = utils.format_extra_args(args)
+    local parsed = utils.parse_args("run", {"go", "js", "php"}, false, false, args)
 
-    -- handle run script
-    local run_cmd = path.join(target_dir, "run.cmd")
-
-    if os.isfile("run.cmd") then
-        utils.printf("[run.cmd] running %s", utils.clean_path(target_dir))
-
-        return string.format(
-            "call %s %s",
-            utils.escape_path(run_cmd),
-            extra_args
-        )
+    if not parsed then
+        return ""
     end
 
-    -- handle go project
-    if utils.is_go(target_dir) then
+    local target_lang = parsed.lang
+    local pass_args = utils.format_extra_args(parsed.pass)
+
+    if not target_lang or target_lang == "" then
+        target_lang = utils.detect_lang("run", target_dir)
+    end
+
+    if target_lang == "script" then
+        local run_cmd = path.join(target_dir, "run.cmd")
+
+        utils.printf("[run.cmd] running %s", utils.clean_path(target_dir))
+
+        return string.format("call %s %s", utils.escape_path(run_cmd), pass_args)
+    elseif target_lang == "php" then
+        local artisan = path.join(target_dir, "artisan")
+
+        if os.isfile(artisan) then
+            utils.printf("[php] running artisan serve")
+
+            return string.format("php artisan serve --port=80 %s", pass_args)
+        else
+            utils.errorf("No artisan file found for PHP project")
+
+            return ""
+        end
+    elseif target_lang == "go" then
         if not utils.go_generate(target_dir) then
-            return
+            return ""
         end
 
         local main_dir = utils.find_go_main_dir(target_dir)
-        local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
+        local go_env = utils.prepare_go_env("windows", "amd64", pass_args)
 
         utils.printf("[go] running %s (mode: %s)", utils.clean_path(main_dir), go_env.mode)
 
@@ -719,64 +733,66 @@ commands["run"] = function(args)
             string.format("go run %s %s %s", go_env.tags_str, go_env.extra_args, utils.escape_path(main_dir)),
             go_env.env
         )
-    end
+    elseif target_lang == "js" then
+        if utils.is_node(target_dir) then
+            local packageJson = path.join(target_dir, "package.json")
+            local script = utils.get_package_json_script(packageJson, {"dev", "watch", "start", "test"})
 
-    -- handle node project
-    if utils.is_node(target_dir) then
-        local packageJson = path.join(target_dir, "package.json")
+            if script then
+                utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
-        local script = utils.get_package_json_script(packageJson, {"dev", "watch", "start", "test"})
+                return string.format("bun run %s %s", script, pass_args)
+            end
+        end
+
+        -- handle single node files
+        local script = utils.get_first_existing_file(target_dir, {"index.js", "main.js", "app.js"})
 
         if script then
             utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
 
-            return string.format(
-                "bun run %s %s",
-                script,
-                extra_args
-            )
+            return string.format("bun %s %s", script, pass_args)
         end
+
+        utils.errorf("%s is not a recognized node project", utils.clean_path(target_dir))
+
+        return ""
+    else
+        utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
+
+        return ""
     end
-
-    -- handle single node files
-    local script = utils.get_first_existing_file(target_dir, {"index.js", "main.js", "app.js"})
-
-    if script then
-        utils.printf("[bun/%s] running %s", script, utils.clean_path(target_dir))
-
-        return string.format(
-            "bun %s %s",
-            script,
-            extra_args
-        )
-    end
-
-    utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
 end
 
 -- build a project
 commands["build"] = function(args)
     local target_dir = os.getcwd()
 
-    local target_os, cleanArgs = utils.parse_target_os(args)
+    local parsed = utils.parse_args("build", {"go", "js"}, true, true, args)
 
-    local extra_args = utils.format_extra_args(cleanArgs)
-
-    -- handle build script
-    local build_cmd = path.join(target_dir, "build.cmd")
-
-    if os.isfile(build_cmd) then
-        utils.printf("[build.cmd] building %s", utils.clean_path(target_dir))
-
-        return string.format(
-            "call %s %s",
-            utils.escape_path(build_cmd),
-            extra_args
-        )
+    if not parsed then
+        return ""
     end
 
-    -- handle go project
-    if utils.is_go(target_dir) then
+    local target_os = parsed.os or "windows"
+    local target_lang = parsed.lang
+    local pass_args = utils.format_extra_args(parsed.pass)
+    local build_opts = parsed.opts
+
+    local build_opts_str = table.concat(build_opts, " ")
+    local go_args = build_opts_str .. " " .. pass_args
+
+    if not target_lang or target_lang == "" then
+        target_lang = utils.detect_lang("build", target_dir)
+    end
+
+    if target_lang == "script" then
+        local build_cmd = path.join(target_dir, "build.cmd")
+
+        utils.printf("[build.cmd] building %s", utils.clean_path(target_dir))
+
+        return string.format("call %s %s", utils.escape_path(build_cmd), pass_args)
+    elseif target_lang == "go" then
         local main_dir = utils.find_go_main_dir(target_dir)
         local base = utils.basename(target_dir) or "app"
 
@@ -785,10 +801,10 @@ commands["build"] = function(args)
         end
 
         if not utils.go_generate(target_dir) then
-            return
+            return ""
         end
 
-        local go_env = utils.prepare_go_env(target_os, "amd64", extra_args)
+        local go_env = utils.prepare_go_env(target_os, "amd64", go_args)
 
         utils.printf("[go/%s/%s] building %s (mode: %s)", target_os, base, utils.clean_path(main_dir), go_env.mode)
 
@@ -828,34 +844,38 @@ commands["build"] = function(args)
         end
 
         return ""
-    end
+    elseif target_lang == "js" then
+        if utils.is_node(target_dir) then
+            local packageJson = path.join(target_dir, "package.json")
+            local script = utils.get_package_json_script(packageJson, {"build", "prod"})
 
-    -- handle node project
-    if utils.is_node(target_dir) then
-        local packageJson = path.join(target_dir, "package.json")
+            if not script then
+                utils.errorf("no script found in package.json")
 
-        local script = utils.get_package_json_script(packageJson, {"build", "prod"})
+                return ""
+            end
 
-        if not script then
-            utils.errorf("no script found in package.json")
+            utils.printf("[bun/%s] building %s", script, utils.clean_path(target_dir))
 
-            return
+            local t0 = utils.start_timer()
+
+            local result = os.execute(string.format("bun run %s %s", script, pass_args))
+
+            if result == true or result == 0 then
+                utils.end_timer(t0)
+            end
+
+            return ""
+        else
+            utils.errorf("no package.json found for node build")
+
+            return ""
         end
-
-        utils.printf("[bun/%s] building %s", script, utils.clean_path(target_dir))
-
-        local t0 = utils.start_timer()
-
-        local result = os.execute(string.format("bun run %s %s", script, extra_args))
-
-        if result == true or result == 0 then
-            utils.end_timer(t0)
-        end
+    else
+        utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
 
         return ""
     end
-
-    utils.errorf("%s is not a recognized project", utils.clean_path(target_dir))
 end
 
 clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darwin"})
@@ -864,32 +884,35 @@ clink.argmatcher("build"):addarg({"win", "windows", "lin", "linux", "dar", "darw
 commands["vet"] = function(args)
     local target_dir = os.getcwd()
 
-    local target_type = utils.trim(args or ""):lower()
+    local parsed = utils.parse_args("vet", {"go", "js"}, false, false, args)
 
-    if target_type == "" then
-        if utils.is_go(target_dir) then
-            target_type = "go"
-        elseif utils.is_node(target_dir) then
-            target_type = "js"
-        end
+    if not parsed then
+        return ""
+    end
+
+    local target_lang = parsed.lang
+    local pass_args = utils.format_extra_args(parsed.pass)
+
+    if not target_lang or target_lang == "" then
+        target_lang = utils.detect_lang("vet", target_dir)
     end
 
     local cmd = ""
 
-    if target_type == "go" then
+    if target_lang == "go" then
         utils.printf("[go] vetting %s", utils.clean_path(target_dir))
 
-        cmd = "vet ./..."
-    elseif target_type == "js" then
+        cmd = "go vet " .. pass_args .. " ./..."
+    elseif target_lang == "js" then
         utils.printf("[biome] vetting %s", utils.clean_path(target_dir))
 
         local config = path.join(utils.home(), "biome.json")
 
-        cmd = string.format("biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+        cmd = string.format("biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s %s", utils.escape_path(config), pass_args)
     else
         utils.errorf("unknown or undetected project type to vet")
 
-        return
+        return ""
     end
 
     local result = os.execute(cmd)
@@ -905,29 +928,34 @@ end
 commands["fix"] = function(args)
     local target_dir = os.getcwd()
 
-    local target_type = utils.trim(args or ""):lower()
+    local parsed = utils.parse_args("fix", {"go", "js"}, false, false, args)
 
-    if target_type == "" then
-        if utils.is_go(target_dir) then
-            target_type = "go"
-        elseif utils.is_node(target_dir) then
-            target_type = "js"
-        end
+    if not parsed then
+        return ""
     end
 
-    if target_type == "go" then
+    local target_lang = parsed.lang
+    local pass_args = utils.format_extra_args(parsed.pass)
+
+    if not target_lang or target_lang == "" then
+        target_lang = utils.detect_lang("fix", target_dir)
+    end
+
+    if target_lang == "go" then
         utils.printf("[go] fixing %s", utils.clean_path(target_dir))
 
-        return "go fix ./... && go fmt ./..."
-    elseif target_type == "js" then
+        return string.format("go fix %s ./... && go fmt %s ./...", pass_args, pass_args)
+    elseif target_lang == "js" then
         utils.printf("[biome] fixing %s", utils.clean_path(target_dir))
 
         local config = path.join(utils.home(), "biome.json")
 
-        return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s", utils.escape_path(config))
+        return string.format("biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s %s", utils.escape_path(config), pass_args)
     end
 
     utils.errorf("unknown or undetected project type to fix")
+
+    return ""
 end
 
 clink.argmatcher("fix"):addarg({"go", "js", "ts", "node"})

@@ -40,6 +40,111 @@ function _read_line() {
 # Helper Functions
 ##
 
+# Helper to parse and validate arguments for build, run, test, vet, fix, bench
+# Usage: _parse_args <cmd_name> <allowed_langs_space_separated> <allow_os: 0|1> <allow_build_opts: 0|1> "$@"
+function _parse_args() {
+	local cmd_name="$1"
+	local allowed_langs=" $2 "
+	local allow_os="$3"
+	local allow_build_opts="$4"
+	shift 4
+
+	PARSED_LANG=""
+	PARSED_OS=""
+	PARSED_OPTS=()
+	PARSED_PASS=()
+
+	local parsing_opts=true
+
+	while (( $# > 0 )); do
+		local arg="$1"
+		if [[ "$parsing_opts" == true ]]; then
+			case "$arg" in
+				--)
+					parsing_opts=false
+					shift
+					continue
+					;;
+				--pure|--compat|--min)
+					if [[ "$allow_build_opts" == "1" ]]; then
+						PARSED_OPTS+=("$arg")
+						shift
+					else
+						_print_error "Unknown argument for $cmd_name: $arg"
+						return 1
+					fi
+					;;
+				win|windows|lin|linux|dar|darwin)
+					if [[ "$allow_os" == "1" ]]; then
+						case "${arg,,}" in
+							win|windows) PARSED_OS="windows" ;;
+							lin|linux)   PARSED_OS="linux" ;;
+							dar|darwin)  PARSED_OS="darwin" ;;
+						esac
+						shift
+					else
+						_print_error "Unknown argument for $cmd_name: $arg"
+						return 1
+					fi
+					;;
+				*)
+					local lower_arg="${arg,,}"
+					if [[ $allowed_langs =~ " $lower_arg " ]]; then
+						PARSED_LANG="$lower_arg"
+						shift
+					else
+						_print_error "Unknown argument for $cmd_name: $arg"
+						return 1
+					fi
+					;;
+			esac
+		else
+			PARSED_PASS+=("$arg")
+			shift
+		fi
+	done
+}
+
+# Helper to automatically detect target project type based on files
+# Usage: _detect_lang <cmd_name> <target_dir>
+function _detect_lang() {
+	local cmd_name="$1"
+	local target="$2"
+
+	if [[ "$cmd_name" == "bench" || "$cmd_name" == "test" || "$cmd_name" == "run" || "$cmd_name" == "build" ]]; then
+		if [[ -f "$target/${cmd_name}.sh" ]]; then
+			echo "script"
+			return
+		fi
+	fi
+
+	if [[ "$cmd_name" == "run" && -f "$target/artisan" ]]; then
+		echo "php"
+		return
+	fi
+
+	if [[ -f "$target/go.mod" ]]; then
+		echo "go"
+		return
+	fi
+
+	if [[ -f "$target/package.json" ]]; then
+		echo "js"
+		return
+	fi
+
+	if [[ "$cmd_name" == "run" ]]; then
+		for file in "index.js" "main.js" "app.js"; do
+			if [[ -f "$target/$file" ]]; then
+				echo "js"
+				return
+			fi
+		done
+	fi
+
+	echo ""
+}
+
 # starts a timer
 function _start_timer() {
 	date +%s%3N 2>/dev/null || echo 0
@@ -1097,64 +1202,73 @@ function bench() (
 	(
 		set -euo pipefail
 
+		_parse_args "bench" "go js" 0 0 "$@" || return 1
+
+		local target_lang="$PARSED_LANG"
+		local -a pass_args=("${PARSED_PASS[@]}")
 		local target="$(realpath ".")"
-		local -a extra_args=("$@")
 
-		# handle bench script
-		if [[ -f "$target/bench.sh" ]]; then
-			_print_info "[bench.sh] benchmarking $target"
-
-			chmod +x ./bench.sh 2>/dev/null
-
-			./bench.sh "${extra_args[@]}"
-
-			return
+		if [[ -z "$target_lang" ]]; then
+			target_lang=$(_detect_lang "bench" "$target")
 		fi
 
-		# handle go project
-		if [[ -f "$target/go.mod" ]]; then
-			_go_generate "$target"
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+		case "$target_lang" in
+			script)
+				_print_info "[bench.sh] benchmarking $target"
 
-			_print_info "[go] benchmarking $target (mode: $GO_MODE_STR)"
+				chmod +x ./bench.sh 2>/dev/null
 
-			go test -run=^$ -bench=. -benchmem $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
+				./bench.sh "${pass_args[@]}"
+				;;
+			go)
+				_go_generate "$target"
+				_apply_go_env "linux" "amd64" "${pass_args[@]}"
 
-			return
-		fi
+				_print_info "[go] benchmarking $target (mode: $GO_MODE_STR)"
 
-		# handle node project
-		if [[ -f "$target/package.json" ]]; then
-			local script=""
+				go test -run=^$ -bench=. -benchmem $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./...
+				;;
+			js)
+				if [[ -f "$target/package.json" ]]; then
+					local script=""
 
-			while IFS= read -r line; do
-				case "$line" in
-					*\"bench\"*:*)     script="${script:-bench}" ;;
-					*\"benchmark\"*:*) script="${script:-benchmark}" ;;
-				esac
-			done < "$target/package.json"
+					while IFS= read -r line; do
+						case "$line" in
+							*\"bench\"*:*)     script="${script:-bench}" ;;
+							*\"benchmark\"*:*) script="${script:-benchmark}" ;;
+						esac
+					done < "$target/package.json"
 
-			if [[ -n "$script" ]]; then
-				_print_info "[bun/$script] benchmarking $target"
+					if [[ -n "$script" ]]; then
+						_print_info "[bun/$script] benchmarking $target"
 
-				bun run "$script" "${extra_args[@]}"
+						bun run "$script" "${pass_args[@]}"
 
-				return
-			fi
-
-			# fallback standalone bench files
-			for file in "bench.js" "bench.ts" "benchmark.js" "benchmark.ts"; do
-				if [[ -f "$target/$file" ]]; then
-					_print_info "[bun/$file] benchmarking $target"
-
-					bun "$file" "${extra_args[@]}"
-
-					return
+						return
+					fi
 				fi
-			done
-		fi
 
-		_print_error "$target is not a recognized benchmark project"
+				# fallback standalone bench files
+				for file in "bench.js" "bench.ts" "benchmark.js" "benchmark.ts"; do
+					if [[ -f "$target/$file" ]]; then
+						_print_info "[bun/$file] benchmarking $target"
+
+						bun "$file" "${pass_args[@]}"
+
+						return
+					fi
+				done
+
+				_print_error "$target is not a recognized node bench project"
+
+				return 1
+				;;
+			*)
+				_print_error "$target is not a recognized benchmark project"
+
+				return 1
+				;;
+		esac
 	)
 )
 
@@ -1163,63 +1277,72 @@ function test() (
 	(
 		set -euo pipefail
 
+		_parse_args "test" "go js" 0 0 "$@" || return 1
+
+		local target_lang="$PARSED_LANG"
+		local -a pass_args=("${PARSED_PASS[@]}")
 		local target="$(realpath ".")"
-		local -a extra_args=("$@")
 
-		# handle test script
-		if [[ -f "$target/test.sh" ]]; then
-			_print_info "[test.sh] testing $target"
-
-			chmod +x ./test.sh 2>/dev/null
-
-			./test.sh "${extra_args[@]}"
-
-			return
+		if [[ -z "$target_lang" ]]; then
+			target_lang=$(_detect_lang "test" "$target")
 		fi
 
-		# handle go project
-		if [[ -f "$target/go.mod" ]]; then
-			_go_generate "$target"
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+		case "$target_lang" in
+			script)
+				_print_info "[test.sh] testing $target"
 
-			_print_info "[go] testing $target (mode: $GO_MODE_STR)"
+				chmod +x ./test.sh 2>/dev/null
 
-			go test -v $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./... 2>&1 | _run_go_test_colorized
+				./test.sh "${pass_args[@]}"
+				;;
+			go)
+				_go_generate "$target"
+				_apply_go_env "linux" "amd64" "${pass_args[@]}"
 
-			return
-		fi
+				_print_info "[go] testing $target (mode: $GO_MODE_STR)"
 
-		# handle node project
-		if [[ -f "$target/package.json" ]]; then
-			local script=""
+				go test -v $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./... 2>&1 | _run_go_test_colorized
+				;;
+			js)
+				if [[ -f "$target/package.json" ]]; then
+					local script=""
 
-			while IFS= read -r line; do
-				case "$line" in
-					*\"test\"*:*)
-						script="test"
-						;;
-				esac
-			done < "$target/package.json"
+					while IFS= read -r line; do
+						case "$line" in
+							*\"test\"*:*)
+								script="test"
+								;;
+						esac
+					done < "$target/package.json"
 
-			if [[ -n "$script" ]]; then
-				_print_info "[bun/$script] testing $target"
+					if [[ -n "$script" ]]; then
+						_print_info "[bun/$script] testing $target"
 
-				bun run "$script" "${extra_args[@]}"
+						bun run "$script" "${pass_args[@]}"
 
-				return
-			fi
+						return
+					fi
+				fi
 
-			# fallback to bun test if test files exist
-			if compgen -G "$target/*.{test,spec}.{js,ts,jsx,tsx}" >/dev/null 2>&1; then
-				_print_info "[bun test] testing $target"
+				# fallback to bun test if test files exist
+				if compgen -G "$target/*.{test,spec}.{js,ts,jsx,tsx}" >/dev/null 2>&1; then
+					_print_info "[bun test] testing $target"
 
-				bun test "${extra_args[@]}"
+					bun test "${pass_args[@]}"
 
-				return
-			fi
-		fi
+					return
+				fi
 
-		_print_error "$target is not a recognized test project"
+				_print_error "$target is not a recognized node test project"
+
+				return 1
+				;;
+			*)
+				_print_error "$target is not a recognized test project"
+
+				return 1
+				;;
+		esac
 	)
 )
 
@@ -1228,68 +1351,88 @@ function run() (
 	(
 		set -euo pipefail
 
+		_parse_args "run" "go js php" 0 0 "$@" || return 1
+
+		local target_lang="$PARSED_LANG"
+		local -a pass_args=("${PARSED_PASS[@]}")
 		local target="$(realpath ".")"
-		local -a extra_args=("$@")
 
-		# handle run script
-		if [[ -f "$target/run.sh" ]]; then
-			_print_info "[run.sh] running $target"
-
-			chmod +x ./run.sh 2>/dev/null
-
-			./run.sh "${extra_args[@]}"
-
-			return
+		if [[ -z "$target_lang" ]]; then
+			target_lang=$(_detect_lang "run" "$target")
 		fi
 
-		# handle go project
-		if [[ -f "$target/go.mod" ]]; then
-			local main_dir=$(_find_go_main_dir "$target")
+		case "$target_lang" in
+			script)
+				_print_info "[run.sh] running $target"
 
-			_go_generate "$target"
-			_apply_go_env "linux" "amd64" "${extra_args[@]}"
+				chmod +x ./run.sh 2>/dev/null
 
-			_print_info "[go] running $main_dir (mode: $GO_MODE_STR)"
+				./run.sh "${pass_args[@]}"
+				;;
+			php)
+				if [[ -f "$target/artisan" ]]; then
+					_print_info "[php] running artisan serve"
 
-			go run $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" "$main_dir"
+					php artisan serve --port=80 "${pass_args[@]}"
+				else
+					_print_error "No artisan file found for PHP project"
 
-			return
-		fi
+					return 1
+				fi
+				;;
+			go)
+				local main_dir=$(_find_go_main_dir "$target")
 
-		# handle node project
-		if [[ -f "$target/package.json" ]]; then
-			local script=""
+				_go_generate "$target"
+				_apply_go_env "linux" "amd64" "${pass_args[@]}"
 
-			while IFS= read -r line; do
-				case "$line" in
-					*\"dev\"*:*)   script="${script:-dev}" ;;
-					*\"watch\"*:*) script="${script:-watch}" ;;
-					*\"start\"*:*) script="${script:-start}" ;;
-					*\"test\"*:*) script="${script:-test}" ;;
-				esac
-			done < "$target/package.json"
+				_print_info "[go] running $main_dir (mode: $GO_MODE_STR)"
 
-			if [[ -n "$script" ]]; then
-				_print_info "[bun/$script] running $target"
+				go run $GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" "$main_dir"
+				;;
+			js)
+				if [[ -f "$target/package.json" ]]; then
+					local script=""
 
-				bun run "$script" "${extra_args[@]}"
+					while IFS= read -r line; do
+						case "$line" in
+							*\"dev\"*:*)   script="${script:-dev}" ;;
+							*\"watch\"*:*) script="${script:-watch}" ;;
+							*\"start\"*:*) script="${script:-start}" ;;
+							*\"test\"*:*)  script="${script:-test}" ;;
+						esac
+					done < "$target/package.json"
 
-				return
-			fi
-		fi
+					if [[ -n "$script" ]]; then
+						_print_info "[bun/$script] running $target"
 
-		# handle single node files
-		for file in "index.js" "main.js" "app.js"; do
-			if [[ -f "$target/$file" ]]; then
-				_print_info "[bun/$file] running $target"
+						bun run "$script" "${pass_args[@]}"
 
-				bun "$file" "${extra_args[@]}"
+						return
+					fi
+				fi
 
-				return
-			fi
-		done
+				# handle single node files
+				for file in "index.js" "main.js" "app.js"; do
+					if [[ -f "$target/$file" ]]; then
+						_print_info "[bun/$file] running $target"
 
-		_print_error "$target is not a recognized project"
+						bun "$file" "${pass_args[@]}"
+
+						return
+					fi
+				done
+
+				_print_error "$target is not a recognized node project"
+
+				return 1
+				;;
+			*)
+				_print_error "$target is not a recognized project"
+
+				return 1
+				;;
+		esac
 	)
 )
 
@@ -1298,153 +1441,134 @@ function build() (
 	(
 		set -euo pipefail
 
-		local target_os="linux"
-		local target_arch="amd64"
+		_parse_args "build" "go js" 1 1 "$@" || return 1
 
+		local target_os="${PARSED_OS:-linux}"
+		local target_lang="$PARSED_LANG"
+		local -a pass_args=("${PARSED_PASS[@]}")
+		local -a build_opts=("${PARSED_OPTS[@]}")
 		local target="$(realpath ".")"
-		local -a extra_args=("$@")
 
-		# Check if first arg is a target OS
-		if ((${#extra_args[@]} > 0)); then
-			local first="${extra_args[0]}"
-			local lower="${first,,}"
-
-			case "$lower" in
-				win|windows)
-					target_os="windows"
-					extra_args=("${extra_args[@]:1}")
-					;;
-				lin|linux)
-					target_os="linux"
-					extra_args=("${extra_args[@]:1}")
-					;;
-				dar|darwin)
-					target_os="darwin"
-					extra_args=("${extra_args[@]:1}")
-					;;
-			esac
-		fi
-
-		# Detect host arch for native builds
+		# detect host arch for native builds
 		local host_arch="$(go env GOHOSTARCH 2>/dev/null || uname -m)"
-
-		target_arch="$host_arch"
+		local target_arch="$host_arch"
 
 		case "$host_arch" in
 			x86_64) host_arch="amd64" ;;
 			aarch64) host_arch="arm64" ;;
 		esac
 
-		# handle build script
-		if [[ -f "$target/build.sh" ]]; then
-			_print_info "[build.sh] building $target"
-
-			chmod +x ./build.sh 2>/dev/null
-
-			./build.sh "${extra_args[@]}"
-
-			return
+		if [[ -z "$target_lang" ]]; then
+			target_lang=$(_detect_lang "build" "$target")
 		fi
 
-		# handle go project
-		if [[ -f "$target/go.mod" ]]; then
-			local main_dir=$(_find_go_main_dir "$target")
+		case "$target_lang" in
+			script)
+				_print_info "[build.sh] building $target"
 
-			local base="$(basename "$target")"
+				chmod +x ./build.sh 2>/dev/null
 
-			# drop the last extension if there is a dot
-			if [[ "$base" == *.* ]]; then
-				base="${base%.*}"
-			fi
+				./build.sh "${pass_args[@]}"
+				;;
+			go)
+				local main_dir=$(_find_go_main_dir "$target")
+				local base="$(basename "$target")"
 
-			# normalize hyphens and remaining dots to underscores
-			base="${base//[-.]/_}"
-
-			# remove any remaining invalid characters
-			base="${base//[^a-zA-Z0-9_]/}"
-
-			# Fallback if the name becomes empty
-			if [[ -z "$base" ]]; then
-				base="app"
-			fi
-
-			if [[ "$target_os" == "windows" ]]; then
-				base="$base.exe"
-			fi
-
-			_go_generate "$target"
-			_apply_go_env "$target_os" "$target_arch" "${extra_args[@]}"
-
-			_print_info "[go/$target_os/$base] building $main_dir (mode: $GO_MODE_STR)"
-
-			local t0=$(_start_timer)
-
-			go build "${GO_BUILD_FLAGS[@]}" -ldflags "$GO_LDFLAGS" "${GO_EXTRA_ARGS[@]}" -o "$base" "$main_dir"
-
-			local exit_code=$?
-
-			if [[ $exit_code -ne 0 ]]; then
-				return $exit_code
-			fi
-
-			_end_timer "$t0" "built"
-
-			if [[ "$GO_MINIFY" == "true" ]]; then
-				if command -v upx &> /dev/null; then
-					_print_info "[upx] compressing $base"
-
-					local t1=$(_start_timer)
-
-					upx --best --lzma "$base" > /dev/null
-
-					_end_timer "$t1" "compressed"
-				else
-					_print_info "upx not found, skipping compression"
+				# drop the last extension if there is a dot
+				if [[ "$base" == *.* ]]; then
+					base="${base%.*}"
 				fi
-			fi
 
-			return
-		fi
+				# normalize hyphens and remaining dots to underscores
+				base="${base//[-.]/_}"
 
-		# handle node project
-		if [[ -f "$target/package.json" ]]; then
-			local script=""
+				# remove any remaining invalid characters
+				base="${base//[^a-zA-Z0-9_]/}"
 
-			while IFS= read -r line; do
-				case "$line" in
-					*\"build\"*:*) script="${script:-build}" ;;
-					*\"prod\"*:*)  script="${script:-prod}"  ;;
-				esac
-			done < "$target/package.json"
+				# Fallback if the name becomes empty
+				if [[ -z "$base" ]]; then
+					base="app"
+				fi
 
-			if [[ -z "$script" ]]; then
-				_print_error "no script found in package.json"
+				if [[ "$target_os" == "windows" ]]; then
+					base="$base.exe"
+				fi
 
-				return
-			fi
+				_go_generate "$target"
+				_apply_go_env "$target_os" "$target_arch" "${build_opts[@]}" "${pass_args[@]}"
 
-			_print_info "[bun/$script] building $target"
+				_print_info "[go/$target_os/$base] building $main_dir (mode: $GO_MODE_STR)"
 
-			local t0=$(_start_timer)
+				local t0=$(_start_timer)
 
-			bun run "$script" "${extra_args[@]}"
+				go build "${GO_BUILD_FLAGS[@]}" -ldflags "$GO_LDFLAGS" "${GO_EXTRA_ARGS[@]}" -o "$base" "$main_dir"
 
-			local exit_code=$?
+				local exit_code=$?
+				if [[ $exit_code -ne 0 ]]; then
+					return $exit_code
+				fi
 
-			if [[ $exit_code -ne 0 ]]; then
-				return $exit_code
-			fi
+				_end_timer "$t0" "built"
 
-			_end_timer "$t0" "built"
+				if [[ "$GO_MINIFY" == "true" ]]; then
+					if command -v upx &> /dev/null; then
+						_print_info "[upx] compressing $base"
 
-			return
-		fi
+						local t1=$(_start_timer)
 
-		_print_error "$target is not a recognized project"
+						upx --best --lzma "$base" > /dev/null
+
+						_end_timer "$t1" "compressed"
+					else
+						_print_info "upx not found, skipping compression"
+					fi
+				fi
+				;;
+			js)
+				if [[ -f "$target/package.json" ]]; then
+					local script=""
+
+					while IFS= read -r line; do
+						case "$line" in
+							*\"build\"*:*) script="${script:-build}" ;;
+							*\"prod\"*:*)  script="${script:-prod}"  ;;
+						esac
+					done < "$target/package.json"
+
+					if [[ -z "$script" ]]; then
+						_print_error "no script found in package.json"
+
+						return 1
+					fi
+
+					_print_info "[bun/$script] building $target"
+
+					local t0=$(_start_timer)
+
+					bun run "$script" "${pass_args[@]}"
+
+					local exit_code=$?
+					if [[ $exit_code -ne 0 ]]; then
+						return $exit_code
+					fi
+
+					_end_timer "$t0" "built"
+				else
+					_print_error "no package.json found for node build"
+
+					return 1
+				fi
+				;;
+			*)
+				_print_error "$target is not a recognized project"
+
+				return 1
+				;;
+		esac
 	)
 )
 
-__build_complete() {
+__build_command_complete() {
 	local cur="${COMP_WORDS[COMP_CWORD]}"
 
 	COMPREPLY=()
@@ -1463,31 +1587,28 @@ function vet() (
 	(
 		set -euo pipefail
 
+		_parse_args "vet" "go js" 0 0 "$@" || return 1
+
+		local target_lang="$PARSED_LANG"
+		local -a pass_args=("${PARSED_PASS[@]}")
 		local target="$(realpath ".")"
 
-		local target_type="${1:-}"
-		target_type="${target_type,,}"
-
-		if [[ -z "$target_type" ]]; then
-			if [[ -f "$target/go.mod" ]]; then
-				target_type="go"
-			elif [[ -f "$target/package.json" ]]; then
-				target_type="js"
-			fi
+		if [[ -z "$target_lang" ]]; then
+			target_lang=$(_detect_lang "vet" "$target")
 		fi
 
 		local status=0
 
-		case "$target_type" in
+		case "$target_lang" in
 			go)
 				_print_info "[go] vetting $target"
 
-				vet ./... || status=$?
+				go vet "${pass_args[@]}" ./... || status=$?
 				;;
 			js)
 				_print_info "[biome] vetting $target"
 
-				biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" || status=$?
+				biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" "${pass_args[@]}" || status=$?
 				;;
 			*)
 				_print_error "unknown or undetected project type to vet"
@@ -1509,30 +1630,27 @@ function fix() (
 	(
 		set -euo pipefail
 
+		_parse_args "fix" "go js" 0 0 "$@" || return 1
+
+		local target_lang="$PARSED_LANG"
+		local -a pass_args=("${PARSED_PASS[@]}")
 		local target="$(realpath ".")"
 
-		local target_type="${1:-}"
-		target_type="${target_type,,}"
-
-		if [[ -z "$target_type" ]]; then
-			if [[ -f "$target/go.mod" ]]; then
-				target_type="go"
-			elif [[ -f "$target/package.json" ]]; then
-				target_type="js"
-			fi
+		if [[ -z "$target_lang" ]]; then
+			target_lang=$(_detect_lang "fix" "$target")
 		fi
 
-		case "$target_type" in
+		case "$target_lang" in
 			go)
 				_print_info "[go] fixing $target"
 
-				go fix ./...
-				go fmt ./...
+				go fix "${pass_args[@]}" ./...
+				go fmt "${pass_args[@]}" ./...
 				;;
 			js)
 				_print_info "[biome] fixing $target"
 
-				biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json"
+				biome check --write --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" "${pass_args[@]}"
 				;;
 			*)
 				_print_error "unknown or undetected project type to fix"
@@ -1875,7 +1993,7 @@ function envup() {
 complete -d cd
 
 complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup ghup perms
-complete -F __build_complete build
+complete -F __build_command_complete build
 
 # various aliases
 alias grep='grep --color=auto'

@@ -367,39 +367,101 @@ function _M.command_with_env(command, env)
     return string.format("cmd /v:off /c \"%s\"", table.concat(entries, " && "))
 end
 
--- Parse target directory and extra arguments separated by --
--- Returns: target_dir (string), extra_args (table)
-function _M.parse_target_and_args(args)
-    if not args or args == "" then
-        return os.getcwd(), {}
+function _M.parse_args(cmd_name, allowed_langs, allow_os, allow_build_opts, args)
+    local tokens = _M.split_args(args)
+
+    local parsed = {
+        lang = nil,
+        os = nil,
+        opts = {},
+        pass = {}
+    }
+
+    local parsing_opts = true
+    local allowed_langs_map = {}
+
+    for _, lang in ipairs(allowed_langs) do
+        allowed_langs_map[lang] = true
     end
 
-    -- Match everything before and after --
-    local target_part, rest = args:match("^(.-)%s*%-%-%s*(.*)$")
+    for _, token in ipairs(tokens) do
+        if parsing_opts then
+            local lower = token:lower()
 
-    if not target_part then
-        -- No -- separator found
-        target_part = args
+            if token == "--" then
+                parsing_opts = false
+            elseif lower == "--pure" or lower == "--compat" or lower == "--min" then
+                if allow_build_opts then
+                    table.insert(parsed.opts, lower)
+                else
+                    _M.errorf("Unknown argument for %s: %s", cmd_name, lower)
 
-        rest = ""
-    end
+                    return false
+                end
+            else
+                local osOpt = false
+                local langOpt = false
 
-    local target = target_part:match("^%s*(.-)%s*$")
+                if allow_os then
+                    if lower == "win" or lower == "windows" then
+                        osOpt = "windows"
+                    elseif lower == "lin" or lower == "linux" then
+                        osOpt = "linux"
+                    elseif lower == "dar" or lower == "darwin" then
+                        osOpt = "darwin"
+                    end
+                end
 
-    if target == "" then
-        target = os.getcwd()
-    end
+                if allowed_langs_map[lower] then
+                    langOpt = lower
+                end
 
-    -- Parse remaining arguments into table
-    local extra_args = {}
+                if osOpt then
+                    parsed.os = osOpt
+                elseif langOpt then
+                    parsed.lang = langOpt
+                else
+                    _M.errorf("Unknown argument for %s: %s", cmd_name, token)
 
-    if rest and rest ~= "" then
-        for extraArg in rest:gmatch("%S+") do
-            table.insert(extra_args, extraArg)
+                    return false
+                end
+            end
+        else
+            table.insert(parsed.pass, token)
         end
     end
 
-    return target, extra_args
+    return parsed
+end
+
+function _M.detect_lang(cmd_name, target)
+    if cmd_name == "bench" or cmd_name == "test" or cmd_name == "run" or cmd_name == "build" then
+        if os.isfile(path.join(target, cmd_name .. ".cmd")) then
+            return "script"
+        end
+    end
+
+    if cmd_name == "run" and os.isfile(path.join(target, "artisan")) then
+        return "php"
+    end
+
+    if os.isfile(path.join(target, "go.mod")) then
+        return "go"
+    end
+
+    if os.isfile(path.join(target, "package.json")) then
+        return "js"
+    end
+
+    if cmd_name == "run" then
+        for _, entry in ipairs({"index.js", "main.js", "app.js"}) do
+            if os.isfile(path.join(target, entry)) then
+                return "js"
+            end
+        end
+    end
+
+    return ""
 end
 
 function _M.format_extra_args(args)
@@ -418,41 +480,6 @@ function _M.format_extra_args(args)
     end
 
     return " " .. table.concat(escaped, " ")
-end
-
-function _M.parse_target_os(args)
-    args = _M.trim(args or "")
-
-    local words = {}
-
-    for word in args:gmatch("%S+") do
-        table.insert(words, word)
-    end
-
-    local target = "windows"
-    local remaining = {}
-
-    for _, word in ipairs(words) do
-        local lower = word:lower()
-
-        if lower == "win" or lower == "windows" then
-            target = "windows"
-        elseif lower == "lin" or lower == "linux" then
-            target = "linux"
-        elseif lower == "dar" or lower == "darwin" then
-            target = "darwin"
-        else
-            table.insert(remaining, word)
-        end
-    end
-
-    local rest = table.concat(remaining, " ")
-
-    if rest == "" then
-        rest = false
-    end
-
-    return target, rest
 end
 
 function _M.prepare_go_env(target_os, target_arch, extra_args_str)
