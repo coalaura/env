@@ -1934,6 +1934,8 @@ fi
 if ! ssh-add -l >/dev/null 2>&1; then
 	ssh-agent -s > "$SSH_AGENT_FILE"
 	source "$SSH_AGENT_FILE" >/dev/null 2>&1
+
+	chmod 600 "$SSH_AGENT_FILE"
 fi
 
 # ensure github ssh key is loaded
