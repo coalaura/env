@@ -4,6 +4,7 @@
 body {
     --ascii-titles: off;
     --ascii-loader: cats;
+
     --dms-background-image-url: url("https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/logos/exports/macchiato_square.png");
 }
 
