@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-go:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -49,15 +49,11 @@ jobs:
           name: upgrader_${{ matrix.goos }}
           path: build/*
 
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-css:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -66,9 +62,6 @@ jobs:
 
       - name: Install CSS Build Dependencies
         run: npm install postcss postcss-import-url cssnano
-
-      - name: Create Deployment Directory
-        run: mkdir -p dist
 
       - name: Build CSS
         run: |
@@ -90,10 +83,10 @@ jobs:
                   from: "discord/theme.css"
               })
               .then(result => {
-                  fs.mkdirSync("dist", {
+                  fs.mkdirSync("css", {
                       recursive: true
                   });
-                  fs.writeFileSync("dist/discord.min.css", result.css);
+                  fs.writeFileSync("css/discord.min.css", result.css);
                   console.log("CSS successfully built.");
               })
               .catch(err => {
@@ -102,18 +95,35 @@ jobs:
               });
           '
 
-      - name: Download Upgrader
+      - name: Upload CSS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: css-theme
+          path: css/discord.min.css
+
+  deploy:
+    needs: [build-go, build-css]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./temp_binaries
+          path: temp_artifacts
 
-      - name: Merge Artifacts into Deploy Directory
+      - name: Organize Deployment Directory
         shell: bash
         run: |
-          shopt -s globstar nullglob
-          cp temp_binaries/**/upgrader_linux dist/ || true
-          cp temp_binaries/**/upgrader_windows.exe dist/ || true
-          ls -lah dist/
+          mkdir -p dist/bin dist/css
+
+          cp temp_artifacts/css-theme/discord.min.css dist/css/
+
+          cp temp_artifacts/upgrader_linux/upgrader_linux dist/bin/upgrader-linux
+          cp temp_artifacts/upgrader_windows/upgrader_windows.exe dist/bin/upgrader-win.exe
+
+          ls -R dist/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

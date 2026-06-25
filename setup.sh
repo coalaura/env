@@ -8,7 +8,7 @@ git pull
 
 echo "Loading upgrader..."
 
-sudo curl -fsSL -o /usr/local/bin/.env_upgrader_tmp "https://coalaura.github.io/env/upgrader_linux"
+sudo curl -fsSL -o /usr/local/bin/.env_upgrader_tmp "https://coalaura.github.io/env/bin/upgrader-linux"
 
 if [ ! -s "/usr/local/bin/.env_upgrader_tmp" ] || [ "$(stat -c%s "/usr/local/bin/.env_upgrader_tmp")" -lt 256 ]; then
 	echo "Failed to download upgrader" >&2

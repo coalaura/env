@@ -25,7 +25,7 @@ if not exist "%USERPROFILE%\.bin" (
 :: environment upgrader
 echo Loading upgrader...
 
-curl -fssl -o "%TEMP%\env_upgrader.exe" "https://coalaura.github.io/env/upgrader_windows.exe"
+curl -fssl -o "%TEMP%\env_upgrader.exe" "https://coalaura.github.io/env/bin/upgrader-win.exe"
 
 if not %errorlevel%==0 (
     echo Failed to download upgrader
