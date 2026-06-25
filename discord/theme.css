@@ -6,19 +6,32 @@ body {
     --ascii-loader: cats;
 }
 
-.scrollerSpacer__36d07 {
-    height: 22px;
+[class*="scrollerSpacer_"] {
+    height: 10px !important;
 }
 
-.chatTypingGradientNotAtBottom__36d07,
-.chatTypingGradientAtBottom__36d07 {
+[class*="chatTypingGradient"] {
     display: none !important;
 }
 
-.messagesWrapper__36d07::before {
-    height: 22px !important;
+[class*="messagesWrapper"]::before {
+    height: 10px !important;
 }
 
-.chatContent_f75fb0:not(:has(.typing_b88801)) .scrollerSpacer__36d07 {
-    height: 10px;
+[class*="typing_"] {
+    position: absolute;
+    top: -31.5px !important;
+    left: unset !important;
+    background-color: var(--bg-4, var(--background-secondary));
+    border: 1px solid var(--border, transparent);
+    padding: 2px 10px !important;
+    pointer-events: none;
+}
+
+[class*="typingDots_"] {
+    margin-inline-start: 4px !important;
+}
+
+[class*="typing_"] span[class*="text_"] {
+    margin-left: 10px;
 }
