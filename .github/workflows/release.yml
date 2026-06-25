@@ -1,14 +1,22 @@
-name: Build
+name: Build and Deploy Site
 
 on:
   push:
     branches:
       - master
     paths:
+      - "discord/theme.css"
       - ".upgrader/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -16,17 +24,16 @@ jobs:
     strategy:
       matrix:
         goos: [windows, linux]
-      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Go
+      - name: Set-up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: ".upgrader/go.mod"
 
-      - name: Build ${{ matrix.goos }}
+      - name: Build Upgrader
         shell: bash
         run: |
           mkdir -p build
@@ -36,51 +43,82 @@ jobs:
           GOOS=${{ matrix.goos }} GOARCH=amd64 CGO_ENABLED=0 \
           go build -trimpath -buildvcs=false -o "$OUT" .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v6
+      - name: Upload Upgrader
+        uses: actions/upload-artifact@v4
         with:
           name: upgrader_${{ matrix.goos }}
           path: build/*
-          if-no-files-found: error
 
-  publish:
-    name: Publish to GitHub Pages
+  deploy:
     needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-      contents: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
+    runs-on: ubuntu-latest
     steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v8
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          path: ./public
+          node-version: 20
 
-      - name: Prepare site
+      - name: Install CSS Build Dependencies
+        run: npm install postcss postcss-import-url cssnano
+
+      - name: Create Deployment Directory
+        run: mkdir -p dist
+
+      - name: Build CSS
+        run: |
+          node -e '
+          const fs = require("fs"),
+              postcss = require("postcss"),
+              postcssImportUrl = require("postcss-import-url"),
+              cssnano = require("cssnano");
+
+          const css = fs.readFileSync("discord/theme.css", "utf8");
+
+          postcss([
+                  postcssImportUrl({
+                      filter: (url) => !url.includes("fonts.googleapis.com") && !url.includes("fonts.gstatic.com")
+                  }),
+                  cssnano()
+              ])
+              .process(css, {
+                  from: "discord/theme.css"
+              })
+              .then(result => {
+                  fs.mkdirSync("dist", {
+                      recursive: true
+                  });
+                  fs.writeFileSync("dist/discord.min.css", result.css);
+                  console.log("CSS successfully built.");
+              })
+              .catch(err => {
+                  console.error(err);
+                  process.exit(1);
+              });
+          '
+
+      - name: Download Upgrader
+        uses: actions/download-artifact@v4
+        with:
+          path: ./temp_binaries
+
+      - name: Merge Artifacts into Deploy Directory
         shell: bash
         run: |
-          set -euo pipefail
           shopt -s globstar nullglob
-          mkdir -p site
-          # Copy the binaries to stable names at the site root
-          cp public/**/upgrader_linux site/ || true
-          cp public/**/upgrader_windows.exe site/ || true
-          ls -lah site
+          cp temp_binaries/**/upgrader_linux dist/ || true
+          cp temp_binaries/**/upgrader_windows.exe dist/ || true
+          ls -lah dist/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: dist
 
       - name: Deploy to Pages
         id: deployment
