@@ -5,9 +5,11 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 ## Structure
 
 - `.vscode/`: `keybinds.json` for vscode
-- `bash/`: `.bashrc` and `.bash_profile` for linux
+- `ahk/`: autohotkey scripts
+- `bash/`: `.bashrc`, `.bash_profile`, `.profile` and `.inputrc` for linux
 - `biome/`: biome config
 - `clink/`: lua scripts and settings for clink
+- `discord/`: catppuccin discord theme for vencord
 - `fonts/`: required/nice fonts
 - `git/`: git configuration and better defaults
 - `go/`: go configurations like staticcheck
