@@ -1,0 +1,24 @@
+@import url("https://refact0r.github.io/system24/build/system24.css");
+@import url("https://raw.githubusercontent.com/refact0r/midnight-discord/refs/heads/master/themes/flavors/midnight-catppuccin-macchiato.theme.css");
+
+body {
+    --ascii-titles: off;
+    --ascii-loader: cats;
+}
+
+.scrollerSpacer__36d07 {
+    height: 22px;
+}
+
+.chatTypingGradientNotAtBottom__36d07,
+.chatTypingGradientAtBottom__36d07 {
+    display: none !important;
+}
+
+.messagesWrapper__36d07::before {
+    height: 22px !important;
+}
+
+.chatContent_f75fb0:not(:has(.typing_b88801)) .scrollerSpacer__36d07 {
+    height: 10px;
+}
