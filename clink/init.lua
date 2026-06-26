@@ -117,8 +117,6 @@ add_to_path({
 
 -- initialized environment variables
 os.setenv("CGO_ENABLED", "1")
-os.setenv("CC", "zig cc -target x86_64-windows-gnu")
-os.setenv("CXX", "zig c++ -target x86_64-windows-gnu")
 
 -- initialize other aliases
 os.setalias("clear", "cls")
