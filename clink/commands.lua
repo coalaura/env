@@ -510,6 +510,8 @@ commands["profile"] = function(args)
 
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
+        go_env.env["GOEXPERIMENT"] = "goroutineleakprofile"
+
         os.execute("rmdir /s /q .profile 2>nul")
         os.execute("mkdir .profile 2>nul")
 
@@ -526,18 +528,19 @@ commands["profile"] = function(args)
         end
 
         os.execute(utils.command_with_env(
-            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -trace=.profile\\trace.out %s %s ./... > .profile\\bench.txt 2>&1", go_env.tags_str, go_env.extra_args),
+            string.format("go test -run=^$ -bench=. -benchmem -cpuprofile=.profile\\cpu.prof -memprofile=.profile\\mem.prof -mutexprofile=.profile\\mutex.prof -blockprofile=.profile\\block.prof -goroutineleakprofile=.profile\\goroutineleak.prof -trace=.profile\\trace.out %s %s ./... > .profile\\bench.txt 2>&1", go_env.tags_str, go_env.extra_args),
             go_env.env
         ))
 
         utils.successf("profile complete")
-        utils.subf("escape/inline: .profile\\escape_analysis.txt")
-        utils.subf("bce misses:    .profile\\bce.txt")
-        utils.subf("benchmarks:    .profile\\bench.txt")
-        utils.subf("cpu profile:   go tool pprof -http=:8080 .profile\\cpu.prof")
-        utils.subf("mem profile:   go tool pprof -http=:8081 .profile\\mem.prof")
-        utils.subf("mutex blocks:  go tool pprof -http=:8082 .profile\\mutex.prof")
-        utils.subf("trace ui:      go tool trace .profile\\trace.out")
+        utils.subf("escape/inline:   .profile\\escape_analysis.txt")
+        utils.subf("bce misses:      .profile\\bce.txt")
+        utils.subf("benchmarks:      .profile\\bench.txt")
+        utils.subf("cpu profile:     go tool pprof -http=:8080 .profile\\cpu.prof")
+        utils.subf("mem profile:     go tool pprof -http=:8081 .profile\\mem.prof")
+        utils.subf("mutex blocks:    go tool pprof -http=:8082 .profile\\mutex.prof")
+        utils.subf("goroutine leaks: go tool pprof -http=:8083 .profile\\goroutineleak.prof")
+        utils.subf("trace ui:        go tool trace .profile\\trace.out")
 
         return
     end

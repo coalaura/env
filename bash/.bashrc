@@ -1161,6 +1161,8 @@ function profile() (
 			_go_generate "$target"
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
 
+			export GOEXPERIMENT=goroutineleakprofile
+
 			if [[ -n "$focus" ]]; then
 				_print_info "[go] profiling $target (focus: $focus, mode: $GO_MODE_STR)"
 
@@ -1178,6 +1180,7 @@ function profile() (
 				-memprofile=.profile/mem.prof \
 				-mutexprofile=.profile/mutex.prof \
 				-blockprofile=.profile/block.prof \
+				-goroutineleakprofile=.profile/goroutineleak.prof \
 				-trace=.profile/trace.out \
 				$GO_TAGS_ARGS "${GO_EXTRA_ARGS[@]}" ./... > .profile/bench.txt 2>&1 || true
 
@@ -1188,6 +1191,7 @@ function profile() (
 			_print_sub "cpu profile:   go tool pprof -http=:8080 .profile/cpu.prof"
 			_print_sub "mem profile:   go tool pprof -http=:8081 .profile/mem.prof"
 			_print_sub "mutex blocks:  go tool pprof -http=:8082 .profile/mutex.prof"
+			_print_sub "goroutine leaks: go tool pprof -http=:8083 .profile/goroutineleak.prof"
 			_print_sub "trace ui:      go tool trace .profile/trace.out"
 
 			return
