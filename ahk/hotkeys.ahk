@@ -58,3 +58,11 @@ CheckFocus()
 
     SendText(result)
 }
+
+; Ctrl + Alt + Shift + Delete force closes active process.
+^!+Delete::
+{
+    activePID := WinGetPID("A")
+
+    ProcessClose(activePID)
+}
