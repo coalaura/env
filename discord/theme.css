@@ -34,6 +34,12 @@ body {
     margin-inline-start: 4px !important;
 }
 
-[class*="typing_"] span[class*="text_"] {
+[class*="typing_"] span[class*="text_"]:nth-child(2) {
+    display: none;
+}
+
+[class*="typing_"] span[class*="text_"]:nth-child(3) {
+    visibility: visible !important;
+    position: unset !important;
     margin-left: 10px;
 }
