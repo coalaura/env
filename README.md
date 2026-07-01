@@ -34,6 +34,14 @@ Installs and upgrades installed software, using the [upgrader](.upgrader) binary
 - **Windows**: Run `setup.cmd` (auto-elevates via `sudo`)
 - **Linux**: Run `sudo ./setup.sh`
 
+### Discord
+
+Import the theme in Quick-CSS/etc. (Vencord/Vesktop):
+
+```css
+@import url("https://coalaura.github.io/env/css/discord.min.css");
+```
+
 ## Software
 
 A list of nice/cool tools and utilities can be found in [software.md](software.md).
