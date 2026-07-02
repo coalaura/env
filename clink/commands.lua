@@ -510,8 +510,6 @@ commands["profile"] = function(args)
 
         local go_env = utils.prepare_go_env("windows", "amd64", extra_args)
 
-        go_env.env["GOEXPERIMENT"] = "goroutineleakprofile"
-
         os.execute("rmdir /s /q .profile 2>nul")
         os.execute("mkdir .profile 2>nul")
 

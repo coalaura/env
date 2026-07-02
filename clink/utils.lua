@@ -585,6 +585,25 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
         env.GOAMD64 = "v3"
     end
 
+    -- always-enabled go experiments
+    local goexperiments = {}
+    local seen_exp = {}
+
+    local function add_experiment(exp_str)
+        for exp in tostring(exp_str or ""):gmatch("[^,%s]+") do
+            if not seen_exp[exp] then
+                seen_exp[exp] = true
+
+                table.insert(goexperiments, exp)
+            end
+        end
+    end
+
+    add_experiment(os.getenv("GOEXPERIMENT"))
+    add_experiment("jsonv2,goroutineleakprofile")
+
+    env.GOEXPERIMENT = table.concat(goexperiments, ",")
+
     local mode_str = (is_pure and "pure" or "cgo") .. (is_compat and ",compat" or ",opt") .. (is_min and ",min" or "")
 
     if env.CGO_ENABLED == "1" then

@@ -388,6 +388,37 @@ function _apply_go_env() {
 		export GOAMD64=v3
 	fi
 
+	# always-enabled go experiments
+	local -a goexperiments=()
+	local -A seen_exp=()
+
+	_add_go_experiment() {
+		local exp
+		local old_ifs="$IFS"
+
+		IFS=','
+
+		for exp in $1; do
+			exp="$(echo "$exp" | xargs)"
+
+			if [[ -z "$exp" ]]; then
+				continue
+			fi
+
+			if [[ -z "${seen_exp[$exp]:-}" ]]; then
+				seen_exp["$exp"]=1
+				goexperiments+=("$exp")
+			fi
+		done
+
+		IFS="$old_ifs"
+	}
+
+	_add_go_experiment "${GOEXPERIMENT:-}"
+	_add_go_experiment "jsonv2,goroutineleakprofile"
+
+	export GOEXPERIMENT="$(IFS=,; echo "${goexperiments[*]}")"
+
 	GO_MODE_STR="cgo"
 
 	if [[ "$is_pure" == "true" ]]; then
@@ -1232,8 +1263,6 @@ function profile() (
 
 			_go_generate "$target"
 			_apply_go_env "linux" "amd64" "${extra_args[@]}"
-
-			export GOEXPERIMENT=goroutineleakprofile
 
 			if [[ -n "$focus" ]]; then
 				_print_info "[go] profiling $target (focus: $focus, mode: $GO_MODE_STR)"
