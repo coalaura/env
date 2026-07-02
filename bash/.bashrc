@@ -40,8 +40,7 @@ function _read_line() {
 # Helper Functions
 ##
 
-# Helper to parse and validate arguments for build, run, test, vet, fix, bench
-# Usage: _parse_args <cmd_name> <allowed_langs_space_separated> <allow_os: 0|1> <allow_build_opts: 0|1> "$@"
+# parse and validate arguments for build, run, test, vet, fix, bench
 function _parse_args() {
 	local cmd_name="$1"
 	local allowed_langs=" $2 "
@@ -105,8 +104,7 @@ function _parse_args() {
 	done
 }
 
-# Helper to automatically detect target project type based on files
-# Usage: _detect_lang <cmd_name> <target_dir>
+# automatically detect target project type based on files
 function _detect_lang() {
 	local cmd_name="$1"
 	local target="$2"
@@ -498,7 +496,7 @@ function _run_go_test_colorized() {
 }
 
 # safely prepend to path
-function path_prepend() {
+function _path_prepend() {
 	local dir="$1"
 
 	[[ -d "$dir" ]] || return
@@ -510,7 +508,7 @@ function path_prepend() {
 }
 
 # safely append to path
-function path_append() {
+function _path_append() {
 	local dir="$1"
 
 	[[ -d "$dir" ]] || return
@@ -520,6 +518,80 @@ function path_append() {
 		*) PATH="$PATH:$dir" ;;
 	esac
 }
+
+##
+# Filtered File Completions
+##
+
+declare -A _FILTER_COMPLETIONS_EXT
+
+function _filtered_file_complete() {
+	local cur="${COMP_WORDS[COMP_CWORD]}"
+	local cmd="${COMP_WORDS[0]}"
+
+	COMPREPLY=()
+
+	local exts="${_FILTER_COMPLETIONS_EXT[$cmd]}"
+
+	if [[ -z "$exts" ]]; then
+		COMPREPLY=( $(compgen -f -- "$cur") )
+		return 0
+	fi
+
+	local -a ext_arr=()
+	local old_ifs="$IFS"
+	IFS=','
+	read -ra ext_arr <<< "$exts"
+	IFS="$old_ifs"
+
+	local -a matches=()
+
+	# include directories for navigation
+	while IFS= read -r dir; do
+		[[ -n "$dir" ]] && matches+=("$dir")
+	done < <(compgen -d -- "$cur")
+
+	# filter files by extension
+	while IFS= read -r file; do
+		[[ -z "$file" ]] && continue
+
+		local ext="${file##*.}"
+		local base="${file##*/}"
+
+		[[ "$ext" == "$base" ]] && continue
+
+		for valid_ext in "${ext_arr[@]}"; do
+			if [[ "${ext,,}" == "${valid_ext,,}" ]]; then
+				matches+=("$file")
+				break
+			fi
+		done
+	done < <(compgen -f -- "$cur")
+
+	COMPREPLY=("${matches[@]}")
+
+	return 0
+}
+
+function filter_completions() {
+	local cmd="$1"
+	shift
+
+	local exts=""
+	local ext
+	for ext in "$@"; do
+		[[ -n "$exts" ]] && exts+=","
+		exts+="$ext"
+	done
+
+	_FILTER_COMPLETIONS_EXT[$cmd]="$exts"
+
+	complete -F _filtered_file_complete "$cmd"
+}
+
+##
+# Command Not Found
+##
 
 # handle .command shorthand for local executables
 function command_not_found_handle() {
@@ -1996,6 +2068,9 @@ complete -d cd
 complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup ghup perms
 complete -F __build_command_complete build
 
+# filtered extension completions
+filter_completions "sqlite3" "db"
+
 # various aliases
 alias grep='grep --color=auto'
 alias ls='ls --color=auto'
@@ -2050,10 +2125,9 @@ export EDITOR=nano
 export FIGNORE=".cmd:.exe"
 
 # ensure path
-path_prepend "$HOME/.bun/bin"
-path_prepend "/usr/local/zig"
-path_prepend "/usr/local/go/bin"
-
+_path_prepend "$HOME/.bun/bin"
+_path_prepend "/usr/local/zig"
+_path_prepend "/usr/local/go/bin"
 
 # write history immediately so multiple terminals share it
 PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
