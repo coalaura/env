@@ -1311,6 +1311,7 @@ function bench() (
 
 		local target_lang="$PARSED_LANG"
 		local -a pass_args=("${PARSED_PASS[@]}")
+		local -a build_opts=("${PARSED_OPTS[@]}")
 		local target="$(realpath ".")"
 
 		if [[ -z "$target_lang" ]]; then
@@ -1327,7 +1328,7 @@ function bench() (
 				;;
 			go)
 				_go_generate "$target"
-				_apply_go_env "linux" "amd64" "${pass_args[@]}"
+				_apply_go_env "linux" "amd64" "${build_opts[@]}" "${pass_args[@]}"
 
 				_print_info "[go] benchmarking $target (mode: $GO_MODE_STR)"
 
@@ -1386,6 +1387,7 @@ function test() (
 
 		local target_lang="$PARSED_LANG"
 		local -a pass_args=("${PARSED_PASS[@]}")
+		local -a build_opts=("${PARSED_OPTS[@]}")
 		local target="$(realpath ".")"
 
 		if [[ -z "$target_lang" ]]; then
@@ -1402,7 +1404,7 @@ function test() (
 				;;
 			go)
 				_go_generate "$target"
-				_apply_go_env "linux" "amd64" "${pass_args[@]}"
+				_apply_go_env "linux" "amd64" "${build_opts[@]}" "${pass_args[@]}"
 
 				_print_info "[go] testing $target (mode: $GO_MODE_STR)"
 
@@ -1460,6 +1462,7 @@ function run() (
 
 		local target_lang="$PARSED_LANG"
 		local -a pass_args=("${PARSED_PASS[@]}")
+		local -a build_opts=("${PARSED_OPTS[@]}")
 		local target="$(realpath ".")"
 
 		if [[ -z "$target_lang" ]]; then
@@ -1491,7 +1494,7 @@ function run() (
 				local main_dir=$(_find_go_main_dir "$target")
 
 				_go_generate "$target"
-				_apply_go_env "linux" "amd64" "${pass_args[@]}"
+				_apply_go_env "linux" "amd64" "${build_opts[@]}" "${pass_args[@]}"
 
 				_print_info "[go] running $main_dir (mode: $GO_MODE_STR)"
 

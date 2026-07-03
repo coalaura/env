@@ -558,6 +558,10 @@ commands["bench"] = function(args)
 
     local target_lang = parsed.lang
     local pass_args = utils.format_extra_args(parsed.pass)
+    local build_opts = parsed.opts
+
+    local build_opts_str = table.concat(build_opts, " ")
+    local go_args = build_opts_str .. " " .. pass_args
 
     if not target_lang or target_lang == "" then
         target_lang = utils.detect_lang("bench", target_dir)
@@ -574,7 +578,7 @@ commands["bench"] = function(args)
             return ""
         end
 
-        local go_env = utils.prepare_go_env("windows", "amd64", pass_args)
+        local go_env = utils.prepare_go_env("windows", "amd64", go_args)
 
         utils.printf("[go] benchmarking %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -627,6 +631,10 @@ commands["test"] = function(args)
 
     local target_lang = parsed.lang
     local pass_args = utils.format_extra_args(parsed.pass)
+    local build_opts = parsed.opts
+
+    local build_opts_str = table.concat(build_opts, " ")
+    local go_args = build_opts_str .. " " .. pass_args
 
     if not target_lang or target_lang == "" then
         target_lang = utils.detect_lang("test", target_dir)
@@ -643,7 +651,7 @@ commands["test"] = function(args)
             return ""
         end
 
-        local go_env = utils.prepare_go_env("windows", "amd64", pass_args)
+        local go_env = utils.prepare_go_env("windows", "amd64", go_args)
 
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(target_dir), go_env.mode)
 
@@ -697,6 +705,10 @@ commands["run"] = function(args)
 
     local target_lang = parsed.lang
     local pass_args = utils.format_extra_args(parsed.pass)
+    local build_opts = parsed.opts
+
+    local build_opts_str = table.concat(build_opts, " ")
+    local go_args = build_opts_str .. " " .. pass_args
 
     if not target_lang or target_lang == "" then
         target_lang = utils.detect_lang("run", target_dir)
@@ -726,7 +738,7 @@ commands["run"] = function(args)
         end
 
         local main_dir = utils.find_go_main_dir(target_dir)
-        local go_env = utils.prepare_go_env("windows", "amd64", pass_args)
+        local go_env = utils.prepare_go_env("windows", "amd64", go_args)
 
         utils.printf("[go] running %s (mode: %s)", utils.clean_path(main_dir), go_env.mode)
 
