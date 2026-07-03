@@ -600,7 +600,7 @@ function _M.prepare_go_env(target_os, target_arch, extra_args_str)
     end
 
     add_experiment(os.getenv("GOEXPERIMENT"))
-    add_experiment("jsonv2,goroutineleakprofile,runtimefreegc,mapsplitgroup,newinliner")
+    add_experiment("jsonv2,goroutineleakprofile,runtimefreegc,newinliner")
 
     env.GOEXPERIMENT = table.concat(goexperiments, ",")
 

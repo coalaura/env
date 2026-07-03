@@ -415,7 +415,7 @@ function _apply_go_env() {
 	}
 
 	_add_go_experiment "${GOEXPERIMENT:-}"
-	_add_go_experiment "jsonv2,goroutineleakprofile,runtimefreegc,mapsplitgroup,newinliner"
+	_add_go_experiment "jsonv2,goroutineleakprofile,runtimefreegc,newinliner"
 
 	export GOEXPERIMENT="$(IFS=,; echo "${goexperiments[*]}")"
 
