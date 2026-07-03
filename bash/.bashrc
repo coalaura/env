@@ -1307,7 +1307,7 @@ function bench() (
 	(
 		set -euo pipefail
 
-		_parse_args "bench" "go js" 0 0 "$@" || return 1
+		_parse_args "bench" "go js" 0 1 "$@" || return 1
 
 		local target_lang="$PARSED_LANG"
 		local -a pass_args=("${PARSED_PASS[@]}")
@@ -1382,7 +1382,7 @@ function test() (
 	(
 		set -euo pipefail
 
-		_parse_args "test" "go js" 0 0 "$@" || return 1
+		_parse_args "test" "go js" 0 1 "$@" || return 1
 
 		local target_lang="$PARSED_LANG"
 		local -a pass_args=("${PARSED_PASS[@]}")
@@ -1456,7 +1456,7 @@ function run() (
 	(
 		set -euo pipefail
 
-		_parse_args "run" "go js php" 0 0 "$@" || return 1
+		_parse_args "run" "go js php" 0 1 "$@" || return 1
 
 		local target_lang="$PARSED_LANG"
 		local -a pass_args=("${PARSED_PASS[@]}")

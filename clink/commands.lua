@@ -550,7 +550,7 @@ end
 commands["bench"] = function(args)
     local target_dir = os.getcwd()
 
-    local parsed = utils.parse_args("bench", {"go", "js"}, false, false, args)
+    local parsed = utils.parse_args("bench", {"go", "js"}, false, true, args)
 
     if not parsed then
         return ""
@@ -619,7 +619,7 @@ end
 commands["test"] = function(args)
     local target_dir = os.getcwd()
 
-    local parsed = utils.parse_args("test", {"go", "js"}, false, false, args)
+    local parsed = utils.parse_args("test", {"go", "js"}, false, true, args)
 
     if not parsed then
         return ""
@@ -689,7 +689,7 @@ end
 commands["run"] = function(args)
     local target_dir = os.getcwd()
 
-    local parsed = utils.parse_args("run", {"go", "js", "php"}, false, false, args)
+    local parsed = utils.parse_args("run", {"go", "js", "php"}, false, true, args)
 
     if not parsed then
         return ""
