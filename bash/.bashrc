@@ -2090,47 +2090,6 @@ function envup() {
 	)
 }
 
-# clean common temporary directories
-function cleanup() (
-	set -euo pipefail
-
-	local -a dirs=(
-		"$HOME/.cache"
-		"$HOME/.local/share/Trash/files"
-		"$HOME/.local/share/Trash/info"
-		"$HOME/.bun/install/cache"
-		"/tmp"
-		"/var/tmp"
-	)
-
-	# add firefox caches if they exist
-	for ff_dir in "$HOME/.mozilla/firefox"/*/cache2; do
-		[[ -d "$ff_dir" ]] && dirs+=("$ff_dir")
-	done
-
-	local cleaned=0
-
-	for dir in "${dirs[@]}"; do
-		if [[ -d "$dir" ]]; then
-			_print_info "cleaning $dir"
-
-			# delete files older than 1 hour (60 minutes)
-			find "$dir" -type f -mmin +60 -delete 2>/dev/null || true
-
-			# remove empty subdirectories older than 1 hour
-			find "$dir" -type d -mmin +60 -empty -delete 2>/dev/null || true
-
-			cleaned=$((cleaned + 1))
-		fi
-	done
-
-	if (( cleaned == 0 )); then
-		_print_error "no temp directories found"
-	else
-		_print_success "cleaned $cleaned directories"
-	fi
-)
-
 ##
 # Shell settings
 ##
