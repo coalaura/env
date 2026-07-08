@@ -2,6 +2,7 @@
     "lugo.environment.knownGlobals": [
         "path",
         "clink",
-        "rl"
+        "rl",
+        "console"
     ],
 }
