@@ -670,56 +670,6 @@ function command_not_found_handle() {
 }
 
 ##
-# Exit status indicator
-##
-
-__exit_indicator() {
-	local exit_code=$?
-
-	# ignore success and ctrl+c
-	if (( exit_code == 0 || exit_code == 130 )); then
-		return "$exit_code"
-	fi
-
-	# only run in interactive terminal
-	if [[ $- != *i* || ! -t 0 || ! -t 1 ]]; then
-		return "$exit_code"
-	fi
-
-	# do not break buffered input
-	local pending
-	if read -t 0 pending 2>/dev/null; then
-		return "$exit_code"
-	fi
-
-	local response
-	local prefix=$'\033['
-	local col
-
-	printf '\033[6n' > /dev/tty
-
-	if IFS= read -r -t 0.2 -d 'R' response < /dev/tty; then
-		response="${response#"$prefix"}"
-
-		col="${response##*;}"
-
-		if [[ "$col" =~ ^[0-9]+$ ]]; then
-			if (( col > 1 )); then
-				printf "\n"
-			fi
-		else
-			printf "\n"
-		fi
-	else
-		printf "\n"
-	fi
-
-	printf "\033[31m!! \033[90mexit \033[31m%d\033[0m\n" "$exit_code"
-
-	return "$exit_code"
-}
-
-##
 # Commands
 ##
 
@@ -2299,6 +2249,3 @@ printf "  \\(__)|\n\n"
 
 # init starship
 eval "$(starship init bash)"
-
-# non-zero exit indicator
-PROMPT_COMMAND="__exit_indicator; ${PROMPT_COMMAND:-}"
