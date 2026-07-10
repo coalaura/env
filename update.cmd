@@ -82,7 +82,7 @@ if %errorlevel%==0 (
 if exist "%APPDATA%\Code\User" (
     echo Copying vscode keybinds...
 
-    copy /y ".vscode\keybinds.json" "%APPDATA%\Code\User\keybindings.json" >nul
+    copy /y "code\keybinds.json" "%APPDATA%\Code\User\keybindings.json" >nul
 )
 
 echo Done.

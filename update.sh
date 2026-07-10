@@ -63,7 +63,7 @@ cp bash/.inputrc ~/.inputrc
 # vscode keybinds.json
 if [[ -d "$HOME/.config/Code/User" ]]; then
 	echo "Copying vscode keybinds..."
-	cp .vscode/keybinds.json ~/.config/Code/User/keybindings.json
+	cp code/keybinds.json ~/.config/Code/User/keybindings.json
 fi
 
 echo "Done."
