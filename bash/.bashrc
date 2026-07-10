@@ -670,6 +670,25 @@ function command_not_found_handle() {
 }
 
 ##
+# Reset exit code
+##
+
+__last_histcmd=""
+
+__reset_exit_code() {
+    local status=$?
+
+    if [[ -n ${__last_histcmd+x} && $HISTCMD == "$__last_histcmd" ]]; then
+        # no new command run
+        return 0
+    fi
+
+    __last_histcmd=$HISTCMD
+
+    return "$status"
+}
+
+##
 # Commands
 ##
 
@@ -2249,3 +2268,5 @@ printf "  \\(__)|\n\n"
 
 # init starship
 eval "$(starship init bash)"
+
+PROMPT_COMMAND="__reset_exit_code; ${PROMPT_COMMAND:-}"
