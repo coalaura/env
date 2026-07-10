@@ -145,9 +145,6 @@
     "scm.repositories.sortOrder": "path",
     "outline.showEnumMembers": false,
     "outline.showTypeParameters": false,
-    "terminal.integrated.env.linux": {
-        "BIOME_CONFIG_PATH": "/home/laura/biome/.biome.json"
-    },
     "security.workspace.trust.untrustedFiles": "open",
     "update.showReleaseNotes": false,
     "telemetry.feedback.enabled": false,
