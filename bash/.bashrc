@@ -670,130 +670,51 @@ function command_not_found_handle() {
 }
 
 ##
-# Output Tracker
+# Exit status indicator
 ##
-
-__exit_indicator_whitelist=(cd pushd popd dirs clear cls .. ... home)
 
 __exit_indicator() {
 	local exit_code=$?
 
-	if [[ $- != *i* ]]; then
+	# ignore success and ctrl+c
+	if (( exit_code == 0 || exit_code == 130 )); then
 		return "$exit_code"
 	fi
 
-	if [[ ! -t 0 ]]; then
+	# only run in interactive terminal
+	if [[ $- != *i* || ! -t 0 || ! -t 1 ]]; then
 		return "$exit_code"
 	fi
 
-	# skip if there is buffered input waiting
-	local _pending
-
-	if read -t 0 _pending 2>/dev/null; then
+	# do not break buffered input
+	local pending
+	if read -t 0 pending 2>/dev/null; then
 		return "$exit_code"
 	fi
 
-	# last command
-	local hist_line
-	hist_line=$(HISTTIMEFORMAT='' history 1 2>/dev/null)
+	local response
+	local prefix=$'\033['
+	local col
 
-	local hist_num
-	hist_num=$(printf '%s\n' "$hist_line" | sed -n 's/^ *\([0-9]*\).*/\1/p')
+	printf '\033[6n' > /dev/tty
 
-	local hist_cmd
-	hist_cmd=$(printf '%s\n' "$hist_line" | sed -n 's/^ *[0-9]* *\(.*\)/\1/p')
+	if IFS= read -r -t 0.2 -d 'R' response < /dev/tty; then
+		response="${response#"$prefix"}"
 
-	# no command run
-	if [[ -n "${__prev_hist_num:-}" && "$hist_num" == "$__prev_hist_num" ]]; then
-		local _r
-		local _c
+		col="${response##*;}"
 
-		if IFS=';' read -sdR -p $'\E[6n' _r _c; then
-			_r="${_r:2}"
-
-			if [[ "$_r" =~ ^[0-9]+$ ]]; then
-				__prev_prompt_row=$_r
+		if [[ "$col" =~ ^[0-9]+$ ]]; then
+			if (( col > 1 )); then
+				printf "\n"
 			fi
-		fi
-
-		return "$exit_code"
-	fi
-
-	__prev_hist_num=$hist_num
-
-	# current cursor pos
-	local _r
-	local _c
-
-	if ! IFS=';' read -sdR -p $'\E[6n' _r _c; then
-		return "$exit_code"
-	fi
-
-	_r="${_r:2}"
-
-	if [[ ! "$_r" =~ ^[0-9]+$ ]]; then
-		return "$exit_code"
-	fi
-
-	if [[ ! "$_c" =~ ^[0-9]+$ ]]; then
-		_c=0
-	fi
-
-	local cur_row=$_r cur_col=$_c
-	local lines=${LINES:-0}
-
-	# first run
-	if [[ -z "${__prev_prompt_row:-}" ]]; then
-		__prev_prompt_row=$cur_row
-
-		return "$exit_code"
-	fi
-
-	# skip ctrl+c (SIGINT = exit 130)
-	if (( exit_code == 130 )); then
-		__prev_prompt_row=$cur_row
-
-		return "$exit_code"
-	fi
-
-	# skip whitelist
-	local first_word="${hist_cmd%% *}"
-
-	for w in "${__exit_indicator_whitelist[@]}"; do
-		if [[ "$first_word" == "$w" ]]; then
-			__prev_prompt_row=$cur_row
-
-			return "$exit_code"
-		fi
-	done
-
-	# did command produce no output
-	local expected=$(( __prev_prompt_row + 1 ))
-	local no_output=false
-
-	if (( cur_col == 1 )); then
-		if (( cur_row == expected )); then
-			no_output=true
-		elif (( lines > 0 && cur_row == lines && __prev_prompt_row == lines )); then
-			no_output=true
-		fi
-	fi
-
-	if [[ "$no_output" == true ]]; then
-		if (( exit_code == 0 )); then
-			printf '\033[90m# no-output \033[32m<0>\033[0m\n'
 		else
-			printf '\033[90m# no-output \033[31m<%d>\033[0m\n' "$exit_code"
-		fi
-
-		if (( lines > 0 && cur_row >= lines )); then
-			__prev_prompt_row=$lines
-		else
-			__prev_prompt_row=$(( cur_row + 1 ))
+			printf "\n"
 		fi
 	else
-		__prev_prompt_row=$cur_row
+		printf "\n"
 	fi
+
+	printf "\033[31m!! \033[90mexit \033[31m%d\033[0m\n" "$exit_code"
 
 	return "$exit_code"
 }
@@ -960,7 +881,7 @@ function update() {
 
 # restart docker compose project in current directory (stop, pull, up -d)
 function dcr() {
-	local compose_file="$(find . -maxdepth 1 -name 'compose.yml' -o -name 'compose.yaml' -o -name 'docker-compose.yml' -o -name 'docker-compose.yaml' | head -1)"
+	local compose_file="$(find . -maxdepth 1 -name "compose.yml" -o -name "compose.yaml" -o -name "docker-compose.yml" -o -name "docker-compose.yaml" | head -1)"
 
 	if [[ -z "$compose_file" ]]; then
 		_print_error "no compose file"
@@ -2379,5 +2300,5 @@ printf "  \\(__)|\n\n"
 # init starship
 eval "$(starship init bash)"
 
-# no-out exit indicator
+# non-zero exit indicator
 PROMPT_COMMAND="__exit_indicator; ${PROMPT_COMMAND:-}"
