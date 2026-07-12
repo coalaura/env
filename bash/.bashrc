@@ -676,16 +676,16 @@ function command_not_found_handle() {
 __last_histcmd=""
 
 __reset_exit_code() {
-    local status=$?
+	local status=$?
 
-    if [[ -n ${__last_histcmd+x} && $HISTCMD == "$__last_histcmd" ]]; then
-        # no new command run
-        return 0
-    fi
+	if [[ -n ${__last_histcmd+x} && $HISTCMD == "$__last_histcmd" ]]; then
+		# no new command run
+		return 0
+	fi
 
-    __last_histcmd=$HISTCMD
+	__last_histcmd=$HISTCMD
 
-    return "$status"
+	return "$status"
 }
 
 ##
@@ -2048,7 +2048,24 @@ function perms() {
 # safer rm that confirms folder deletes
 function rm() {
 	(
-		local arg path reply parsing_opts=true
+		local arg path reply
+		local parsing_opts=true
+		local recursive=false
+
+		for arg in "$@"; do
+			if [[ "$parsing_opts" == true ]]; then
+				case "$arg" in
+					--)
+						parsing_opts=false
+						;;
+					--recursive|-r|-R|-[^-]*r*|-[^-]*R*)
+						recursive=true
+						;;
+				esac
+			fi
+		done
+
+		parsing_opts=true
 
 		for arg in "$@"; do
 			if [[ "$parsing_opts" == true ]]; then
@@ -2067,7 +2084,37 @@ function rm() {
 			if [[ -d "$arg" && ! -L "$arg" ]]; then
 				path="$(cd -- "$arg" && pwd -P)" || return 1
 
-				_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N] " reply
+				if [[ "$path" == "/" ]]; then
+					_print_error "refusing to remove /"
+
+					return 1
+				fi
+
+				if [[ "$recursive" != true ]]; then
+					_print_error "directory '$path' requires -r"
+
+					return 1
+				fi
+
+				local depth=0
+				local probe="$path"
+
+				while [[ "$probe" != "/" ]]; do
+					probe="${probe%/*}"
+
+					if [[ -z "$probe" ]]; then
+						probe="/"
+					fi
+
+					((depth += 1))
+				done
+
+				if (( depth <= 2 )); then
+					printf "\033[31m!?\033[0m remove \033[31m%s\033[0m? [y/N] " "$path"
+					read -r reply
+				else
+					_read_line "remove $(printf '\033[36m%s\033[0m' "$path")? [y/N] " reply
+				fi
 
 				case "$reply" in
 					[yY]) ;;
