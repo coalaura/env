@@ -32,7 +32,7 @@
         "*.bin": "hexEditor.hexedit",
         "*.lar": "hexEditor.hexedit",
         "*.dll": "hexEditor.hexedit",
-        "*.db": "sqlite3-editor.editor"
+        "*.db": "sqlite-viewer.view"
     },
     "workbench.iconTheme": "catppuccin-macchiato",
     "workbench.quickOpen.preserveInput": true,
@@ -216,9 +216,6 @@
         "editor.wordWrap": "on",
         "diffEditor.ignoreTrimWhitespace": true
     },
-    "[pcss]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
     "[php]": {
         "editor.defaultFormatter": "kokororin.vscode-phpfmt"
     },
@@ -227,12 +224,6 @@
     },
     "[scss]": {
         "editor.defaultFormatter": "vscode.css-language-features"
-    },
-    "[typescript]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
-    "[vue]": {
-        "editor.defaultFormatter": "Vue.volar"
     },
     "auto-rename-tag.activationOnLanguage": [
         "html"
@@ -671,6 +662,7 @@
         "hubba",
         "huntingrifle",
         "HWID",
+        "Idents",
         "ifak",
         "igfa",
         "igna",
@@ -1248,6 +1240,11 @@
         "GOEXPERIMENT": "jsonv2"
     },
     "go.toolsManagement.autoUpdate": true,
+    "gopls": {
+        "analyses": {
+            "stdmethods": false
+        }
+    },
     "gomu.lineSpacing": 6,
     "importCost.fontStyle": "italic",
     "intelephense.codeLens.references.enable": true,
