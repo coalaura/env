@@ -77,6 +77,17 @@ if %errorlevel%==0 (
     copy /y "go\staticcheck.conf" "%USERPROFILE%\staticcheck.conf" >nul
 )
 
+:: opencode config
+if exist "%USERPROFILE%\.config\opencode\" (
+	echo Copying opencode config...
+
+	if exist "%USERPROFILE%\.config\opencode\opencode.json" (
+		del "%USERPROFILE%\.config\opencode\opencode.json"
+	)
+
+	copy /y "slop\opencode.jsonc" "%USERPROFILE%\.config\opencode\opencode.jsonc"
+)
+
 :: vscode keybinds.json
 if exist "%APPDATA%\Code\User" (
     echo Copying vscode keybinds...

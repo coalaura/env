@@ -40,6 +40,23 @@ if command -v go >/dev/null 2>&1; then
 	cp go/staticcheck.conf ~/staticcheck.conf
 fi
 
+# opencode config
+if [[ -d ~/.config/opencode ]]; then
+	echo "Copying opencode config..."
+
+	if [[ -f ~/.config/opencode/opencode.json ]]; then
+		rm ~/.config/opencode/opencode.json
+	fi
+
+	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
+fi
+
+# vscode keybinds.json
+if [[ -d "$HOME/.config/Code/User" ]]; then
+	echo "Copying vscode keybinds..."
+	cp code/keybinds.json ~/.config/Code/User/keybindings.json
+fi
+
 # .bash_profile
 echo "Copying .bash_profile..."
 
@@ -59,11 +76,5 @@ cp bash/.bashrc ~/.bashrc
 echo "Copying .inputrc..."
 
 cp bash/.inputrc ~/.inputrc
-
-# vscode keybinds.json
-if [[ -d "$HOME/.config/Code/User" ]]; then
-	echo "Copying vscode keybinds..."
-	cp code/keybinds.json ~/.config/Code/User/keybindings.json
-fi
 
 echo "Done."
