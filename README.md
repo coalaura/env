@@ -14,6 +14,7 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 - `git/`: git configuration and better defaults
 - `go/`: go configurations like staticcheck
 - `rio/`: rio configuration and catppuccin themes
+- `slop/`: ai related settings/configs (e.g. opencode)
 - `starship/`: starship prompt config
 - `workflows/`: ci workflows commonly used
 - `background.png`: clean catppuccin wallpaper
