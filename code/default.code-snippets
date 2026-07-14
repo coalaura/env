@@ -1,0 +1,40 @@
+{
+	"Citizen.CreateThread": {
+		"scope": "lua",
+		"prefix": "thread",
+		"body": [
+			"Citizen.CreateThread(function()",
+			"\t$0",
+			"end)"
+		],
+		"description": "Create a thread"
+	},
+	"Citizen.CreateThreadNow": {
+		"scope": "lua",
+		"prefix": "threadnow",
+		"body": [
+			"Citizen.CreateThreadNow(function()",
+			"\t$0",
+			"end)"
+		],
+		"description": "Create an immediately-running thread"
+	},
+	"Citizen.Wait": {
+		"scope": "lua",
+		"prefix": "tick",
+		"body": [
+			"Citizen.Wait(0)$0"
+		],
+		"description": "Wait for one Citizen tick"
+	},
+	"Citizen.SetTimeout": {
+		"scope": "lua",
+		"prefix": "timeout",
+		"body": [
+			"Citizen.SetTimeout(1000, function()",
+			"\t$0",
+			"end)"
+		],
+		"description": "Run a callback after a timeout"
+	}
+}

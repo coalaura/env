@@ -51,10 +51,15 @@ if [[ -d ~/.config/opencode ]]; then
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
 fi
 
-# vscode keybinds.json
+# vscode keybinds and snippets
 if [[ -d "$HOME/.config/Code/User" ]]; then
-	echo "Copying vscode keybinds..."
+	echo "Copying vscode config..."
+
 	cp code/keybinds.json ~/.config/Code/User/keybindings.json
+
+	mkdir -p "$HOME/.config/Code/User/snippets"
+
+	cp code/default.code-snippets "$HOME/.config/Code/User/snippets/default.code-snippets"
 fi
 
 # .bash_profile

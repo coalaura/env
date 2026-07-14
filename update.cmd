@@ -88,11 +88,17 @@ if exist "%USERPROFILE%\.config\opencode\" (
 	copy /y "slop\opencode.jsonc" "%USERPROFILE%\.config\opencode\opencode.jsonc"
 )
 
-:: vscode keybinds.json
+:: vscode keybinds and snippets
 if exist "%APPDATA%\Code\User" (
-    echo Copying vscode keybinds...
+    echo Copying vscode config...
 
     copy /y "code\keybinds.json" "%APPDATA%\Code\User\keybindings.json" >nul
+
+    if not exist "%APPDATA%\Code\User\snippets" (
+        mkdir "%APPDATA%\Code\User\snippets"
+    )
+
+    copy /y "code\default.code-snippets" "%APPDATA%\Code\User\snippets\default.code-snippets" >nul
 )
 
 echo Done.
