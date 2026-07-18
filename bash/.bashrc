@@ -2442,6 +2442,7 @@ _path_prepend "/usr/local/zig"
 _path_prepend "/usr/local/go/bin"
 
 _path_append "$HOME/go/bin"
+_path_append "$HOME/.local/bin"
 
 # write history immediately so multiple terminals share it
 PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
