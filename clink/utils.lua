@@ -176,6 +176,10 @@ function _M.is_node(dir)
     return os.isfile(path.join(dir, "package.json"))
 end
 
+function _M.is_php(dir)
+    return os.isfile(path.join(dir, "artisan"))
+end
+
 function _M.git_root(dir)
     local handle = io.popen(string.format("git.exe -C %s rev-parse --show-toplevel 2>nul", _M.escape_path(dir)))
 
@@ -223,9 +227,19 @@ function _M.escape_pattern(str)
 end
 
 function _M.escape_path(pt, escapeQuotes)
-    pt = path.normalise(pt)
+    pt = tostring(pt or "")
 
-    pt = pt:gsub("[/\\]+$", "")
+    local is_dot_relative = pt:match("^%.[./\\]") or pt == "." or pt == ".."
+
+    if not is_dot_relative then
+        pt = path.normalise(pt)
+    end
+
+    -- strip trailing separators
+    if not (pt == "." or pt == "..") then
+        pt = pt:gsub("[/\\]+$", "")
+    end
+
     pt = pt:gsub("\"", "\"\"")
 
     if escapeQuotes then
@@ -338,7 +352,6 @@ function _M.go_generate(dir, env)
     return true
 end
 
-
 local function escape_cmd_set_value(v)
     v = tostring(v)
 
@@ -367,12 +380,86 @@ function _M.command_with_env(command, env)
     return string.format("cmd /v:off /c \"%s\"", table.concat(entries, " && "))
 end
 
+function _M.resolve_project_target(cmd, cwd, target, lang)
+    cwd = path.normalise(cwd or os.getcwd())
+
+    if not target or target == "" then
+        return cwd, nil
+    end
+
+    print(cmd, cwd, target, lang)
+
+    local resolved = nil
+
+    if os.isfile(target) or os.isdir(target) then
+        resolved = target
+    end
+
+    -- ./pkg/... or other go patterns
+    if not resolved then
+        return cwd, target
+    end
+
+    local cwd_is_go = lang == "go" and _M.is_go(cwd)
+    local cwd_is_js = lang == "js" and _M.is_node(cwd)
+    local cwd_is_php = lang == "php" and _M.is_php(cwd)
+    local cwd_is_project = cwd_is_go or cwd_is_js or cwd_is_php or lang == "script"
+
+    if os.isfile(resolved) then
+        if cwd_is_project then
+            return cwd, target
+        end
+
+        return path.normalise(path.getdirectory(resolved)), target
+    end
+
+    if os.isdir(resolved) then
+        local pt_is_go = lang == "go" and _M.is_go(resolved)
+        local pt_is_js = lang == "js" and _M.is_node(resolved)
+        local pt_is_php = lang == "php" and _M.is_php(resolved)
+        local pt_is_script = lang == "script" and os.isfile(path.join(resolved, cmd .. ".cmd"))
+
+        local target_is_project = pt_is_go or pt_is_js or pt_is_php or pt_is_script
+
+        if target_is_project then
+            return path.normalise(resolved), nil
+        end
+
+        if cwd_is_project then
+            return cwd, target
+        end
+
+        return path.normalise(resolved), nil
+    end
+
+    return cwd, target
+end
+
+function _M.looks_like_path(token)
+    if not token or token == "" then
+        return false
+    end
+
+    -- "-" probably flag
+    if token:sub(1, 1) == "-" then
+        return false
+    end
+
+    -- "./path" or "path/sub" or "path.go"
+    if token:match("^%.[/\\]") or token:match("[/\\]") or token:match("%.%w+$") then
+        return true
+    end
+
+    return os.isdir(token) or os.isfile(token)
+end
+
 function _M.parse_args(cmd_name, allowed_langs, allow_os, allow_build_opts, args)
     local tokens = _M.split_args(args)
 
     local parsed = {
         lang = nil,
         os = nil,
+        target = nil,
         opts = {},
         pass = {}
     }
@@ -420,6 +507,8 @@ function _M.parse_args(cmd_name, allowed_langs, allow_os, allow_build_opts, args
                     parsed.os = osOpt
                 elseif langOpt then
                     parsed.lang = langOpt
+                elseif _M.looks_like_path(token) and not parsed.target then
+                    parsed.target = token
                 else
                     _M.errorf("Unknown argument for %s: %s", cmd_name, token)
 
