@@ -2272,8 +2272,13 @@ function rm() {
 					--)
 						parsing_opts=false
 						;;
-					--recursive|-r|-R|-[^-]*r[^-]*|-[^-]*R[^-]*)
+					--recursive)
 						recursive=true
+						;;
+					-[!-]*)
+						if [[ "$arg" == *[rR]* ]]; then
+							recursive=true
+						fi
 						;;
 				esac
 			fi
