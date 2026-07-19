@@ -2272,7 +2272,7 @@ function rm() {
 					--)
 						parsing_opts=false
 						;;
-					--recursive|-r|-R|-[^-]*r*|-[^-]*R*)
+					--recursive|-r|-R|-[^-]*r[^-]*|-[^-]*R[^-]*)
 						recursive=true
 						;;
 				esac
