@@ -1,4 +1,5 @@
 local utils = require("utils")
+local windows = require("windows")
 
 local commands = {}
 
@@ -1440,6 +1441,9 @@ commands["envup"] = function()
 
     return string.format("cd /d %s && setup.cmd", utils.escape_path(env_dir))
 end
+
+-- specialty windows only commands
+windows.register_windows_only_commands(commands)
 
 -- Command handler
 clink.onfilterinput(function(text)

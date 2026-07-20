@@ -25,12 +25,7 @@ if not exist "%LOCALAPPDATA%\clink" (
     mkdir "%LOCALAPPDATA%\clink"
 )
 
-copy /y "clink\clink_settings" "%LOCALAPPDATA%\clink\clink_settings" >nul
-copy /y "clink\commands.lua" "%LOCALAPPDATA%\clink\commands.lua" >nul
-copy /y "clink\completions.lua" "%LOCALAPPDATA%\clink\completions.lua" >nul
-copy /y "clink\init.lua" "%LOCALAPPDATA%\clink\init.lua" >nul
-copy /y "clink\json.lua" "%LOCALAPPDATA%\clink\json.lua" >nul
-copy /y "clink\utils.lua" "%LOCALAPPDATA%\clink\utils.lua" >nul
+xcopy /y /q "clink\*" "%LOCALAPPDATA%\clink\"
 
 :: starship config
 where starship >nul 2>&1
