@@ -1,5 +1,4 @@
 local utils = require("utils")
-local windows = require("windows")
 
 local commands = {}
 
@@ -1443,7 +1442,7 @@ commands["envup"] = function()
 end
 
 -- specialty windows only commands
-windows.register_windows_only_commands(commands)
+require("pkill").register_command(commands)
 
 -- Command handler
 clink.onfilterinput(function(text)

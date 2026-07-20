@@ -1040,6 +1040,16 @@ function _M.read_line(prompt, default)
     return input ~= "" and input or default
 end
 
+function _M.create_map(array)
+    local map = {}
+
+    for _, entry in ipairs(array) do
+        map[entry] = true
+    end
+
+    return map
+end
+
 function _M.printf(format, ...)
     if not format then
         return
