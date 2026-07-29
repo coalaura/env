@@ -1,4 +1,6 @@
 {
+    "chat.disableAIFeatures": true,
+    "telemetry.telemetryLevel": "crash",
     "editor.acceptSuggestionOnCommitCharacter": false,
     "editor.autoClosingBrackets": "always",
     "editor.autoClosingComments": "always",
