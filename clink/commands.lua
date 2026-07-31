@@ -1452,12 +1452,12 @@ clink.onfilterinput(function(text)
 
     local command, arguments = text:match("^(%S+)%s*(.*)$")
 
-    local isDebug = false
-
     if command == "debug" then
-        isDebug = true
+        utils.setIsDebug(true)
 
         command, arguments = (arguments or ""):match("^(%S+)%s*(.*)$")
+    else
+        utils.setIsDebug(false)
     end
 
     if not command then
@@ -1501,7 +1501,7 @@ clink.onfilterinput(function(text)
 
     local result = func(arguments)
 
-    if isDebug then
+    if result ~= "" and utils.isDebug() then
         utils.printf("$ %s", result or "n/a")
 
         return ""

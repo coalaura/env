@@ -3,8 +3,18 @@ local json = require("json")
 
 local _M = {}
 
+local isDebug = false
+
 local home = os.getenv("USERPROFILE") or os.getenv("HOME") or ""
 local host = os.getenv("COMPUTERNAME") or ""
+
+function _M.setIsDebug(newIsDebug)
+    isDebug = newIsDebug
+end
+
+function _M.isDebug()
+    return isDebug
+end
 
 function _M.home()
     return home
@@ -377,7 +387,13 @@ function _M.command_with_env(command, env)
 
     table.insert(entries, command)
 
-    return string.format("cmd /v:off /c \"%s\"", table.concat(entries, " && "))
+    local result = string.format("cmd /v:off /c \"%s\"", table.concat(entries, " && "))
+
+    if isDebug then
+        _M.printf("$ %s", result)
+    end
+
+    return result
 end
 
 function _M.resolve_project_target(cmd, cwd, target, lang)
