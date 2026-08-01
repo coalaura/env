@@ -888,93 +888,37 @@ function _M.run_go_test_colorized(cmd, env)
     end
 
     for line in handle:lines() do
-        local matched = false
+        local ok, event = pcall(json.decode, line)
 
-        -- "=== RUN   TestName"
-        local run_test = line:match("^=== RUN%s+(.*)")
+        if ok and event then
+            local elapsed = string.format("(%.2fs)", event.Elapsed or 0)
 
-        if run_test then
-            line = string.format("   \x1b[90m-> run: \x1b[0m \x1b[36m%s\x1b[0m", run_test)
+            if event.Action == "run" and event.Test then
+                print(string.format("   \x1b[90m-> run: \x1b[0m \x1b[36m%s\x1b[0m", event.Test))
+            elseif event.Test and event.Action == "pass" then
+                print(string.format("   \x1b[32m-> pass:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", event.Test, elapsed))
+            elseif event.Test and event.Action == "fail" then
+                print(string.format("   \x1b[31m-> fail:\x1b[0m \x1b[31;1m%s\x1b[0m \x1b[90m%s\x1b[0m", event.Test, elapsed))
+            elseif event.Test and event.Action == "skip" then
+                print(string.format("   \x1b[33m-> skip:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", event.Test, elapsed))
+            elseif not event.Test and event.Action == "pass" then
+                print(string.format("\x1b[32m::\x1b[0m \x1b[32mok\x1b[0m     %s \x1b[90m%s\x1b[0m", event.Package or "", elapsed))
+            elseif not event.Test and event.Action == "fail" then
+                print(string.format("\x1b[31m!!\x1b[0m \x1b[31;1mFAIL\x1b[0m   %s \x1b[90m%s\x1b[0m", event.Package or "", elapsed))
+            elseif not event.Test and event.Action == "skip" then
+                print(string.format("\x1b[33m::\x1b[0m \x1b[33m?\x1b[0m      %s \x1b[90m[no test files]\x1b[0m", event.Package or ""))
+            elseif event.Action == "output" then
+                local output = event.Output or ""
 
-            matched = true
-        end
-
-        -- "--- PASS: TestName (0.00s)"
-        if not matched then
-            local pass_test, pass_time = line:match("^%s*%-%-%- PASS:%s+(%S+)%s+(%(.+%))")
-
-            if pass_test then
-                line = string.format("   \x1b[32m-> pass:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", pass_test, pass_time)
-
-                matched = true
+                -- Test and package result lines are represented by their action events above.
+                if not output:match("^=== RUN%s+") and not output:match("^%s*%-%-%-%s+PASS:") and not output:match("^%s*%-%-%-%s+FAIL:") and not output:match("^%s*%-%-%-%s+SKIP:") and not output:match("^PASS[\r\n]*$") and not output:match("^FAIL[\r\n]*$") and not output:match("^ok%s+") and not output:match("^%?%s+") and not output:match("^FAIL%s+") then
+                    io.write(output)
+                    io.flush()
+                end
             end
+        else
+            print(line)
         end
-
-        -- "--- FAIL: TestName (0.00s)" or "    --- FAIL: SubTest (0.00s)"
-        if not matched then
-            local fail_test, fail_time = line:match("^%s*%-%-%- FAIL:%s+(%S+)%s+(%(.+%))")
-
-            if fail_test then
-                line = string.format("   \x1b[31m-> fail:\x1b[0m \x1b[31;1m%s\x1b[0m \x1b[90m%s\x1b[0m", fail_test, fail_time)
-
-                matched = true
-            end
-        end
-
-        -- "--- SKIP: TestName (0.00s)"
-        if not matched then
-            local skip_test, skip_time = line:match("^%s*%-%-%- SKIP:%s+(%S+)%s+(%(.+%))")
-
-            if skip_test then
-                line = string.format("   \x1b[33m-> skip:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", skip_test, skip_time)
-
-                matched = true
-            end
-        end
-
-        -- "ok      package/name   0.00s"
-        if not matched then
-            local ok_pkg, ok_time = line:match("^ok%s+(%S+)%s+(.*)")
-
-            if ok_pkg then
-                line = string.format("\x1b[32m::\x1b[0m \x1b[32mok\x1b[0m     %s \x1b[90m%s\x1b[0m", ok_pkg, ok_time)
-
-                matched = true
-            end
-        end
-
-        -- "FAIL    package/name   0.00s"
-        if not matched then
-            local fail_pkg, fail_time = line:match("^FAIL%s+(%S+)%s+(.*)")
-
-            if fail_pkg then
-                line = string.format("\x1b[31m!!\x1b[0m \x1b[31;1mFAIL\x1b[0m   %s \x1b[90m%s\x1b[0m", fail_pkg, fail_time)
-
-                matched = true
-            end
-        end
-
-        -- "?       package/name   [no test files]"
-        if not matched then
-            local q_pkg, q_time = line:match("^%?%s+(%S+)%s+(.*)")
-
-            if q_pkg then
-                line = string.format("\x1b[33m::\x1b[0m \x1b[33m?\x1b[0m      %s \x1b[90m%s\x1b[0m", q_pkg, q_time)
-
-                matched = true
-            end
-        end
-
-        -- Global final result flags
-        if not matched then
-            if line == "PASS" then
-                line = "\x1b[32;1mPASS\x1b[0m"
-            elseif line == "FAIL" then
-                line = "\x1b[31;1mFAIL\x1b[0m"
-            end
-        end
-
-        print(line)
     end
 
     return handle:close()

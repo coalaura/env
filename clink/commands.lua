@@ -668,7 +668,7 @@ commands["test"] = function(args)
 
         utils.printf("[go] testing %s (mode: %s)", utils.clean_path(run_target or project_dir), go_env.mode)
 
-        local cmd = string.format("go test -v %s %s %s", go_env.tags_str, go_env.extra_args, packages)
+        local cmd = string.format("go test -json %s %s %s", go_env.tags_str, go_env.extra_args, packages)
 
         utils.run_go_test_colorized(cmd, go_env.env)
 
