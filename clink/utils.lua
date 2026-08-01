@@ -887,6 +887,10 @@ function _M.run_go_test_colorized(cmd, env)
         return false
     end
 
+    local ran = 0
+    local passed = 0
+    local failed = 0
+
     for line in handle:lines() do
         local ok, event = pcall(json.decode, line)
 
@@ -894,10 +898,16 @@ function _M.run_go_test_colorized(cmd, env)
             local elapsed = string.format("(%.2fs)", event.Elapsed or 0)
 
             if event.Action == "run" and event.Test then
+                ran = ran + 1
+
                 print(string.format("   \x1b[90m-> run: \x1b[0m \x1b[36m%s\x1b[0m", event.Test))
             elseif event.Test and event.Action == "pass" then
+                passed = passed + 1
+
                 print(string.format("   \x1b[32m-> pass:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", event.Test, elapsed))
             elseif event.Test and event.Action == "fail" then
+                failed = failed + 1
+
                 print(string.format("   \x1b[31m-> fail:\x1b[0m \x1b[31;1m%s\x1b[0m \x1b[90m%s\x1b[0m", event.Test, elapsed))
             elseif event.Test and event.Action == "skip" then
                 print(string.format("   \x1b[33m-> skip:\x1b[0m \x1b[36m%s\x1b[0m \x1b[90m%s\x1b[0m", event.Test, elapsed))
@@ -921,7 +931,11 @@ function _M.run_go_test_colorized(cmd, env)
         end
     end
 
-    return handle:close()
+    local success = handle:close()
+
+    print(string.format("\x1b[36m::\x1b[0m tests: \x1b[36m%d ran\x1b[0m, \x1b[32m%d passed\x1b[0m, \x1b[31m%d failed\x1b[0m", ran, passed, failed))
+
+    return success
 end
 
 function _M.split_args(pArgs)

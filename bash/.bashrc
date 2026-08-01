@@ -628,14 +628,24 @@ function _apply_go_env() {
 
 # colorize go test output
 function _run_go_test_colorized() {
+	local ran=0
+	local passed=0
+	local failed=0
+
 	while IFS= read -r line || [[ -n "$line" ]]; do
 		line="${line%$'\r'}"
 
 		if [[ "$line" =~ ^===[[:space:]]RUN[[:space:]]+(.*) ]]; then
+			((ran += 1))
+
 			printf "   \033[90m-> run: \033[0m \033[36m%s\033[0m\n" "${BASH_REMATCH[1]}"
 		elif [[ "$line" =~ ^[[:space:]]*---[[:space:]]PASS:[[:space:]]+([^[:space:]]+)[[:space:]]+(\(.*\)) ]]; then
+			((passed += 1))
+
 			printf "   \033[32m-> pass:\033[0m \033[36m%s\033[0m \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 		elif [[ "$line" =~ ^[[:space:]]*---[[:space:]]FAIL:[[:space:]]+([^[:space:]]+)[[:space:]]+(\(.*\)) ]]; then
+			((failed += 1))
+
 			printf "   \033[31m-> fail:\033[0m \033[31;1m%s\033[0m \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
 		elif [[ "$line" =~ ^[[:space:]]*---[[:space:]]SKIP:[[:space:]]+([^[:space:]]+)[[:space:]]+(\(.*\)) ]]; then
 			printf "   \033[33m-> skip:\033[0m \033[36m%s\033[0m \033[90m%s\033[0m\n" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
@@ -653,6 +663,8 @@ function _run_go_test_colorized() {
 			printf "%s\n" "$line"
 		fi
 	done
+
+	printf "\033[36m::\033[0m tests: \033[36m%d ran\033[0m, \033[32m%d passed\033[0m, \033[31m%d failed\033[0m\n" "$ran" "$passed" "$failed"
 }
 
 # safely prepend to path
