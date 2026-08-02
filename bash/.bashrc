@@ -1098,8 +1098,34 @@ function tag() {
 
 		if [[ -n "$latest_line" ]]; then
 			_print_tag_preview "current" "$latest_line"
+
+			local last_tag="${latest_line%%[[:space:]]*}"
+
+			if [[ -z "$(git -C "$target" log -1 --format='%h' "$last_tag..HEAD")" ]]; then
+				_print_error "no new commits since $last_tag"
+
+				return 1
+			fi
+
+			_print_info "commits:"
+
+			while IFS= read -r commit; do
+				_print_sub "$commit"
+			done < <(git -C "$target" log --format='%h %s' "$last_tag..HEAD")
 		else
 			_print_info "current: n/a"
+
+			if [[ -z "$(git -C "$target" log -1 --format='%h' HEAD)" ]]; then
+				_print_error "no commits to tag"
+
+				return 1
+			fi
+
+			_print_info "commits:"
+
+			while IFS= read -r commit; do
+				_print_sub "$commit"
+			done < <(git -C "$target" log --format='%h %s' HEAD)
 		fi
 
 		_print_info ""

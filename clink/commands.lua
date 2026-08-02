@@ -93,8 +93,74 @@ commands["tag"] = function(args)
 
         utils.printf("current: %s", last_tag)
         utils.subf("%s", last_msg)
+
+        local commit_check = io.popen(string.format(
+            "git.exe -C %s log -1 --format=%%h \"%s..HEAD\" 2>nul",
+            escaped_root,
+            utils.escape_input(last_tag)
+        ))
+
+        local has_commits = commit_check and commit_check:read("*l")
+
+        if commit_check then
+            commit_check:close()
+        end
+
+        if not has_commits or has_commits == "" then
+            utils.errorf("no new commits since %s", last_tag)
+
+            return
+        end
+
+        utils.printf("commits:")
+
+        local handle = io.popen(string.format(
+            "git.exe -C %s log --format=\"%%h %%s\" \"%s..HEAD\" 2>nul",
+            escaped_root,
+            utils.escape_input(last_tag)
+        ))
+
+        if handle then
+            for line in handle:lines() do
+                utils.subf("%s", line)
+            end
+
+            handle:close()
+        end
     else
         utils.printf("current: n/a")
+
+        local commit_check = io.popen(string.format(
+            "git.exe -C %s log -1 --format=%%h HEAD 2>nul",
+            escaped_root
+        ))
+
+        local has_commits = commit_check and commit_check:read("*l")
+
+        if commit_check then
+            commit_check:close()
+        end
+
+        if not has_commits or has_commits == "" then
+            utils.errorf("no commits to tag")
+
+            return
+        end
+
+        utils.printf("commits:")
+
+        local handle = io.popen(string.format(
+            "git.exe -C %s log --format=\"%%h %%s\" HEAD 2>nul",
+            escaped_root
+        ))
+
+        if handle then
+            for line in handle:lines() do
+                utils.subf("%s", line)
+            end
+
+            handle:close()
+        end
     end
 
     utils.printf("")
