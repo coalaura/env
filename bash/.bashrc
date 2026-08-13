@@ -1984,7 +1984,13 @@ function vet() (
 			go)
 				_print_info "[go] vetting $target"
 
-				go vet "${pass_args[@]}" ./... || status=$?
+				local vet_bin
+
+				if vet_bin=$(type -P vet); then
+					"$vet_bin" "${pass_args[@]}" ./... || status=$?
+				else
+					go vet "${pass_args[@]}" ./... || status=$?
+				fi
 				;;
 			js)
 				_print_info "[biome] vetting $target"

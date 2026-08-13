@@ -1010,7 +1010,11 @@ commands["vet"] = function(args)
     if target_lang == "go" then
         utils.printf("[go] vetting %s", utils.clean_path(target_dir))
 
-        cmd = "go vet " .. pass_args .. " ./..."
+        if os.execute("where.exe vet >nul 2>nul") then
+            cmd = "vet " .. pass_args .. " ./..."
+        else
+            cmd = "go vet " .. pass_args .. " ./..."
+        end
     elseif target_lang == "js" then
         utils.printf("[biome] vetting %s", utils.clean_path(target_dir))
 
