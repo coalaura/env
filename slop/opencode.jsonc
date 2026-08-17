@@ -36,5 +36,15 @@
 			]
 		}
 	},
+	"agent": {
+		"lmstudio": {
+			"description": "LM Studio Agent",
+			"mode": "primary",
+			"permission": {
+				"task": "deny"
+			}
+		}
+	},
+	"default_agent": "build",
 	"shell": "bash"
 }
