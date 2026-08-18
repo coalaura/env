@@ -55,7 +55,11 @@ TAB: menu-complete
 "\e[1;5D": backward-word
 # move forward one word with Ctrl-Right
 "\e[1;5C": forward-word
+# search history backward
+"\e[A": previous-history
+# search history forward
+"\e[B": next-history
 # search history backward using input prefix
-"\e[A": history-search-backward
+"\e[1;5A": history-search-backward
 # search history forward using input prefix
-"\e[B": history-search-forward
+"\e[1;5B": history-search-forward

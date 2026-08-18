@@ -2470,7 +2470,7 @@ shopt -s nocaseglob
 shopt -s checkjobs
 
 # better history
-export HISTCONTROL=ignoreboth:erasedups
+export HISTCONTROL=ignoreboth
 export HISTIGNORE="ssh-add *:password *:secret *"
 export HISTSIZE=50000
 export HISTFILESIZE=100000
@@ -2493,8 +2493,8 @@ _path_prepend "/usr/local/go/bin"
 _path_append "$HOME/go/bin"
 _path_append "$HOME/.local/bin"
 
-# write history immediately so multiple terminals share it
-PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+# write history immediately
+PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
 
 # wtf completions
 if command -v wtf >/dev/null 2>&1; then
