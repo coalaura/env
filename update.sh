@@ -6,6 +6,38 @@ echo "Updating configuration files..."
 
 mkdir -p ~/.config
 
+# .bash_profile
+echo "Copying .bash_profile..."
+
+cp bash/.bash_profile ~/.bash_profile
+
+# .profile
+echo "Copying .profile..."
+
+cp bash/.profile ~/.profile
+
+# .bashrc
+echo "Copying .bashrc..."
+
+cp bash/.bashrc ~/.bashrc
+
+# .inputrc
+echo "Copying .inputrc..."
+
+cp bash/.inputrc ~/.inputrc
+
+# git config
+if command -v git >/dev/null 2>&1; then
+	echo "Copying git config..."
+	cp git/.gitconfig ~/.config/.gitconfig_env
+fi
+
+# skip the rest, if connected via ssh
+if [[ -n "${SSH_CLIENT:-}" ]]; then
+	echo "Done."
+	exit 0
+fi
+
 # rio config
 if command -v rio >/dev/null 2>&1; then
 	echo "Copying rio config..."
@@ -22,22 +54,10 @@ if command -v starship >/dev/null 2>&1; then
 	cp starship/starship.toml ~/.config/starship.toml
 fi
 
-# git config
-if command -v git >/dev/null 2>&1; then
-	echo "Copying git config..."
-	cp git/.gitconfig ~/.config/.gitconfig_env
-fi
-
 # biome config
 if command -v biome >/dev/null 2>&1; then
 	echo "Copying biome config..."
 	cp biome/biome.json ~/biome.json
-fi
-
-# go staticcheck config
-if command -v go >/dev/null 2>&1; then
-	echo "Copying staticcheck config..."
-	cp go/staticcheck.conf ~/staticcheck.conf
 fi
 
 # opencode config
@@ -61,25 +81,5 @@ if [[ -d "$HOME/.config/Code/User" ]]; then
 
 	cp code/default.code-snippets "$HOME/.config/Code/User/snippets/default.code-snippets"
 fi
-
-# .bash_profile
-echo "Copying .bash_profile..."
-
-cp bash/.bash_profile ~/.bash_profile
-
-# .profile
-echo "Copying .profile..."
-
-cp bash/.profile ~/.profile
-
-# .bashrc
-echo "Copying .bashrc..."
-
-cp bash/.bashrc ~/.bashrc
-
-# .inputrc
-echo "Copying .inputrc..."
-
-cp bash/.inputrc ~/.inputrc
 
 echo "Done."

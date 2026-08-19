@@ -12,7 +12,6 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 - `discord/`: catppuccin discord theme for vencord
 - `fonts/`: required/nice fonts
 - `git/`: git configuration and better defaults
-- `go/`: go configurations like staticcheck
 - `rio/`: rio configuration and catppuccin themes
 - `slop/`: ai related settings/configs (e.g. opencode)
 - `starship/`: starship prompt config

@@ -63,15 +63,6 @@ if %errorlevel%==0 (
     copy /y "biome\biome.json" "D:\biome.json" >nul
 )
 
-:: go staticcheck config
-where go >nul 2>&1
-
-if %errorlevel%==0 (
-    echo Copying staticcheck config...
-
-    copy /y "go\staticcheck.conf" "%USERPROFILE%\staticcheck.conf" >nul
-)
-
 :: opencode config
 if exist "%USERPROFILE%\.config\opencode\" (
 	echo Copying opencode config...
