@@ -1,9 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
+)
+
+var (
+	strictVersionRgx = regexp.MustCompile(`^[0-9]+\.[0-9]+(?:\.[0-9]+)?$`)
+	outputVersionRgx = regexp.MustCompile(`[0-9]+\.[0-9]+(?:\.[0-9]+)?`)
 )
 
 type SemVer struct {
@@ -25,55 +32,24 @@ func NewEmptySemVer() *SemVer {
 func ParseSemVer(str string, allowSuffix bool) (*SemVer, error) {
 	str = strings.TrimSpace(str)
 
-	var (
-		index  int
-		digit  bool
-		majorB strings.Builder
-		minorB strings.Builder
-		patchB strings.Builder
-	)
-
-	for i, r := range str {
-		if (r < '0' || r > '9') && (!digit || r != '.') {
-			if digit {
-				if allowSuffix && index >= 1 {
-					break
-				}
-
-				return nil, fmt.Errorf("unexpected token %q at :%d", r, i)
-			}
-
-			continue
-		}
-
-		digit = true
-
-		if r == '.' {
-			index++
-
-			if index > 2 {
-				return nil, fmt.Errorf("unexpected token %q at :%d", r, i)
-			}
-
-			continue
-		}
-
-		switch index {
-		case 0:
-			majorB.WriteRune(r)
-		case 1:
-			minorB.WriteRune(r)
-		case 2:
-			patchB.WriteRune(r)
-		}
+	if allowSuffix {
+		str = outputVersionRgx.FindString(str)
+	} else if !strictVersionRgx.MatchString(str) {
+		return nil, fmt.Errorf("invalid version %q", str)
 	}
 
-	major, err := strconv.ParseInt(majorB.String(), 10, 64)
+	if str == "" {
+		return nil, errors.New("version not found")
+	}
+
+	parts := strings.Split(str, ".")
+
+	major, err := strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	minor, err := strconv.ParseInt(minorB.String(), 10, 64)
+	minor, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +59,8 @@ func ParseSemVer(str string, allowSuffix bool) (*SemVer, error) {
 		hasPatch bool
 	)
 
-	if patchB.Len() > 0 {
-		patch, err = strconv.ParseInt(patchB.String(), 10, 64)
+	if len(parts) == 3 {
+		patch, err = strconv.ParseInt(parts[2], 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -100,15 +76,19 @@ func ParseSemVer(str string, allowSuffix bool) (*SemVer, error) {
 	}, nil
 }
 
+func ParseVersionTag(tag, prefix string) (*SemVer, error) {
+	if !strings.HasPrefix(tag, prefix) {
+		return nil, errors.New("tag prefix does not match")
+	}
+
+	return ParseSemVer(strings.TrimPrefix(tag, prefix), false)
+}
+
 func (s *SemVer) String() string {
 	if s.HasPatch {
 		return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
 	}
 
-	return fmt.Sprintf("%d.%d", s.Major, s.Minor)
-}
-
-func (s *SemVer) String2() string {
 	return fmt.Sprintf("%d.%d", s.Major, s.Minor)
 }
 
@@ -126,4 +106,8 @@ func (s *SemVer) HigherThan(b *SemVer) bool {
 	}
 
 	return false
+}
+
+func (s *SemVer) Equal(b *SemVer) bool {
+	return s.Major == b.Major && s.Minor == b.Minor && s.Patch == b.Patch
 }

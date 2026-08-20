@@ -9,9 +9,7 @@ import (
 )
 
 func InstallGo(ver *SemVer) error {
-	uri := fmt.Sprintf("https://go.dev/dl/go%s.windows-amd64.msi", ver.String())
-
-	path, err := DownloadTempFile(uri, ".msi")
+	path, err := DownloadGoFile(ver)
 	if err != nil {
 		return err
 	}
@@ -22,16 +20,17 @@ func InstallGo(ver *SemVer) error {
 }
 
 func InstallZig(ver *SemVer) error {
-	uri := fmt.Sprintf("https://ziglang.org/download/%s/zig-x86_64-windows-%s.zip", ver.String(), ver.String())
-
-	path, err := DownloadTempFile(uri, ".zip")
+	path, err := DownloadZigFile(ver)
 	if err != nil {
 		return err
 	}
 
 	defer os.Remove(path)
 
-	dir, err := os.MkdirTemp("", "upgrader-*")
+	dstDir := filepath.Dir(GetZigBinaryPath())
+	parent := filepath.Dir(dstDir)
+
+	dir, err := os.MkdirTemp(parent, ".upgrader-zig-*")
 	if err != nil {
 		return err
 	}
@@ -44,29 +43,13 @@ func InstallZig(ver *SemVer) error {
 	}
 
 	srcDir := filepath.Join(dir, fmt.Sprintf("zig-x86_64-windows-%s", ver.String()))
-	dstDir := filepath.Dir(GetZigBinaryPath())
 
-	os.RemoveAll(dstDir)
-	os.MkdirAll(dstDir, 0755)
+	err = ValidateBinary(filepath.Join(srcDir, "zig.exe"), []string{"version"}, ver)
+	if err != nil {
+		return err
+	}
 
-	return filepath.Walk(srcDir, func(p string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		rel, err := filepath.Rel(srcDir, p)
-		if err != nil {
-			return err
-		}
-
-		target := filepath.Join(dstDir, rel)
-
-		if info.IsDir() {
-			return os.MkdirAll(target, 0755)
-		}
-
-		return CopyFile(p, target)
-	})
+	return ReplaceDirectory(srcDir, dstDir)
 }
 
 func InstallUPX(ver *SemVer) error {
@@ -75,11 +58,12 @@ func InstallUPX(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/upx/upx/releases/download/v%s/upx-%s-win64.zip", ver.String(), ver.String())
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("upx-%s-win64.zip", ver.String())
 
 	path := filepath.Join(home, ".bin", "upx.exe")
 
-	return InstallSingleBinaryFromZip(uri, "upx.exe", path)
+	return InstallSingleBinaryFromZip("upx/upx", tag, asset, "upx.exe", path, ver, []string{"--version"})
 }
 
 func InstallStarship(ver *SemVer) error {
@@ -88,17 +72,19 @@ func InstallStarship(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/starship/starship/releases/download/v%s/starship-x86_64-pc-windows-msvc.zip", ver.String())
+	tag := "v" + ver.String()
+	asset := "starship-x86_64-pc-windows-msvc.zip"
 
 	path := filepath.Join(home, ".bin", "starship.exe")
 
-	return InstallSingleBinaryFromZip(uri, "starship.exe", path)
+	return InstallSingleBinaryFromZip("starship/starship", tag, asset, "starship.exe", path, ver, []string{"--version"})
 }
 
 func InstallBun(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/oven-sh/bun/releases/download/bun-v%s/bun-windows-x64.zip", ver.String())
+	tag := "bun-v" + ver.String()
+	asset := "bun-windows-x64.zip"
 
-	return InstallSingleBinaryFromZip(uri, "bun.exe", GetBunBinaryPath())
+	return InstallSingleBinaryFromZip("oven-sh/bun", tag, asset, "bun.exe", GetBunBinaryPath(), ver, []string{"--version"})
 }
 
 func InstallBiome(ver *SemVer) error {
@@ -107,11 +93,10 @@ func InstallBiome(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/biomejs/biome/releases/download/%%40biomejs%%2Fbiome%%40%s/biome-win32-x64.exe", ver.String())
-
+	tag := "@biomejs/biome@" + ver.String()
 	path := filepath.Join(home, ".bin", "biome.exe")
 
-	return DownloadFileTo(uri, path)
+	return InstallGitHubExecutable("biomejs/biome", tag, "biome-win32-x64.exe", path, ver, []string{"version"})
 }
 
 func InstallTime(ver *SemVer) error {
@@ -120,11 +105,12 @@ func InstallTime(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/v%s/time_v%s_windows_amd64.exe", ver.String(), ver.String())
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("time_v%s_windows_amd64.exe", ver.String())
 
 	path := filepath.Join(home, ".bin", "time.exe")
 
-	return DownloadFileTo(uri, path)
+	return InstallGitHubExecutable("coalaura/time", tag, asset, path, ver, []string{"--version"})
 }
 
 func InstallWtf(ver *SemVer) error {
@@ -133,11 +119,12 @@ func InstallWtf(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/coalaura/wtf/releases/download/v%s/wtf_v%s_windows_amd64.exe", ver.String(), ver.String())
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("wtf_v%s_windows_amd64.exe", ver.String())
 
 	path := filepath.Join(home, ".bin", "wtf.exe")
 
-	return DownloadFileTo(uri, path)
+	return InstallGitHubExecutable("coalaura/wtf", tag, asset, path, ver, []string{"--version"})
 }
 
 func InstallVet(ver *SemVer) error {
@@ -146,11 +133,11 @@ func InstallVet(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet-windows-amd64.exe", ver.String())
+	tag := "v" + ver.String()
 
 	path := filepath.Join(home, ".bin", "vet.exe")
 
-	return DownloadFileTo(uri, path)
+	return InstallGitHubExecutable("coalaura/vet", tag, "vet-windows-amd64.exe", path, ver, []string{"--version"})
 }
 
 func InstallCoreutils(ver *SemVer) error {
@@ -159,9 +146,10 @@ func InstallCoreutils(ver *SemVer) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-pc-windows-gnu.zip", ver.String(), ver.String())
+	tag := ver.String()
+	asset := fmt.Sprintf("coreutils-%s-x86_64-pc-windows-msvc.zip", ver.String())
 
-	path, err := DownloadTempFile(uri, ".zip")
+	path, err := DownloadGitHubAssetTemp("uutils/coreutils", tag, asset, ".zip")
 	if err != nil {
 		return err
 	}
@@ -180,10 +168,13 @@ func InstallCoreutils(ver *SemVer) error {
 		return err
 	}
 
-	src := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-pc-windows-gnu", ver.String()), "coreutils.exe")
+	src := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-pc-windows-msvc", ver.String()), "coreutils.exe")
 	dst := filepath.Join(home, ".bin", "coreutils.exe")
 
-	os.MkdirAll(filepath.Dir(dst), 0755)
+	err = ValidateBinary(src, []string{"--version"}, ver)
+	if err != nil {
+		return err
+	}
 
 	return CopyFile(src, dst)
 }

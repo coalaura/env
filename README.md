@@ -32,7 +32,7 @@ Copies configuration files from the repo to their respective system locations (e
 Installs and upgrades installed software, using the [upgrader](.upgrader) binary.
 
 - **Windows**: Run `setup.cmd` (auto-elevates via `sudo`)
-- **Linux**: Run `sudo ./setup.sh`
+- **Linux**: Run `./setup.sh` (uses `sudo` for system installs)
 
 ### Discord
 

@@ -12,6 +12,7 @@ func GetConfigs() []*UpgradeConfig {
 			Args:   []string{"version"},
 
 			Installer: InstallGo,
+			Resolver:  FetchLatestGoVersion,
 		},
 
 		// Zig
@@ -24,12 +25,14 @@ func GetConfigs() []*UpgradeConfig {
 			Args:   []string{"version"},
 
 			Installer: InstallZig,
+			Resolver:  FetchLatestZigVersion,
 		},
 
 		// UPX
 		{
 			Repository: "upx/upx",
 			Prefix:     "v",
+			Releases:   true,
 
 			Binary: "upx",
 			Path:   GetLocalBinaryPath("upx"),
@@ -42,6 +45,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "starship/starship",
 			Prefix:     "v",
+			Releases:   true,
 
 			Binary: "starship",
 			Path:   GetLocalBinaryPath("starship"),
@@ -54,6 +58,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "oven-sh/bun",
 			Prefix:     "bun-v",
+			Releases:   true,
 
 			Binary: "bun",
 			Path:   GetBunBinaryPath(),
@@ -66,6 +71,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "biomejs/biome",
 			Prefix:     "@biomejs/biome@",
+			Releases:   true,
 
 			Binary: "biome",
 			Path:   GetLocalBinaryPath("biome"),
@@ -78,6 +84,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "coalaura/vet",
 			Prefix:     "v",
+			Releases:   true,
 
 			Binary: "vet",
 			Path:   GetLocalBinaryPath("vet"),
@@ -90,6 +97,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "coalaura/time",
 			Prefix:     "v",
+			Releases:   true,
 
 			Binary: "time",
 			Path:   GetLocalBinaryPath("time"),
@@ -102,6 +110,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "coalaura/wtf",
 			Prefix:     "v",
+			Releases:   true,
 
 			Binary: "wtf",
 			Path:   GetLocalBinaryPath("wtf"),
@@ -114,6 +123,7 @@ func GetConfigs() []*UpgradeConfig {
 		{
 			Repository: "uutils/coreutils",
 			Prefix:     "",
+			Releases:   true,
 
 			Binary: "coreutils",
 			Path:   GetLocalBinaryPath("coreutils"),

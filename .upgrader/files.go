@@ -1,8 +1,8 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -14,7 +14,11 @@ func OpenFileForReading(path string) (*os.File, error) {
 func OpenFileForWriting(path string) (*os.File, error) {
 	dir := filepath.Dir(path)
 
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
+	if _, err := os.Stat(dir); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
 			return nil, err
@@ -24,27 +28,121 @@ func OpenFileForWriting(path string) (*os.File, error) {
 	return os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 }
 
-func GetTempFilePath(ext string) (string, error) {
-	b := make([]byte, 16)
-
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(os.TempDir(), hex.EncodeToString(b)+ext), nil
+func CopyFile(src, dst string) error {
+	return CopyFileMode(src, dst, 0)
 }
 
-func OpenTempFileForWriting(ext string) (*os.File, string, error) {
-	path, err := GetTempFilePath(ext)
+func CopyFileMode(src, dst string, mode os.FileMode) error {
+	in, err := OpenFileForReading(src)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 
-	file, err := OpenFileForWriting(path)
+	dir := filepath.Dir(dst)
+
+	err = os.MkdirAll(dir, 0755)
 	if err != nil {
-		return nil, "", err
+		in.Close()
+
+		return err
 	}
 
-	return file, path, nil
+	out, err := os.CreateTemp(dir, ".upgrader-*")
+	if err != nil {
+		in.Close()
+
+		return err
+	}
+
+	tmp := out.Name()
+
+	defer os.Remove(tmp)
+
+	_, copyErr := io.Copy(out, in)
+	closeInErr := in.Close()
+
+	syncErr := out.Sync()
+	closeOutErr := out.Close()
+
+	if copyErr != nil {
+		return copyErr
+	}
+
+	if closeInErr != nil {
+		return closeInErr
+	}
+
+	if syncErr != nil {
+		return syncErr
+	}
+
+	if closeOutErr != nil {
+		return closeOutErr
+	}
+
+	if mode == 0 {
+		info, err := os.Stat(src)
+		if err != nil {
+			return err
+		}
+
+		mode = info.Mode().Perm()
+	}
+
+	err = os.Chmod(tmp, mode)
+	if err != nil {
+		return err
+	}
+
+	return ReplaceFile(tmp, dst)
+}
+
+func ReplaceDirectory(src, dst string) error {
+	parent := filepath.Dir(dst)
+
+	err := os.MkdirAll(parent, 0755)
+	if err != nil {
+		return err
+	}
+
+	backup, err := os.MkdirTemp(parent, ".upgrader-backup-*")
+	if err != nil {
+		return err
+	}
+
+	err = os.Remove(backup)
+	if err != nil {
+		return err
+	}
+
+	hasBackup := false
+
+	if _, err = os.Stat(dst); err == nil {
+		err = os.Rename(dst, backup)
+		if err != nil {
+			return err
+		}
+
+		hasBackup = true
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	err = os.Rename(src, dst)
+	if err != nil {
+		if hasBackup {
+			rollbackErr := os.Rename(backup, dst)
+			if rollbackErr != nil {
+				return errors.Join(err, rollbackErr)
+			}
+		}
+
+		return err
+	}
+
+	if hasBackup {
+		return os.RemoveAll(backup)
+	}
+
+	return nil
 }

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/coalaura/plain"
@@ -10,41 +12,86 @@ import (
 var log = plain.New(plain.WithDate(plain.RFC3339Local))
 
 func main() {
+	status := run()
+
+	if status != 0 {
+		os.Exit(status)
+	}
+}
+
+func run() int {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		log.Warnf("unsupported operating system: %s\n", runtime.GOOS)
+
+		return 1
+	}
+
+	if runtime.GOARCH != "amd64" {
+		log.Warnf("unsupported architecture: %s\n", runtime.GOARCH)
+
+		return 1
+	}
+
 	configs := GetConfigs()
-	configs = FilterConfigs(configs, os.Args[1:])
+
+	configs, err := FilterConfigs(configs, os.Args[1:])
+	if err != nil {
+		log.Warnln(err)
+
+		return 1
+	}
+
+	failed := false
 
 	for _, cfg := range configs {
-		err := cfg.Upgrade()
+		err = cfg.Upgrade()
 		if err != nil {
-			log.Warnln(err)
+			failed = true
+
+			log.Warnf("%s: %v\n", cfg.GetName(), err)
 		}
+	}
+
+	if failed {
+		log.Warnln("Completed upgrades with errors.")
+
+		return 1
 	}
 
 	log.Println("Completed upgrades.")
+
+	return 0
 }
 
-func FilterConfigs(configs []*UpgradeConfig, names []string) []*UpgradeConfig {
+func FilterConfigs(configs []*UpgradeConfig, names []string) ([]*UpgradeConfig, error) {
 	if len(names) == 0 {
-		return configs
+		return configs, nil
 	}
 
-	allowed := make(map[string]struct{}, len(names))
-
-	for _, name := range names {
-		allowed[strings.ToLower(strings.TrimSpace(name))] = struct{}{}
-	}
-
-	filtered := make([]*UpgradeConfig, 0, len(configs))
+	available := make(map[string]*UpgradeConfig, len(configs))
 
 	for _, cfg := range configs {
-		name := strings.ToLower(cfg.GetName())
-
-		if _, ok := allowed[name]; ok {
-			filtered = append(filtered, cfg)
-
-			continue
-		}
+		available[strings.ToLower(cfg.GetName())] = cfg
 	}
 
-	return filtered
+	filtered := make([]*UpgradeConfig, 0, len(names))
+	added := make(map[string]struct{}, len(names))
+
+	for _, name := range names {
+		name = strings.ToLower(strings.TrimSpace(name))
+
+		cfg, ok := available[name]
+		if !ok {
+			return nil, fmt.Errorf("unknown tool %q", name)
+		}
+
+		if _, ok := added[name]; ok {
+			continue
+		}
+
+		filtered = append(filtered, cfg)
+		added[name] = struct{}{}
+	}
+
+	return filtered, nil
 }

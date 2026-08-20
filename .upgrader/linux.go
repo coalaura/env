@@ -9,59 +9,111 @@ import (
 )
 
 func InstallGo(ver *SemVer) error {
-	uri := fmt.Sprintf("https://go.dev/dl/go%s.linux-amd64.tar.gz", ver.String())
-
-	path, err := DownloadTempFile(uri, ".tar.gz")
+	path, err := DownloadGoFile(ver)
 	if err != nil {
 		return err
 	}
 
 	defer os.Remove(path)
 
-	err = RunCommandOrError("rm", "-rf", "/usr/local/go")
+	dir, err := os.MkdirTemp("/usr/local", ".upgrader-go-*")
 	if err != nil {
 		return err
 	}
 
-	return RunCommandOrError("tar", "-C", "/usr/local", "-xzf", path)
+	defer os.RemoveAll(dir)
+
+	err = ExtractTarGzFile(path, dir)
+	if err != nil {
+		return err
+	}
+
+	err = ValidateBinary(filepath.Join(dir, "go", "bin", "go"), []string{"version"}, ver)
+	if err != nil {
+		return err
+	}
+
+	return ReplaceDirectory(filepath.Join(dir, "go"), "/usr/local/go")
 }
 
 func InstallZig(ver *SemVer) error {
-	uri := fmt.Sprintf("https://ziglang.org/download/%s/zig-x86_64-linux-%s.tar.xz", ver.String(), ver.String())
-
-	path, err := DownloadTempFile(uri, ".tar.xz")
+	path, err := DownloadZigFile(ver)
 	if err != nil {
 		return err
 	}
 
 	defer os.Remove(path)
 
-	return RunCommandOrError("sh", "-c", fmt.Sprintf("rm -rf /usr/local/zig && mkdir -p /usr/local/zig && tar -C /usr/local/zig --strip-components=1 -xf %q", path))
+	dir, err := os.MkdirTemp("/usr/local", ".upgrader-zig-*")
+	if err != nil {
+		return err
+	}
+
+	defer os.RemoveAll(dir)
+
+	err = ExtractTarXzFile(path, dir)
+	if err != nil {
+		return err
+	}
+
+	payload := filepath.Join(dir, fmt.Sprintf("zig-x86_64-linux-%s", ver.String()))
+
+	err = ValidateBinary(filepath.Join(payload, "zig"), []string{"version"}, ver)
+	if err != nil {
+		return err
+	}
+
+	return ReplaceDirectory(payload, "/usr/local/zig")
 }
 
 func InstallUPX(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/upx/upx/releases/download/v%s/upx-%s-amd64_linux.tar.xz", ver.String(), ver.String())
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("upx-%s-amd64_linux.tar.xz", ver.String())
 
-	path, err := DownloadTempFile(uri, ".tar.xz")
+	path, err := DownloadGitHubAssetTemp("upx/upx", tag, asset, ".tar.xz")
 	if err != nil {
 		return err
 	}
 
 	defer os.Remove(path)
 
-	return RunCommandOrError("sh", "-c", fmt.Sprintf("tmpdir=$(mktemp -d) && tar -C \"$tmpdir\" -xf %q && install \"$tmpdir\"/*/upx /usr/local/bin/upx", path))
+	dir, err := os.MkdirTemp("", "upgrader-*")
+	if err != nil {
+		return err
+	}
+
+	defer os.RemoveAll(dir)
+
+	err = ExtractTarXzFile(path, dir)
+	if err != nil {
+		return err
+	}
+
+	src, err := FindFile(dir, "upx")
+	if err != nil {
+		return err
+	}
+
+	err = ValidateBinary(src, []string{"--version"}, ver)
+	if err != nil {
+		return err
+	}
+
+	return CopyFileMode(src, "/usr/local/bin/upx", 0755)
 }
 
 func InstallStarship(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/starship/starship/releases/download/v%s/starship-x86_64-unknown-linux-gnu.tar.gz", ver.String())
+	tag := "v" + ver.String()
+	asset := "starship-x86_64-unknown-linux-gnu.tar.gz"
 
-	return InstallSingleBinaryFromTarGz(uri, "starship", "/usr/local/bin/starship")
+	return InstallSingleBinaryFromTarGz("starship/starship", tag, asset, "starship", "/usr/local/bin/starship", ver, []string{"--version"})
 }
 
 func InstallBun(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/oven-sh/bun/releases/download/bun-v%s/bun-linux-x64.zip", ver.String())
+	tag := "bun-v" + ver.String()
+	asset := "bun-linux-x64.zip"
 
-	path, err := DownloadTempFile(uri, ".zip")
+	path, err := DownloadGitHubAssetTemp("oven-sh/bun", tag, asset, ".zip")
 	if err != nil {
 		return err
 	}
@@ -83,62 +135,73 @@ func InstallBun(ver *SemVer) error {
 	src := filepath.Join(dir, "bun-linux-x64", "bun")
 	dst := GetBunBinaryPath()
 
-	err = CopyFile(src, dst)
+	binDir := filepath.Dir(dst)
+	bunDir := filepath.Dir(binDir)
+
+	err = os.MkdirAll(binDir, 0755)
 	if err != nil {
 		return err
 	}
 
-	return os.Chmod(dst, 0755)
+	err = ChownToInvokingUser(bunDir)
+	if err != nil {
+		return err
+	}
+
+	err = ChownToInvokingUser(binDir)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chmod(src, 0755)
+	if err != nil {
+		return err
+	}
+
+	err = ValidateBinary(src, []string{"--version"}, ver)
+	if err != nil {
+		return err
+	}
+
+	err = CopyFileMode(src, dst, 0755)
+	if err != nil {
+		return err
+	}
+
+	return ChownToInvokingUser(dst)
 }
 
 func InstallBiome(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/biomejs/biome/releases/download/%%40biomejs%%2Fbiome%%40%s/biome-linux-x64", ver.String())
+	tag := "@biomejs/biome@" + ver.String()
 
-	err := DownloadFileTo(uri, "/usr/local/bin/biome")
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod("/usr/local/bin/biome", 0755)
+	return InstallGitHubExecutable("biomejs/biome", tag, "biome-linux-x64", "/usr/local/bin/biome", ver, []string{"version"})
 }
 
 func InstallTime(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/coalaura/time/releases/download/v%s/time_v%s_linux_amd64", ver.String(), ver.String())
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("time_v%s_linux_amd64", ver.String())
 
-	err := DownloadFileTo(uri, "/usr/local/bin/time")
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod("/usr/local/bin/time", 0755)
+	return InstallGitHubExecutable("coalaura/time", tag, asset, "/usr/local/bin/time", ver, []string{"--version"})
 }
 
 func InstallWtf(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/coalaura/wtf/releases/download/v%s/wtf_v%s_linux_amd64", ver.String(), ver.String())
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("wtf_v%s_linux_amd64", ver.String())
 
-	err := DownloadFileTo(uri, "/usr/local/bin/wtf")
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod("/usr/local/bin/wtf", 0755)
+	return InstallGitHubExecutable("coalaura/wtf", tag, asset, "/usr/local/bin/wtf", ver, []string{"--version"})
 }
 
 func InstallVet(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/coalaura/vet/releases/download/v%s/vet-linux-amd64", ver.String())
+	tag := "v" + ver.String()
 
-	err := DownloadFileTo(uri, "/usr/local/bin/vet")
-	if err != nil {
-		return err
-	}
-
-	return os.Chmod("/usr/local/bin/vet", 0755)
+	return InstallGitHubExecutable("coalaura/vet", tag, "vet-linux-amd64", "/usr/local/bin/vet", ver, []string{"--version"})
 }
 
 func InstallCoreutils(ver *SemVer) error {
-	uri := fmt.Sprintf("https://github.com/uutils/coreutils/releases/download/%s/coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String(), ver.String())
+	tag := ver.String()
+	asset := fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String())
 
-	path, err := DownloadTempFile(uri, ".tar.gz")
+	path, err := DownloadGitHubAssetTemp("uutils/coreutils", tag, asset, ".tar.gz")
 	if err != nil {
 		return err
 	}
@@ -158,12 +221,11 @@ func InstallCoreutils(ver *SemVer) error {
 	}
 
 	src := filepath.Join(dir, fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu", ver.String()), "coreutils")
-	dst := "/usr/local/bin/coreutils"
 
-	err = CopyFile(src, dst)
+	err = ValidateBinary(src, []string{"--version"}, ver)
 	if err != nil {
 		return err
 	}
 
-	return os.Chmod(dst, 0755)
+	return CopyFileMode(src, "/usr/local/bin/coreutils", 0755)
 }

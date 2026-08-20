@@ -1,15 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"os"
-	"path/filepath"
-	"runtime"
 )
 
-func InstallSingleBinaryFromTarGz(url, binName, dstPath string) error {
-	path, err := DownloadTempFile(url, ".tar.gz")
+func InstallSingleBinaryFromTarGz(repository, tag, asset, binName, dstPath string, ver *SemVer, args []string) error {
+	path, err := DownloadGitHubAssetTemp(repository, tag, asset, ".tar.gz")
 	if err != nil {
 		return err
 	}
@@ -33,6 +29,11 @@ func InstallSingleBinaryFromTarGz(url, binName, dstPath string) error {
 		return err
 	}
 
+	err = ValidateBinary(src, args, ver)
+	if err != nil {
+		return err
+	}
+
 	err = CopyFile(src, dstPath)
 	if err != nil {
 		return err
@@ -41,8 +42,8 @@ func InstallSingleBinaryFromTarGz(url, binName, dstPath string) error {
 	return os.Chmod(dstPath, 0755)
 }
 
-func InstallSingleBinaryFromZip(url, binName, dstPath string) error {
-	path, err := DownloadTempFile(url, ".zip")
+func InstallSingleBinaryFromZip(repository, tag, asset, binName, dstPath string, ver *SemVer, args []string) error {
+	path, err := DownloadGitHubAssetTemp(repository, tag, asset, ".zip")
 	if err != nil {
 		return err
 	}
@@ -66,55 +67,10 @@ func InstallSingleBinaryFromZip(url, binName, dstPath string) error {
 		return err
 	}
 
+	err = ValidateBinary(src, args, ver)
+	if err != nil {
+		return err
+	}
+
 	return CopyFile(src, dstPath)
-}
-
-func CopyFile(src, dst string) error {
-	in, err := OpenFileForReading(src)
-	if err != nil {
-		return err
-	}
-
-	defer in.Close()
-
-	out, err := OpenFileForWriting(dst)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(out, in)
-
-	closeErr := out.Close()
-
-	if err != nil {
-		return err
-	}
-
-	if closeErr != nil {
-		return closeErr
-	}
-
-	return nil
-}
-
-func GetLinuxBinDir() string {
-	return "/usr/local/bin"
-}
-
-func GetWindowsBinDir() (string, error) {
-	home, err := UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(home, ".bin"), nil
-}
-
-func GetZigAssetName(ver *SemVer) string {
-	switch runtime.GOOS {
-	case "windows":
-		return fmt.Sprintf("zig-windows-x86_64-%s.zip", ver.String())
-	default:
-		return fmt.Sprintf("zig-linux-x86_64-%s.tar.xz", ver.String())
-	}
 }

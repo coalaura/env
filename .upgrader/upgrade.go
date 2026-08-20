@@ -7,17 +7,20 @@ import (
 )
 
 type Installer func(*SemVer) error
+type VersionResolver func() (*SemVer, error)
 
 type UpgradeConfig struct {
 	Name       string
 	Repository string
 	Prefix     string
+	Releases   bool
 
 	Binary string
 	Path   string
 	Args   []string
 
 	Installer Installer
+	Resolver  VersionResolver
 }
 
 func (u *UpgradeConfig) GetName() string {
@@ -65,25 +68,13 @@ func (u *UpgradeConfig) Upgrade() error {
 		return err
 	}
 
-	if remote.HigherThan(local) {
+	if !remote.Equal(local) {
 		log.Errorln("failed")
 
-		return errors.New("remote still higher")
+		return errors.New("installed version does not match requested version")
 	}
 
 	log.Writeln(log.Theme(plain.Success), "success", true, true)
 
 	return nil
-}
-
-func (u *UpgradeConfig) AssetVersion() string {
-	if u.Prefix == "" {
-		return u.VersionString()
-	}
-
-	return u.Prefix + u.VersionString()
-}
-
-func (u *UpgradeConfig) VersionString() string {
-	return ""
 }

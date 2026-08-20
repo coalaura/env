@@ -42,6 +42,7 @@ jobs:
           OUT="../build/upgrader_${{ matrix.goos }}${EXT}"
           GOOS=${{ matrix.goos }} GOARCH=amd64 CGO_ENABLED=0 \
           go build -trimpath -buildvcs=false -o "$OUT" .
+          sha256sum "$OUT" | cut -d " " -f 1 > "$OUT.sha256"
 
       - name: Upload Upgrader
         uses: actions/upload-artifact@v4
@@ -121,7 +122,9 @@ jobs:
           cp temp_artifacts/css-theme/discord.min.css dist/css/
 
           cp temp_artifacts/upgrader_linux/upgrader_linux dist/bin/upgrader-linux
+          cp temp_artifacts/upgrader_linux/upgrader_linux.sha256 dist/bin/upgrader-linux.sha256
           cp temp_artifacts/upgrader_windows/upgrader_windows.exe dist/bin/upgrader-win.exe
+          cp temp_artifacts/upgrader_windows/upgrader_windows.exe.sha256 dist/bin/upgrader-win.exe.sha256
 
           ls -R dist/
 
