@@ -80,6 +80,19 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallBiome,
 		},
 
+		// Builder
+		{
+			Repository: "coalaura/builder",
+			Prefix:     "v",
+			Releases:   true,
+
+			Binary: "builder",
+			Path:   GetLocalBinaryPath("builder"),
+			Args:   []string{"--version"},
+
+			Installer: InstallBuilder,
+		},
+
 		// Vet
 		{
 			Repository: "coalaura/vet",

@@ -129,6 +129,12 @@ os.setalias("which", "where $*")
 os.setalias("..", "cd ..")
 os.setalias("...", "cd ..\\..")
 os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
+
+os.setalias("bench", "builder bench $*")
+os.setalias("test", "builder test $*")
+os.setalias("run", "builder run $*")
+os.setalias("build", "builder build $*")
+
 os.setalias("t", utils.binary("time.exe", " $*"))
 
 -- handle ..\ or ...\

@@ -99,6 +99,18 @@ func InstallBiome(ver *SemVer) error {
 	return InstallGitHubExecutable("biomejs/biome", tag, "biome-win32-x64.exe", path, ver, []string{"version"})
 }
 
+func InstallBuilder(ver *SemVer) error {
+	home, err := UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	tag := "v" + ver.String()
+	path := filepath.Join(home, ".bin", "builder.exe")
+
+	return InstallGitHubExecutable("coalaura/builder", tag, "builder-windows-amd64.exe", path, ver, []string{"--version"})
+}
+
 func InstallTime(ver *SemVer) error {
 	home, err := UserHomeDir()
 	if err != nil {

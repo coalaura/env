@@ -177,6 +177,12 @@ func InstallBiome(ver *SemVer) error {
 	return InstallGitHubExecutable("biomejs/biome", tag, "biome-linux-x64", "/usr/local/bin/biome", ver, []string{"version"})
 }
 
+func InstallBuilder(ver *SemVer) error {
+	tag := "v" + ver.String()
+
+	return InstallGitHubExecutable("coalaura/builder", tag, "builder-linux-amd64", "/usr/local/bin/builder", ver, []string{"--version"})
+}
+
 func InstallTime(ver *SemVer) error {
 	tag := "v" + ver.String()
 	asset := fmt.Sprintf("time_v%s_linux_amd64", ver.String())

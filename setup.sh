@@ -60,7 +60,7 @@ TOOLS=(go time wtf)
 
 # skip development tools, if connected via ssh
 if [[ -z "${SSH_CLIENT:-}" ]]; then
-	TOOLS+=(starship zig upx bun biome vet)
+	TOOLS+=(starship zig upx bun biome builder vet)
 fi
 
 run_as_root env "GITHUB_TOKEN=${GITHUB_TOKEN:-}" "$UPGRADER_TMP" "${TOOLS[@]}"
