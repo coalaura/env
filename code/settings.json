@@ -15,7 +15,7 @@
     "editor.rulers": [
         80
     ],
-    "editor.unicodeHighlight.nonBasicASCII": true,
+    "editor.unicodeHighlight.nonBasicASCII": false,
     "diffEditor.ignoreTrimWhitespace": false,
     "workbench.colorCustomizations": {
         "editorRuler.foreground": "#363a4f"
@@ -670,6 +670,7 @@
         "igna",
         "imagehash",
         "infnoise",
+        "Infof",
         "inspectable",
         "insta",
         "interactable",
@@ -1027,6 +1028,8 @@
         "strs",
         "stungun",
         "stunrod",
+        "Stylesheet",
+        "Subf",
         "subformat",
         "sublabel",
         "subsampling",
@@ -1073,6 +1076,7 @@
         "timedout",
         "tinyint",
         "tiquon",
+        "Titlebar",
         "tlds",
         "tmpl",
         "togglable",
@@ -1173,6 +1177,7 @@
         "woah",
         "Wooby",
         "writef",
+        "Writeln",
         "yeehaw",
         "yeet",
         "yeeted",
