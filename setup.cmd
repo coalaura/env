@@ -3,6 +3,7 @@
 setlocal
 
 set "SETUP_EXIT=0"
+set "SETUP_IS_ADMIN=0"
 
 net session >nul 2>&1
 
@@ -15,6 +16,8 @@ if errorlevel 1 (
     
     goto :END
 )
+
+set "SETUP_IS_ADMIN=1"
 
 :: pull repo
 echo Pulling...
@@ -99,5 +102,17 @@ if "%SETUP_EXIT%"=="0" (
 )
 
 :END
+
+if "%SETUP_EXIT%"=="0" goto :EXIT
+if not "%SETUP_IS_ADMIN%"=="1" goto :EXIT
+
+echo %CMDCMDLINE% | findstr /i /c:" /c" >nul
+
+if errorlevel 1 goto :EXIT
+
+echo Setup failed. Press any key to close...
+pause >nul
+
+:EXIT
 
 endlocal & exit /b %SETUP_EXIT%
