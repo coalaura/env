@@ -53,15 +53,16 @@ if not !errorlevel!==0 (
 
 set "UPGRADER_TMP=!UPGRADER_DIR!\env_upgrader_!RANDOM!_!RANDOM!.exe"
 set "UPGRADER_HASH=!UPGRADER_TMP!.sha256"
+set "UPGRADER_CACHE_KEY=!RANDOM!!RANDOM!"
 
-curl -fsSL --connect-timeout 15 --max-time 900 -o "!UPGRADER_TMP!" "https://coalaura.github.io/env/bin/upgrader-win.exe"
+curl -fsSL --connect-timeout 15 --max-time 900 -o "!UPGRADER_TMP!" "https://coalaura.github.io/env/bin/upgrader-win.exe?v=!UPGRADER_CACHE_KEY!"
 
 if not !errorlevel!==0 (
     echo Failed to download upgrader
 
     set "SETUP_EXIT=1"
 ) else (
-    curl -fsSL --connect-timeout 15 --max-time 900 -o "!UPGRADER_HASH!" "https://coalaura.github.io/env/bin/upgrader-win.exe.sha256"
+    curl -fsSL --connect-timeout 15 --max-time 900 -o "!UPGRADER_HASH!" "https://coalaura.github.io/env/bin/upgrader-win.exe.sha256?v=!UPGRADER_CACHE_KEY!"
 
     if not !errorlevel!==0 (
         echo Failed to download upgrader checksum

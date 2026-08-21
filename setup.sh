@@ -31,6 +31,7 @@ echo "Loading upgrader..."
 
 UPGRADER_TMP="$(run_as_root mktemp /usr/local/bin/.env_upgrader.XXXXXX)"
 UPGRADER_HASH="${UPGRADER_TMP}.sha256"
+UPGRADER_CACHE_KEY="$(date +%s)-$$"
 
 cleanup_upgrader() {
 	run_as_root rm -f "$UPGRADER_TMP" "$UPGRADER_HASH"
@@ -38,8 +39,8 @@ cleanup_upgrader() {
 
 trap cleanup_upgrader EXIT
 
-run_as_root curl -fsSL --connect-timeout 15 --max-time 900 -o "$UPGRADER_TMP" "https://coalaura.github.io/env/bin/upgrader-linux"
-run_as_root curl -fsSL --connect-timeout 15 --max-time 900 -o "$UPGRADER_HASH" "https://coalaura.github.io/env/bin/upgrader-linux.sha256"
+run_as_root curl -fsSL --connect-timeout 15 --max-time 900 -o "$UPGRADER_TMP" "https://coalaura.github.io/env/bin/upgrader-linux?v=${UPGRADER_CACHE_KEY}"
+run_as_root curl -fsSL --connect-timeout 15 --max-time 900 -o "$UPGRADER_HASH" "https://coalaura.github.io/env/bin/upgrader-linux.sha256?v=${UPGRADER_CACHE_KEY}"
 
 EXPECTED_HASH="$(run_as_root cat "$UPGRADER_HASH")"
 ACTUAL_HASH="$(run_as_root sha256sum "$UPGRADER_TMP")"
