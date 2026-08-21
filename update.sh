@@ -68,7 +68,12 @@ if [[ -d ~/.config/opencode ]]; then
 		rm ~/.config/opencode/opencode.json
 	fi
 
+	if [[ -f ~/.config/opencode/dcp.json ]]; then
+		rm ~/.config/opencode/dcp.json
+	fi
+
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
+	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
 fi
 
 # vscode keybinds and snippets
