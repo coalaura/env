@@ -74,6 +74,7 @@ if [[ -d ~/.config/opencode ]]; then
 
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
 	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
+	cp slop/AGENTS.md ~/.config/opencode/AGENTS.md
 fi
 
 # vscode keybinds and snippets
