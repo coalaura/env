@@ -5,16 +5,17 @@ Repository-local instructions and established project conventions take precedenc
 ## Code
 
 - Match the existing style, structure, naming and conventions before introducing new patterns.
-- Let the code breathe. Prefer clear, readable, maintainable code over dense or clever code.
-- Use descriptive identifiers that quickly communicate purpose. Avoid one-/two-letter names for variables, functions, types and structs.
-- Keep changes focused. Avoid unrelated rewrites or opportunistic refactors unless asked to.
-- Split code into files by coherent responsibility. Keep related behavior together rather than splitting by arbitrary size.
+- Let the code breathe. Use blank lines to separate distinct operations and control-flow steps; avoid visually stacking unrelated `if`, `for`, assignment, and return blocks.
+- Prefer clear, readable, maintainable code over dense or clever code.
+- Use descriptive identifiers that quickly communicate purpose. Avoid one-/two-letter names for variables, functions, types, and structs.
+- Keep changes focused. Avoid unrelated rewrites or opportunistic refactors.
+- Split code into files by coherent responsibility and keep related behavior together.
 - Prefer simple, explicit designs over unnecessary abstraction.
 
 ## Go
 
-- Write modern, idiomatic Go using features supported by the project's declared Go version.
-- Write mechanically sympathetic, allocation-conscious code. Avoid needless allocations and abstractions without sacrificing clarity for speculative micro-optimizations.
+- Write modern, idiomatic, mechanically sympathetic, allocation-conscious Go using the project's declared Go version.
+- Prefer assigning errors before checking them rather than declarations inside `if`. Inline error checks are fine for trivial operations such as `ctx.Err()`.
 - Prefer named types over inline or anonymous structs for application data.
 - Unless the project clearly follows another convention organize Go files as:
   1. constants
@@ -28,7 +29,7 @@ Repository-local instructions and established project conventions take precedenc
 
 - Never weaken, remove, skip or loosen tests or assertions to make them pass. Fix the underlying cause.
 - When an approach stops producing new information, change strategy rather than chasing it indefinitely.
-- If ambiguity materially affects behavior, architecture, APIs, security or data, ask rather than inventing requirements. Infer minor implementation details from the existing code when safe.
+- If ambiguity materially affects behavior, architecture, APIs, security or data, ask rather than inventing requirements. Infer minor details from existing code when safe.
 
 ## Dependencies
 
