@@ -41,6 +41,7 @@
 	"agent": {
 		"lmstudio": {
 			"description": "LM Studio Agent",
+			"name": "LM Studio",
 			"mode": "primary",
 			"permission": {
 				"task": "deny"
