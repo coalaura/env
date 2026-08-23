@@ -5,7 +5,7 @@ Repository-local instructions and established project conventions take precedenc
 ## Code
 
 - Match the existing style, structure, naming and conventions before introducing new patterns.
-- Let the code breathe. Use blank lines to separate distinct operations and control-flow steps; avoid visually stacking unrelated `if`, `for`, assignment, and return blocks.
+- Let the code breathe. Visually isolate control-flow blocks: use blank lines between consecutive `if`, `for`, `switch`, and similar blocks, and between setup, iteration, and follow-up operations. Keep a statement adjacent only when it directly introduces the check that immediately follows.
 - Prefer clear, readable, maintainable code over dense or clever code.
 - Use descriptive identifiers that quickly communicate purpose. Avoid one-/two-letter names for variables, functions, types, and structs.
 - Keep changes focused. Avoid unrelated rewrites or opportunistic refactors.
@@ -16,7 +16,7 @@ Repository-local instructions and established project conventions take precedenc
 
 - Write modern, idiomatic, mechanically sympathetic, allocation-conscious Go using the project's declared Go version.
 - Prefer assigning errors before checking them rather than declarations inside `if`. Inline error checks are fine for trivial operations such as `ctx.Err()`.
-- Prefer named types over inline or anonymous structs for application data.
+- Do not use anonymous or function-local struct types, including in tests. Define named structs at package scope, unexported when appropriate and keep them with the other type declarations.
 - Unless the project clearly follows another convention organize Go files as:
   1. constants
   2. types and structs
