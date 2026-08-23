@@ -30,6 +30,7 @@ Repository-local instructions and established project conventions take precedenc
 - Never weaken, remove, skip or loosen tests or assertions to make them pass. Fix the underlying cause.
 - When an approach stops producing new information, change strategy rather than chasing it indefinitely.
 - If ambiguity materially affects behavior, architecture, APIs, security or data, ask rather than inventing requirements. Infer minor details from existing code when safe.
+- Do not run the application or start long-lived processes such as servers, watchers, daemons, or listeners unless explicitly requested. Prefer builds, tests, linters, and static checks for verification.
 
 ## Dependencies
 
