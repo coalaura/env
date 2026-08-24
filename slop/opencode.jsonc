@@ -52,7 +52,7 @@
 		// Agent for local models, no parallel agents
 		"lmstudio": {
 			"name": "LM Studio",
-			"color": "#60a5fa",
+			"color": "#6fa3d2",
 			"mode": "primary",
 			"model": "lmstudio/qwen/qwen3.8-27b",
 			"permission": {
@@ -63,7 +63,7 @@
 		// OpenAI agent, only calls OpenAI subagents
 		"openai": {
 			"name": "OpenAI",
-			"color": "#f4a340",
+			"color": "#e0a05a",
 			"mode": "primary",
 			"model": "openai/gpt-5.6-sol",
 			"permission": {
@@ -75,20 +75,23 @@
 		},
 
 		"openai-explore": {
+			"name": "OpenAI Explore",
 			"mode": "subagent",
-			"color": "#f5b15a",
+			"color": "#e7ac6e",
 			"model": "openai/gpt-5.6-terra",
 			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
 		},
 		"openai-general": {
+			"name": "OpenAI General",
 			"mode": "subagent",
-			"color": "#f7bc70",
+			"color": "#ebb983",
 			"model": "openai/gpt-5.6-terra",
 			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
 		},
 		"openai-quick": {
+			"name": "OpenAI Quick",
 			"mode": "subagent",
-			"color": "#f8ca8c",
+			"color": "#efc99f",
 			"model": "openai/gpt-5.6-luna",
 			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
 		},
@@ -96,7 +99,7 @@
 		// OpenRouter agent, only calls OpenRouter subagents
 		"openrouter": {
 			"name": "OpenRouter",
-			"color": "#ef6b73",
+			"color": "#d66a73",
 			"mode": "primary",
 			"model": "openrouter/openai/gpt-5.6-sol",
 
@@ -109,28 +112,45 @@
 		},
 
 		"router-explore": {
+			"name": "OpenRouter Explore",
 			"mode": "subagent",
-			"color": "#f07e85",
+			"color": "#d9777f",
 			"model": "openrouter/google/gemini-3.7-flash",
 			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
 		},
 		"router-general": {
+			"name": "OpenRouter General",
 			"mode": "subagent",
-			"color": "#f29197",
+			"color": "#dd888e",
 			"model": "openrouter/z-ai/glm-5.3",
 			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
 		},
 		"router-quick": {
+			"name": "OpenRouter Quick",
 			"mode": "subagent",
-			"color": "#f4a5aa",
+			"color": "#e29da1",
 			"model": "openrouter/openai/gpt-5.6-luna",
 			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
+		},
+
+		// Built-in agents, color only — all default behavior remains unchanged
+		"build": {
+			"color": "#8fbd90"
+		},
+		"plan": {
+			"color": "#a58ac7"
+		},
+		"general": {
+			"color": "#75b2aa"
+		},
+		"explore": {
+			"color": "#c4a96d"
 		},
 
 		"scout": {
 			"disable": true
 		}
 	},
-	"default_agent": "openai",
+	"default_agent": "OpenAI",
 	"shell": "bash"
 }
