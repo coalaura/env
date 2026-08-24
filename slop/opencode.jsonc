@@ -44,12 +44,12 @@
 				"z-ai/glm-5.3",
 				"qwen/qwen3.8-max",
 				"deepseek/deepseek-v4-pro-0813",
-
 				"stealth/ox-alpha"
 			]
 		}
 	},
 	"agent": {
+		// Agent for local models, no parallel agents
 		"lmstudio": {
 			"description": "LM Studio",
 			"mode": "primary",
@@ -58,20 +58,62 @@
 				"task": "deny"
 			}
 		},
-		"explore": {
+
+		// OpenAI agent, only calls OpenAI subagents
+		"openai": {
+			"mode": "primary",
+			"model": "openai/gpt-5.6-sol",
+			"permission": {
+				"task": {
+					"*": "deny",
+					"openai-*": "allow"
+				}
+			}
+		},
+
+		"openai-explore": {
 			"model": "openai/gpt-5.6-terra",
 			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
 		},
-		"general": {
+		"openai-general": {
 			"mode": "subagent",
 			"model": "openai/gpt-5.6-terra",
 			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
 		},
-		"quick": {
+		"openai-quick": {
 			"mode": "subagent",
 			"model": "openai/gpt-5.6-luna",
 			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
 		},
+
+		// OpenRouter agent, only calls OpenRouter subagents
+		"openrouter": {
+			"mode": "primary",
+			"model": "openrouter/openai/gpt-5.6-sol",
+
+			"permission": {
+				"task": {
+					"*": "deny",
+					"router-*": "allow"
+				}
+			}
+		},
+
+		"router-explore": {
+			"model": "openrouter/google/gemini-3.7-flash",
+			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
+		},
+		"router-general": {
+			"mode": "subagent",
+			"model": "openrouter/z-ai/glm-5.3",
+			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
+		},
+		"router-quick": {
+			"mode": "subagent",
+			"model": "openrouter/openai/gpt-5.6-luna",
+			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
+		},
+
 		"scout": {
 			"disable": true
 		}
