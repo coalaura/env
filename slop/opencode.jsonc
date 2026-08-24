@@ -120,6 +120,5 @@
 			"disable": true
 		}
 	},
-	"default_agent": "build",
 	"shell": "bash"
 }
