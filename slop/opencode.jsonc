@@ -21,7 +21,7 @@
 					"name": "Qwen3.8 27B",
 					"limit": {
 						"context": 163840,
-						"output": 32768
+						"output": 65536
 					}
 				}
 			}
