@@ -695,10 +695,8 @@ function update() {
 			(
 				cd "$env_dir" || exit 1
 
-				if ! sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK,USERPROFILE,HOME bash setup.sh; then
-					print_time "env update failed, continuing"
-				fi
-			)
+				sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK,USERPROFILE,HOME bash setup.sh
+			) || print_time "env update failed, continuing"
 		fi
 
 		##
