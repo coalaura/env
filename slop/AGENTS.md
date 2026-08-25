@@ -15,8 +15,8 @@ Repository-local instructions and established project conventions take precedenc
 ## Go
 
 - Write modern, idiomatic, mechanically sympathetic, allocation-conscious Go using the project's declared Go version.
-- Prefer assigning errors before checking them rather than declarations inside `if`. Avoid inline error/value checks (`if _, err := thing(); err != nil {`).
-- Do not use anonymous or function-local struct types, including in tests. Define named structs at package scope, unexported when appropriate and keep them with the other type declarations.
+- Avoid declarations and initializers in `if` statements. Assign/read values first, then check them separately. Inline comma-ok checks for map lookups and type assertions are fine.
+- Never use anonymous or function-local struct types, including for tests, temporary collections, or one-off values. Define field-bearing structs as named package-scope types in the file's type section. Zero-sized `struct{}{}` values are fine.
 - Unless the project clearly follows another convention organize Go files as:
   1. constants
   2. types and structs
