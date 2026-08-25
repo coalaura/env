@@ -24,6 +24,7 @@ Repository-local instructions and established project conventions take precedenc
   4. struct methods
   5. package-level functions
   6. helpers
+- For Go verification, run the local `vet.exe`/`vet` tool. It runs `go vet` and `staticcheck`; do not run them separately.
 
 ## Correctness
 
