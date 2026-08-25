@@ -15,7 +15,7 @@ Repository-local instructions and established project conventions take precedenc
 ## Go
 
 - Write modern, idiomatic, mechanically sympathetic, allocation-conscious Go using the project's declared Go version.
-- Prefer assigning errors before checking them rather than declarations inside `if`. Inline error checks are fine for trivial operations such as `ctx.Err()`.
+- Prefer assigning errors before checking them rather than declarations inside `if`. Avoid inline error/value checks (`if _, err := thing(); err != nil {`).
 - Do not use anonymous or function-local struct types, including in tests. Define named structs at package scope, unexported when appropriate and keep them with the other type declarations.
 - Unless the project clearly follows another convention organize Go files as:
   1. constants
