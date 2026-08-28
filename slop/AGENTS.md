@@ -17,7 +17,7 @@ Repository-local instructions and project conventions take precedence over these
   project's declared Go version.
 - One value per statement: assign first, then check. No initializers in `if` or `switch`, no function-local `const` or `type`, no anonymous struct types, no composite literals in `range` position. This holds in `_test.go` files too. Inline comma-ok for map lookups and type assertions is fine (in `if`), as is `struct{}{}`.
 - Unless the project follows another convention, organize Go files as: constants -> types -> package variables -> methods -> package-level functions -> helpers.
-- Verify with `vet.exe`/`vet`; it is always on PATH - never search for or install it. It runs go vet, staticcheck and the house rules; do not run them separately. Never silence a diagnostic with an ignore directive or by restructuring around the check - fix what it points at.
+- Verify with `vet.exe`/`vet`; it is always on PATH - never search for or try to install it. It runs go vet, staticcheck and the house rules; do not run them separately. Never silence a diagnostic with an ignore directive or by restructuring around the check - fix what it points at.
 - Vet takes optional `--os [windows/linux/darwin]` and `--arch [amd64/arm64]` flags (defaulting to the host) and `--cgo` if the project needs cgo (off by default). If the project has OS/arch-specific build constraints (`//go:build windows` etc.), vet every relevant target; otherwise plain `vet` suffices.
 
 ## Correctness
