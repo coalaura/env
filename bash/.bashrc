@@ -1306,55 +1306,6 @@ function profile() (
 	)
 )
 
-# vet/analyze a project for issues
-function vet() (
-	(
-		set -euo pipefail
-
-		_parse_args "vet" "go js" 0 0 "$@" || return 1
-
-		local target_lang="$PARSED_LANG"
-		local -a pass_args=("${PARSED_PASS[@]}")
-		local target="$(realpath ".")"
-
-		if [[ -z "$target_lang" ]]; then
-			target_lang=$(_detect_lang "vet" "$target")
-		fi
-
-		local status=0
-
-		case "$target_lang" in
-			go)
-				_print_info "[go] vetting $target"
-
-				local vet_bin
-
-				if vet_bin=$(type -P vet); then
-					"$vet_bin" "${pass_args[@]}" ./... || status=$?
-				else
-					go vet "${pass_args[@]}" ./... || status=$?
-				fi
-				;;
-			js)
-				_print_info "[biome] vetting $target"
-
-				biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path="$HOME/biome.json" "${pass_args[@]}" || status=$?
-				;;
-			*)
-				_print_error "unknown or undetected project type to vet"
-
-				return 1
-				;;
-		esac
-
-		if [[ $status -eq 0 ]]; then
-			_print_success "no issues found"
-		else
-			return $status
-		fi
-	)
-)
-
 # auto-fix/lint a project
 function fix() (
 	(

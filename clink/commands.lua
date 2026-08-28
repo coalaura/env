@@ -612,54 +612,6 @@ commands["profile"] = function(args)
     utils.errorf("%s is not a recognized profile project", utils.clean_path(target_dir))
 end
 
--- vet/analyze a project for issues
-commands["vet"] = function(args)
-    local target_dir = os.getcwd()
-
-    local parsed = utils.parse_args("vet", {"go", "js"}, false, false, args)
-
-    if not parsed then
-        return ""
-    end
-
-    local target_lang = parsed.lang
-    local pass_args = utils.format_extra_args(parsed.pass)
-
-    if not target_lang or target_lang == "" then
-        target_lang = utils.detect_lang("vet", target_dir)
-    end
-
-    local cmd = ""
-
-    if target_lang == "go" then
-        utils.printf("[go] vetting %s", utils.clean_path(target_dir))
-
-        if os.execute("where.exe vet >nul 2>nul") then
-            cmd = "vet " .. pass_args .. " ./..."
-        else
-            cmd = "go vet " .. pass_args .. " ./..."
-        end
-    elseif target_lang == "js" then
-        utils.printf("[biome] vetting %s", utils.clean_path(target_dir))
-
-        local config = path.join(utils.home(), "biome.json")
-
-        cmd = string.format("biome check --reporter=summary --no-errors-on-unmatched --log-level=info --config-path=%s %s", utils.escape_path(config), pass_args)
-    else
-        utils.errorf("unknown or undetected project type to vet")
-
-        return ""
-    end
-
-    local result = os.execute(cmd)
-
-    if result == true or result == 0 then
-        utils.successf("no issues found")
-    end
-
-    return ""
-end
-
 -- auto-fix/lint a project
 commands["fix"] = function(args)
     local target_dir = os.getcwd()
