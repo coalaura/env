@@ -1,5 +1,51 @@
 {
 	"$schema": "https://opencode.ai/config.json",
+	"lsp": {
+		"gopls": {
+			"command": [ "gopls" ],
+			"extensions": [ ".go" ]
+		},
+
+		// Avoid automatically downloading other LSPs
+		// https://raw.githubusercontent.com/anomalyco/opencode/dev/packages/opencode/src/lsp/server.ts
+		"deno": { "disabled": true },
+		"typescript": { "disabled": true },
+		"vue": { "disabled": true },
+		"eslint": { "disabled": true },
+		"oxlint": { "disabled": true },
+		"biome": { "disabled": true },
+		"ruby-lsp": { "disabled": true },
+		"ty": { "disabled": true },
+		"pyright": { "disabled": true },
+		"elixir-ls": { "disabled": true },
+		"zls": { "disabled": true },
+		"csharp": { "disabled": true },
+		"razor": { "disabled": true },
+		"fsharp": { "disabled": true },
+		"sourcekit-lsp": { "disabled": true },
+		"rust": { "disabled": true },
+		"clangd": { "disabled": true },
+		"svelte": { "disabled": true },
+		"astro": { "disabled": true },
+		"jdtls": { "disabled": true },
+		"kotlin-ls": { "disabled": true },
+		"yaml-ls": { "disabled": true },
+		"lua-ls": { "disabled": true },
+		"php intelephense": { "disabled": true },
+		"prisma": { "disabled": true },
+		"dart": { "disabled": true },
+		"ocaml-lsp": { "disabled": true },
+		"bash": { "disabled": true },
+		"terraform": { "disabled": true },
+		"texlab": { "disabled": true },
+		"dockerfile": { "disabled": true },
+		"gleam": { "disabled": true },
+		"clojure-lsp": { "disabled": true },
+		"nixd": { "disabled": true },
+		"tinymist": { "disabled": true },
+		"haskell-language-server": { "disabled": true },
+		"julials": { "disabled": true }
+	},
 	"plugin": [
 		"@tarquinen/opencode-dcp@v3.1.15",
 		"context-mode@1.0.169"
