@@ -51,6 +51,13 @@
 		"context-mode@1.0.169"
 	],
 	"permission": {
+		"bash": {
+			"git commit": "deny",
+			"git commit *": "deny",
+			"git push": "deny",
+			"git push *": "deny",
+			"git tag *": "deny"
+		},
 		"external_directory": {
 			"~/go/**": "allow"
 		}
