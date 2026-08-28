@@ -1,38 +1,31 @@
 # Engineering preferences
 
-Repository-local instructions and established project conventions take precedence over these defaults.
+Repository-local instructions and project conventions take precedence over these defaults.
 
 ## Code
 
-- Match the existing style, structure, naming and conventions before introducing new patterns.
-- Let the code breathe. Visually isolate control-flow blocks: use blank lines between consecutive `if`, `for`, `switch`, and similar blocks, and between setup, iteration, and follow-up operations. Keep a statement adjacent only when it directly introduces the check that immediately follows.
-- Prefer clear, readable, maintainable code over dense or clever code.
-- Use descriptive identifiers that quickly communicate purpose. Avoid one-/two-letter names for variables, functions, types, and structs.
-- Keep changes focused. Avoid unrelated rewrites or opportunistic refactors.
-- Split code into files by coherent responsibility and keep related behavior together.
-- Prefer simple, explicit designs over unnecessary abstraction.
+- Match existing style, structure, naming and conventions before introducing new patterns.
+- Prefer clear, explicit code over dense, clever or over-abstracted code.
+- Use descriptive identifiers. Avoid one-/two-letter names for variables, functions, types and fields.
+- Let the code breathe: blank lines between control-flow blocks and between setup, iteration and follow-up work. A statement sits directly above a check only if it feeds it.
+- Keep changes focused. No unrelated rewrites or opportunistic refactors.
+- Split files by coherent responsibility and keep related behavior together.
 
 ## Go
 
-- Write modern, idiomatic, mechanically sympathetic, allocation-conscious Go using the project's declared Go version.
-- Avoid declarations and initializers in `if` statements. Assign/read values first, then check them separately. Inline comma-ok checks for map lookups and type assertions are fine.
-- Never use anonymous or function-local struct types, including for tests, temporary collections, or one-off values. Define field-bearing structs as named package-scope types in the file's type section. Zero-sized `struct{}{}` values are fine.
-- Unless the project clearly follows another convention organize Go files as:
-  1. constants
-  2. types and structs
-  3. package variables
-  4. struct methods
-  5. package-level functions
-  6. helpers
-- For Go verification, run the local `vet.exe`/`vet` tool. It runs `go vet` and `staticcheck`; do not run them separately.
+- Write modern, idiomatic, mechanically sympathetic, allocation-conscious Go for the
+  project's declared Go version.
+- One value per statement: assign first, then check. No initializers in `if` or `switch`, no function-local `const` or `type`, no anonymous struct types, no composite literals in `range` position. This holds in `_test.go` files too. Inline comma-ok for map lookups and type assertions is fine (in `if`), as is `struct{}{}`.
+- Unless the project follows another convention, organize Go files as: constants -> types -> package variables -> methods -> package-level functions -> helpers.
+- Verify with the local `vet.exe`/`vet` tool; it runs go vet, staticcheck and the house rules. Do not run them separately. Never silence a diagnostic with an ignore directive or by restructuring around the check - fix what it points at.
 
 ## Correctness
 
 - Never weaken, remove, skip or loosen tests or assertions to make them pass. Fix the underlying cause.
 - When an approach stops producing new information, change strategy rather than chasing it indefinitely.
 - If ambiguity materially affects behavior, architecture, APIs, security or data, ask rather than inventing requirements. Infer minor details from existing code when safe.
-- Do not run the application or start long-lived processes such as servers, watchers, daemons, or listeners unless explicitly requested. Prefer builds, tests, linters, and static checks for verification.
-- After completing a task, include a short lowercase commit message for all currently uncommitted changes (not just changes from the current task/pass) unless asked otherwise, alongside the normal response. Do not spend significant extra effort deriving it.
+- Do not run the application or start long-lived processes such as servers, watchers or daemons unless explicitly requested. Verify with builds, tests, linters and static checks.
+- After completing a task, include a short lowercase commit message covering all uncommitted changes, not just this task's. Do not spend significant effort deriving it.
 
 ## Dependencies
 
