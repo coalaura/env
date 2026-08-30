@@ -11,8 +11,8 @@ blinking = false
 program = "code"
 
 [window]
-width = 1100
-height = 622
+width = 1132
+height = 640
 mode = "windowed"
 windows-corner-preference = "RoundSmall"
 decorations = "enabled"
