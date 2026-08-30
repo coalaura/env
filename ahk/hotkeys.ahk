@@ -1,3 +1,4 @@
+#Requires AutoHotkey v2.0
 #SingleInstance Force
 
 ; PTT applications
@@ -28,7 +29,7 @@ IsPTTAppActive() => WinActive("ahk_group PTTApps")
 ´::SendText("``")
 
 ; Right windows button locks screen
-RWin::Send("#L")
+RWin::DllCall("User32\LockWorkStation")
 
 ; Ensure F7 is released when leaving PTT app
 SetTimer CheckFocus, 200
@@ -47,6 +48,14 @@ CheckFocus()
 
         SendEvent("{F7 up}")
     }
+}
+
+; Release F8 if script exits
+OnExit(ReleasePTT)
+
+ReleasePTT(*)
+{
+    SendEvent("{F7 up}")
 }
 
 ; Ctrl + Alt + Shift + F12 types 16 random letters.
@@ -88,23 +97,42 @@ CheckFocus()
 
     info :=
     (
-    "Title:   " WinGetTitle(hwnd) "
-    Process: " WinGetProcessName(hwnd) "
-    PID:     " WinGetPID(hwnd) "
-    Class:   " WinGetClass(hwnd) "
-    Handle:  " Format("0x{:X}", hwnd) "
-    - - - -
-    Actual client: " cw " × " ch " px
-    Normalized:    " Round(cw / scale) " × " Round(ch / scale) "
-    Full window:   " w " × " h " px
-    Position:      " x ", " y "
-    - - - -
+    "[Window]
+    Title: " WinGetTitle(hwnd) "
+    Class: " WinGetClass(hwnd) "
+    HWND:  " Format("0x{:X}", hwnd) "
+
+    [Process]
+    Name: " WinGetProcessName(hwnd) "
+    PID:  " WinGetPID(hwnd) "
+    Path: " WinGetProcessPath(hwnd) "
+
+    [Styles]
+    Style:    " Format("0x{:08X}", WinGetStyle(hwnd)) "
+    Ex-style: " Format("0x{:08X}", WinGetExStyle(hwnd)) "
+
+    [Geometry]
+    Client size: " cw " × " ch " px
+    Client @dpi: " Round(cw / scale) " × " Round(ch / scale) " px
+    Window size: " w " × " h " px
+    Client pos:  " cx ", " cy "
+    Window pos:  " x ", " y "
+
+    [DPI]
     DPI:   " dpi "
     Scale: " Round(scale * 100, 1) "%"
     )
 
     file := A_Temp "\window-info.txt"
-    try FileDelete(file)
-    FileAppend(info, file, "UTF-8")
-    Run(file)
+
+    try {
+        f := FileOpen(file, "w", "UTF-8")
+
+        f.Write(info)
+        f.Close()
+
+        Run(file)
+    } catch Error as err {
+        MsgBox("Could not create window information:`n" err.Message)
+    }
 }

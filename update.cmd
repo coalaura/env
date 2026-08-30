@@ -93,6 +93,13 @@ if exist "%APPDATA%\Code\User" (
     copy /y "code\default.code-snippets" "%APPDATA%\Code\User\snippets\default.code-snippets" >nul
 )
 
+:: autohotkey
+if exist "%USERPROFILE%\Desktop\hotkeys.ahk" (
+	echo Copying autohotkeys...
+
+	copy /y "ahk\hotkeys.ahk" "%USERPROFILE%\Desktop\hotkeys.ahk"
+)
+
 echo Done.
 
 echo %CMDCMDLINE% | findstr /i /c:" /c" >nul
