@@ -1,18 +1,22 @@
 #SingleInstance Force
 
-; FiveM
-GroupAdd "FiveM", "ahk_exe FiveM_GTAProcess.exe"
+; PTT applications
+GroupAdd "PTTApps", "ahk_exe FiveM_GTAProcess.exe"
+GroupAdd "PTTApps", "Minecraft"
+GroupAdd "PTTApps", "Feather Client"
 
-; Check if FiveM is focused
-#HotIf WinActive("FiveM") || WinActive("Minecraft") || WinActive("Feather Client")
+IsPTTAppActive() => WinActive("ahk_group PTTApps")
 
-; ^ is FiveM push-to-talk
+; Check if PTT apps is focused
+#HotIf IsPTTAppActive()
+
+; ^ is push-to-talk
 ^::F7
 
 #HotIf
 
-; Check if FiveM is not focused
-#HotIf !WinActive("FiveM") && !WinActive("Minecraft") && !WinActive("Feather Client")
+; Check if PTT app is not focused
+#HotIf !IsPTTAppActive()
 
 ; Remove double-press of ^ key
 ^::SendText("^")
@@ -26,20 +30,20 @@ GroupAdd "FiveM", "ahk_exe FiveM_GTAProcess.exe"
 ; Right windows button locks screen
 RWin::Send("#L")
 
-; Ensure F7 is released when leaving FiveM
+; Ensure F7 is released when leaving PTT app
 SetTimer CheckFocus, 200
 
-; Release F7 if FiveM is not active
-FiveMActive := false
+; Release F7 if PTT app is not active
+PTTActive := false
 
 CheckFocus()
 {
-    global FiveMActive
+    global PTTActive
 
-    if (WinActive("FiveM")) {
-        FiveMActive := true
-    } else if (FiveMActive && !GetKeyState("Alt", "P")) {
-        FiveMActive := false
+    if IsPTTAppActive() {
+        PTTActive := true
+    } else if (PTTActive && !GetKeyState("Alt", "P")) {
+        PTTActive := false
 
         SendEvent("{F7 up}")
     }
@@ -65,4 +69,42 @@ CheckFocus()
     activePID := WinGetPID("A")
 
     ProcessClose(activePID)
+}
+
+; Ctrl + Alt + W inspect focused window.
+^!w::
+{
+    hwnd := WinExist("A")
+    if !hwnd {
+        return
+    }
+
+    WinGetClientPos(&cx, &cy, &cw, &ch, hwnd)
+    WinGetPos(&x, &y, &w, &h, hwnd)
+
+    dpi := DllCall("User32\GetDpiForWindow", "Ptr", hwnd, "UInt")
+    dpi := dpi ? dpi : 96
+    scale := dpi / 96
+
+    info :=
+    (
+    "Title:   " WinGetTitle(hwnd) "
+    Process: " WinGetProcessName(hwnd) "
+    PID:     " WinGetPID(hwnd) "
+    Class:   " WinGetClass(hwnd) "
+    Handle:  " Format("0x{:X}", hwnd) "
+    - - - -
+    Actual client: " cw " × " ch " px
+    Normalized:    " Round(cw / scale) " × " Round(ch / scale) "
+    Full window:   " w " × " h " px
+    Position:      " x ", " y "
+    - - - -
+    DPI:   " dpi "
+    Scale: " Round(scale * 100, 1) "%"
+    )
+
+    file := A_Temp "\window-info.txt"
+    try FileDelete(file)
+    FileAppend(info, file, "UTF-8")
+    Run(file)
 }
