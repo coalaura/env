@@ -51,14 +51,30 @@
 		"context-mode@1.0.169"
 	],
 	"permission": {
+		"read": {
+			"*": "allow",
+
+			"*.env": "deny",
+			"*.env.*": "deny",
+			"*.env.example": "allow",
+
+			"*/config.yml": "deny",
+			"*/config.yaml": "deny",
+			"*/config.toml": "deny",
+
+			"~/.ssh/*": "deny"
+		},
 		"bash": {
 			"git commit": "deny",
 			"git commit *": "deny",
 			"git push": "deny",
 			"git push *": "deny",
-			"git tag *": "deny"
+			"git tag *": "deny",
+			"gh*": "deny"
 		},
 		"external_directory": {
+			"~/.ssh/**": "deny",
+
 			"~/go/**": "allow"
 		}
 	},
