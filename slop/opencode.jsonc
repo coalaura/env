@@ -79,17 +79,17 @@
 		}
 	},
 	"provider": {
-		"lmstudio": {
+		"llama.cpp": {
 			"npm": "@ai-sdk/openai-compatible",
-			"name": "LM Studio (local)",
+			"name": "LLama.cpp (local)",
 			"options": {
-				"baseURL": "http://192.168.178.222:1234/v1"
+				"baseURL": "http://localhost:1234/v1"
 			},
 			"models": {
 				"qwen/qwen3.8-27b": {
 					"name": "Qwen3.8 27B",
 					"limit": {
-						"context": 163840,
+						"context": 131072,
 						"output": 65536
 					}
 				}
@@ -134,11 +134,11 @@
 	},
 	"agent": {
 		// Agent for local models, no parallel agents
-		"lmstudio": {
-			"description": "LM Studio",
+		"llama.cpp": {
+			"description": "LLama.cpp",
 			"color": "#5ca4e4",
 			"mode": "primary",
-			"model": "lmstudio/qwen/qwen3.8-27b",
+			"model": "llama.cpp/qwen/qwen3.8-27b",
 			"permission": {
 				"task": "deny"
 			}
