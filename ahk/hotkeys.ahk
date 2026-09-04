@@ -3,6 +3,7 @@
 
 ; PTT applications
 GroupAdd "PTTApps", "ahk_exe FiveM_GTAProcess.exe"
+GroupAdd "PTTApps", "ahk_exe FiveM_b3788_GTAProcess.exe"
 GroupAdd "PTTApps", "Minecraft"
 GroupAdd "PTTApps", "Feather Client"
 
