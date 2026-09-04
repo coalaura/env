@@ -1357,17 +1357,142 @@ function goup() {
 			return 1
 		fi
 
-		local gv=$(go version | awk '{print $3}' | sed 's/^go//')
-
-		go -C "$target" mod edit -go "$gv"
-
-		_print_success "set go version to $gv"
-
 		go -C "$target" get -u ./...
 
 		go -C "$target" mod tidy
 
 		_print_success "updated packages"
+	)
+}
+
+# set the lowest Go version supported by a project
+function gover() {
+	(
+		set -euo pipefail
+
+		local target="${1:-.}"
+
+		target=$(realpath "$target")
+
+		if [[ ! -f "$target/go.mod" ]]; then
+			_print_error "$target is not a go project"
+
+			return 1
+		fi
+
+		local host_version="$(go env GOVERSION)"
+		local host_minor="${host_version#go1.}"
+
+		host_minor="${host_minor%%.*}"
+
+		local temp_dir="$(mktemp -d)"
+		local committed=false
+		local had_sum=false
+
+		cp "$target/go.mod" "$temp_dir/go.mod"
+
+		if [[ -f "$target/go.sum" ]]; then
+			cp "$target/go.sum" "$temp_dir/go.sum"
+			had_sum=true
+		fi
+
+		function restore_go_mod() {
+			cp "$temp_dir/go.mod" "$target/go.mod"
+
+			if [[ "$had_sum" == true ]]; then
+				cp "$temp_dir/go.sum" "$target/go.sum"
+			else
+				command rm -f "$target/go.sum"
+			fi
+		}
+
+		function cleanup_gover() {
+			if [[ "$committed" != true ]]; then
+				restore_go_mod
+			fi
+
+			command rm -rf "$temp_dir"
+		}
+
+		trap cleanup_gover EXIT
+
+		local -A seen_versions=()
+		local -a versions=()
+		local minor
+
+		for (( minor = 11; minor <= host_minor; minor++ )); do
+			seen_versions["1.$minor"]=1
+		done
+
+		while IFS= read -r version; do
+			version="${version#go}"
+
+			if [[ "$version" =~ ^1\.[0-9]+(\.[0-9]+)?$ ]]; then
+				seen_versions["$version"]=1
+			fi
+		done < <(GOWORK=off GOTOOLCHAIN=local go -C "$target" list -m -f '{{.GoVersion}}' all 2>/dev/null || true)
+
+		readarray -t versions < <(printf '%s\n' "${!seen_versions[@]}" | sort -V)
+
+		local log_file="$temp_dir/check.log"
+
+		local -A legacy_toolchains=(
+			[11]="go1.11.13"
+			[12]="go1.12.17"
+			[13]="go1.13.15"
+			[14]="go1.14.15"
+			[15]="go1.15.15"
+			[16]="go1.16.15"
+			[17]="go1.17.13"
+			[18]="go1.18.10"
+			[19]="go1.19.13"
+			[20]="go1.20.14"
+		)
+
+		local version
+
+		_print_info "finding minimum Go version for $target"
+
+		for version in "${versions[@]}"; do
+			restore_go_mod
+
+			if ! GOWORK=off GOTOOLCHAIN=local go -C "$target" mod edit -go="$version" >"$log_file" 2>&1; then
+				continue
+			fi
+
+			if ! GOWORK=off GOTOOLCHAIN=local go -C "$target" mod tidy -go="$version" >>"$log_file" 2>&1; then
+				continue
+			fi
+
+			minor="${version#1.}"
+			minor="${minor%%.*}"
+
+			if (( minor < 21 )); then
+				if ! GOWORK=off GOTOOLCHAIN="${legacy_toolchains[$minor]}" go -C "$target" vet ./... >>"$log_file" 2>&1; then
+					continue
+				fi
+			else
+				if ! GOWORK=off GOTOOLCHAIN=local go -C "$target" vet -stdversion ./... >>"$log_file" 2>&1; then
+					continue
+				fi
+			fi
+
+			committed=true
+
+			_print_success "set minimum Go version to $version"
+
+			return 0
+		done
+
+		_print_error "could not determine a compatible Go version up to ${host_version#go}"
+
+		if [[ -s "$log_file" ]]; then
+			while IFS= read -r line; do
+				_print_sub "$line"
+			done < "$log_file"
+		fi
+
+		return 1
 	)
 }
 
@@ -1720,7 +1845,7 @@ function envup() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup ghup perms
+complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup gover ghup perms
 
 # filtered extension completions
 filter_completions "sqlite3" "db"

@@ -658,39 +658,171 @@ commands["goup"] = function(args)
         return
     end
 
-    local handle = io.popen("go version 2>nul")
-
-    if not handle then
-        utils.errorf("failed to detect go version.")
-
-        return
-    end
-
-    local version_line = handle:read("*l") or ""
-
-    handle:close()
-
-    local gov = version_line:match("go([%d%.]+)")
-
-    if not gov then
-        utils.errorf("failed to detect go version.")
-
-        return
-    end
-
     local escaped_dir = utils.escape_path(target_dir)
 
-    os.execute(string.format("go -C %s mod edit -go %s", escaped_dir, gov))
+    if not utils.command_ok(os.execute(string.format("go -C %s get -u ./...", escaped_dir))) then
+        utils.errorf("failed to update packages")
 
-    utils.successf("set go version to %s", gov)
+        return
+    end
 
-    os.execute(string.format("go -C %s get -u ./...", escaped_dir))
-    os.execute(string.format("go -C %s mod tidy", escaped_dir))
+    if not utils.command_ok(os.execute(string.format("go -C %s mod tidy", escaped_dir))) then
+        utils.errorf("failed to tidy module")
+
+        return
+    end
 
     utils.successf("updated packages")
 end
 
 clink.argmatcher("goup"):addarg(clink.dirmatches)
+
+-- set the lowest Go version supported by a project
+commands["gover"] = function(args)
+    local target_dir = args or os.getcwd()
+
+    if not utils.is_go(target_dir) then
+        utils.errorf("%s is not a go project", utils.clean_path(target_dir))
+
+        return
+    end
+
+    local mod_path = path.join(target_dir, "go.mod")
+    local sum_path = path.join(target_dir, "go.sum")
+    local original_mod = utils.read_file(mod_path)
+    local original_sum = utils.read_file(sum_path)
+    local escaped_dir = utils.escape_path(target_dir)
+    local env = { GOTOOLCHAIN = "local", GOWORK = "off" }
+
+    local function restore_module()
+        utils.write_file(mod_path, original_mod)
+
+        if original_sum then
+            utils.write_file(sum_path, original_sum)
+        else
+            os.remove(sum_path)
+        end
+    end
+
+    local handle = io.popen(utils.command_with_env("go env GOVERSION 2>nul", env))
+
+    if not handle then
+        utils.errorf("failed to detect Go version")
+
+        return
+    end
+
+    local host_version = utils.trim(handle:read("*l") or ""):match("^go([%d%.]+)$")
+
+    handle:close()
+
+    if not host_version then
+        utils.errorf("failed to detect Go version")
+
+        return
+    end
+
+    local host_minor = tonumber(host_version:match("^1%.(%d+)"))
+
+    local seen_versions = {}
+
+    local legacy_toolchains = {
+        [11] = "go1.11.13",
+        [12] = "go1.12.17",
+        [13] = "go1.13.15",
+        [14] = "go1.14.15",
+        [15] = "go1.15.15",
+        [16] = "go1.16.15",
+        [17] = "go1.17.13",
+        [18] = "go1.18.10",
+        [19] = "go1.19.13",
+        [20] = "go1.20.14",
+    }
+
+    for minor = 11, host_minor do
+        seen_versions[string.format("1.%d", minor)] = true
+    end
+
+    handle = io.popen(utils.command_with_env(
+        string.format("go -C %s list -m -f \"{{.GoVersion}}\" all 2>nul", escaped_dir),
+        env
+    ))
+
+    if handle then
+        for line in handle:lines() do
+            local version = utils.trim(line):gsub("^go", "")
+
+            if version:match("^1%.%d+%.?%d*$") then
+                seen_versions[version] = true
+            end
+        end
+
+        handle:close()
+    end
+
+    local versions = {}
+
+    for version in pairs(seen_versions) do
+        table.insert(versions, version)
+    end
+
+    table.sort(versions, function(left, right)
+        local left_minor, left_patch = left:match("^1%.(%d+)%.?(%d*)$")
+        local right_minor, right_patch = right:match("^1%.(%d+)%.?(%d*)$")
+
+        left_minor = tonumber(left_minor)
+        left_patch = tonumber(left_patch) or 0
+        right_minor = tonumber(right_minor)
+        right_patch = tonumber(right_patch) or 0
+
+        return left_minor < right_minor or (left_minor == right_minor and left_patch < right_patch)
+    end)
+
+    utils.printf("finding minimum Go version for %s", utils.clean_path(target_dir))
+
+    for _, version in ipairs(versions) do
+        restore_module()
+
+        local edit = utils.command_with_env(
+            string.format("go -C %s mod edit -go=%s >nul 2>&1", escaped_dir, version),
+            env
+        )
+
+        local tidy = utils.command_with_env(
+            string.format("go -C %s mod tidy -go=%s >nul 2>&1", escaped_dir, version),
+            env
+        )
+
+        local minor = tonumber(version:match("^1%.(%d+)"))
+        local vet_env = env
+        local vet_flags = "-stdversion "
+
+        if minor < 21 then
+            vet_env = { GOTOOLCHAIN = legacy_toolchains[minor], GOWORK = "off" }
+            vet_flags = ""
+        end
+
+        local vet = utils.command_with_env(
+            string.format("go -C %s vet %s./... >nul 2>&1", escaped_dir, vet_flags),
+            vet_env
+        )
+
+        if utils.command_ok(os.execute(edit)) and
+            utils.command_ok(os.execute(tidy)) and
+            utils.command_ok(os.execute(vet))
+        then
+            utils.successf("set minimum Go version to %s", version)
+
+            return
+        end
+    end
+
+    restore_module()
+
+    utils.errorf("could not determine a compatible Go version up to %s", host_version)
+end
+
+clink.argmatcher("gover"):addarg(clink.dirmatches)
 
 -- update github actions in workflows
 commands["ghup"] = function(args)
