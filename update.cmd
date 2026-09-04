@@ -71,11 +71,16 @@ if exist "%USERPROFILE%\.config\opencode\" (
 		del "%USERPROFILE%\.config\opencode\opencode.json"
 	)
 
+	if exist "%USERPROFILE%\.config\opencode\tui.json" (
+		del "%USERPROFILE%\.config\opencode\tui.json"
+	)
+
 	if exist "%USERPROFILE%\.config\opencode\dcp.json" (
 		del "%USERPROFILE%\.config\opencode\dcp.json"
 	)
 
 	copy /y "slop\opencode.jsonc" "%USERPROFILE%\.config\opencode\opencode.jsonc"
+	copy /y "slop\tui.jsonc" "%USERPROFILE%\.config\opencode\tui.jsonc"
 	copy /y "slop\dcp.jsonc" "%USERPROFILE%\.config\opencode\dcp.jsonc"
 	copy /y "slop\AGENTS.md" "%USERPROFILE%\.config\opencode\AGENTS.md"
 )
