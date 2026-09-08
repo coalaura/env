@@ -78,6 +78,7 @@
 			"~/go/**": "allow"
 		}
 	},
+	"enabled_providers": ["llama.cpp", "openai", "openrouter"],
 	"provider": {
 		"llama.cpp": {
 			"npm": "@ai-sdk/openai-compatible",
