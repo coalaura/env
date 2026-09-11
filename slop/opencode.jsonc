@@ -118,7 +118,7 @@
 		},
 		"openrouter": {
 			"whitelist": [
-				"deepseek/deepseek-v4-flash-vision-exp",
+				"deepseek/deepseek-v4.1-flash",
 				"deepseek/deepseek-v4-pro-0813",
 				"google/gemini-3.8-flash",
 				"inception/mercury-2.5-preview",
