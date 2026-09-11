@@ -65,11 +65,23 @@
 			"~/.ssh/*": "deny"
 		},
 		"bash": {
+			// block adding, committing or pushing
+			"git add": "deny",
+			"git add *": "deny",
 			"git commit": "deny",
 			"git commit *": "deny",
 			"git push": "deny",
 			"git push *": "deny",
+
+			// block creating tags but allow listing
 			"git tag *": "deny",
+			"git tag": "allow",
+			"git tag --list": "allow",
+			"git tag --list *": "allow",
+			"git tag -l": "allow",
+			"git tag -l *": "allow",
+
+			// block gh tool (no PRs, etc)
 			"gh*": "deny"
 		},
 		"external_directory": {
