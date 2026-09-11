@@ -83,3 +83,6 @@ keys = [
 
 [platform]
 windows.shell.program = "cmd"
+
+linux.window.width = 1134
+linux.window.height = 645
