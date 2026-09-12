@@ -1869,6 +1869,7 @@ alias test='builder test'
 alias run='builder run'
 alias build='builder build'
 alias sign='builder sign'
+alias verify='builder verify'
 
 if type -P time >/dev/null 2>&1; then
 	alias t='command time'

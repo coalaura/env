@@ -135,6 +135,7 @@ os.setalias("test", "builder test $*")
 os.setalias("run", "builder run $*")
 os.setalias("build", "builder build $*")
 os.setalias("sign", "builder sign $*")
+os.setalias("verify", "builder verify $*")
 
 os.setalias("t", utils.binary("time.exe", " $*"))
 
