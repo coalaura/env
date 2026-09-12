@@ -14,10 +14,12 @@ Repository-local instructions and project conventions take precedence over these
 ## Go
 
 - Write modern, idiomatic Go for the project's declared Go version.
+- To take the address of a value, use `new(expr)` (e.g. `new(42)`, `new(cfg.Timeout)`) instead of a throwaway variable or a hand-rolled `ptr` helper.
 - One value per statement: assign first, then check. No initializers in `if` or `switch`, no function-local `const` or `type`, no anonymous struct types, no composite literals in `range` position. This holds in `_test.go` files too. Inline comma-ok for map lookups and type assertions is fine (in `if`), as is `struct{}{}`.
 - Organize Go files strictly top to bottom as: constants -> types -> package variables -> methods -> package-level functions -> helpers. Apply this to every file you create or edit, and re-check the ordering before finishing. Only deviate if the project already follows a different convention.
 - Verify with `vet.exe`/`vet`; it is always on PATH - never search for or try to install it. It runs go vet, staticcheck and the house rules; do not run them separately. If a rule is unclear, run `vet --explain [rule]` (e.g. `vet --explain breathe`). Never silence a diagnostic with an ignore directive or by restructuring around the check - fix what it points at.
-- Vet takes optional `--os [windows/linux/darwin]` and `--arch [amd64/arm64]` flags (defaulting to the host) and `--cgo` if the project needs cgo (off by default). If the project has OS/arch-specific build constraints (`//go:build windows` etc.), vet every relevant target; otherwise plain `vet` suffices.
+- Vet takes optional `--os [windows/linux/darwin]` and `--arch [amd64/arm64]` flags (defaulting to the host) and `--cgo` if the project needs cgo (off by default). `--fix` auto-applies fixes vet deems very safe; review the diff and fix the rest by hand. If the project has OS/arch-specific build constraints (`//go:build windows` etc.), vet every relevant target; otherwise plain `vet` suffices.
+- To inspect a dependency, use `go doc [pkg]` or read its source under `~/go/pkg/mod`. Never search for it anywhere else.
 
 ## Performance
 
@@ -27,11 +29,11 @@ Allocation and copy discipline is the default, not a later optimization pass. Ai
 - Prefer append-to-caller APIs (`func AppendFoo(dst []T, ...) []T`, like `strconv.AppendInt`) and caller-supplied buffers over functions that return fresh slices.
 - Reuse buffers across iterations: declare once outside the loop, reset with `buf = buf[:0]`. `sync.Pool` only when profiling justifies it.
 - Format into the destination: `fmt.Fprintf(w, ...)`, `strings.Builder`/`bytes.Buffer`, `strconv.Append*` over `fmt.Sprintf`. Never `+=` strings in a loop, never `buf.WriteString(fmt.Sprintf(...))`.
-- Convert `[]byte`<->`string` once, not per iteration or per map lookup.
+- Convert `[]byte`<->`string` once, not per iteration or per map lookup. An `unsafe` zero-copy conversion is acceptable only when every use of the result is verifiably safe (e.g. never mutating a `[]byte` view of a `string`); comment the invariant at the conversion site.
 - Iterate instead of collecting: `iter.Seq`, `strings.SplitSeq`/`FieldsSeq`, `bytes.Cut`, or index-based scanning over `strings.Split`/`Fields` when the result is walked once.
 - Keep values on the stack: do not return or store pointers to locals unnecessarily, do not box into `any` or capture in closures on hot paths, do not `defer` in tight loops. Verify with `go build -gcflags=-m` when it matters.
 - Small structs by value, large by pointer. Do not pointer-ize small values "to save copies"; do not copy large elements by ranging over a slice by value - use the index or a pointer.
-- Avoid `reflect`, `unsafe`, `regexp` and `fmt`-based parsing on hot paths; explicit `strconv`/`bytes` code is usually both clearer and allocation-free.
+- Avoid `reflect`, `unsafe` (except the conversion above), `regexp` and `fmt`-based parsing on hot paths; explicit `strconv`/`bytes` code is usually both clearer and allocation-free.
 - Comment every non-obvious mechanical trick (buffer reuse, BCE hint, field-order layout) so the next reader knows why it exists.
 - Benchmarks use `for b.Loop()` with `b.ReportAllocs()`; compare `allocs/op` before and after.
 
@@ -42,6 +44,7 @@ Allocation and copy discipline is the default, not a later optimization pass. Ai
 - If ambiguity materially affects behavior, architecture, APIs, security or data, ask rather than inventing requirements. Infer minor details from existing code when safe.
 - Do not run the application or start long-lived processes such as servers, watchers or daemons unless explicitly requested. Verify with builds, tests, linters and static checks.
 - After completing a task, include a short lowercase commit message covering all uncommitted changes, not just this task's. Do not spend significant effort deriving it. Skip the commit message entirely if there are no uncommitted changes or if you are running as a subagent (e.g. exploring, planning, etc).
+- Stay inside the working directory: scope every search and glob to `./` or narrower. Leave it only when the task strictly requires it (e.g. `~/go/pkg/mod`), never to browse the home directory.
 
 ## Dependencies
 
