@@ -76,10 +76,17 @@ if [[ -d ~/.config/opencode ]]; then
 		rm ~/.config/opencode/dcp.json
 	fi
 
+	if [[ ! -d ~/.config/opencode/commands ]]; then
+		mkdir ~/.config/opencode/commands
+	fi
+
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
 	cp slop/tui.jsonc ~/.config/opencode/tui.jsonc
 	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
+
 	cp slop/AGENTS.md ~/.config/opencode/AGENTS.md
+
+	cp slop/commands/banner.md ~/.config/opencode/commands/banner.md
 fi
 
 # vscode keybinds and snippets

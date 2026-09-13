@@ -79,10 +79,17 @@ if exist "%USERPROFILE%\.config\opencode\" (
 		del "%USERPROFILE%\.config\opencode\dcp.json"
 	)
 
+	if not exist "%USERPROFILE%\.config\opencode\commands" (
+		mkdir "%USERPROFILE%\.config\opencode\commands"
+	)
+
 	copy /y "slop\opencode.jsonc" "%USERPROFILE%\.config\opencode\opencode.jsonc"
 	copy /y "slop\tui.jsonc" "%USERPROFILE%\.config\opencode\tui.jsonc"
 	copy /y "slop\dcp.jsonc" "%USERPROFILE%\.config\opencode\dcp.jsonc"
+
 	copy /y "slop\AGENTS.md" "%USERPROFILE%\.config\opencode\AGENTS.md"
+
+	copy /y "slop\commands\banner.md" "%USERPROFILE%\.config\opencode\commands\banner.md"
 )
 
 :: vscode keybinds and snippets
