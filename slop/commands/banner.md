@@ -45,6 +45,11 @@ Before finishing, review the result:
 - Does it still read well when scaled down to README width?
 - Are both theme variants legible and balanced?
 
+If needed, you can use `ffwebp` (available in PATH) to render a png you can then inspect like so:
+```
+ffwebp -i path/to/input.svg -o path/to/output.png
+```
+
 ## README integration
 
 Add or update the README to use:
