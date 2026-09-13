@@ -15,11 +15,12 @@ Requirements:
 
 - Transparent background.
 - Matching dark/light pair.
-- Wide banner shape.
+- Wide banner shape, with a generally more compact height.
 - Clean, inviting and nicely detailed (but not overly complicated).
 - Good contrast for each theme.
 - Optional small personal touches when they fit the project (for example the Go gopher or similar matching details, but do not force it).
 - We don't want just a logo, title and slogan.
+- Keep border radii to a minimum (max 2px).
 - Keep the SVG markup clean and maintainable.
 
 Add or update the README to use:
