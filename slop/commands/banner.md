@@ -22,7 +22,7 @@ Create:
 - Prefer a few well-developed elements over many small embellishments. Detail should explain something, add character, or strengthen the composition.
 - Do not use terminal windows, code samples, dashboard cards, badges, accent bars, or floating symbols merely to make the banner look technical or complete. They are welcome when they are genuinely the right subject.
 - Personality is welcome when it fits: a restrained visual joke, a custom illustration, or a mascot interacting meaningfully with the concept. Do not add a Go gopher merely because the repository uses Go.
-- Keep copy economical. Usually the project name and, if useful, one short supporting line are enough. Avoid turning the banner into a miniature README. Any technical claims or code shown must be supported by the repository.
+- Keep copy economical. The project name alone is fine; add a short supporting line only when it helps explain what the project does. Use plain, concrete language, not advertising copy. Avoid punchy slogan pairs ("Small logger. Clear signals."), vague benefits, superlatives, and forced wordplay. Prefer "Low-overhead logging for Go" over "Less overhead. More clarity." Personality should come primarily from the visual concept, not a manufactured tagline. Any technical claims or code shown must be supported by the repository.
 - Do not force complexity. A simple, distinctive concept is better than a busy illustration or an elaborate but generic mock interface.
 
 ## Visual and technical requirements
