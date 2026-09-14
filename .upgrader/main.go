@@ -6,10 +6,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/coalaura/plain"
+	"github.com/coalaura/plain/minimal"
 )
 
-var log = plain.New(plain.WithDate(plain.RFC3339Local))
+var log = minimal.New()
 
 func main() {
 	status := run()
@@ -58,7 +58,7 @@ func run() int {
 		return 1
 	}
 
-	log.Println("Completed upgrades.")
+	log.Successln("Completed upgrades.")
 
 	return 0
 }

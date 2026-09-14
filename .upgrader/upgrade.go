@@ -1,10 +1,6 @@
 package main
 
-import (
-	"errors"
-
-	"github.com/coalaura/plain"
-)
+import "errors"
 
 type Installer func(*SemVer) error
 type VersionResolver func() (*SemVer, error)
@@ -32,7 +28,7 @@ func (u *UpgradeConfig) GetName() string {
 }
 
 func (u *UpgradeConfig) Upgrade() error {
-	log.Printf("Checking %s version...\n", u.GetName())
+	log.Infof("Checking %s version...\n", u.GetName())
 
 	remote, err := u.FetchLatestVersion()
 	if err != nil {
@@ -45,21 +41,21 @@ func (u *UpgradeConfig) Upgrade() error {
 	}
 
 	if !remote.HigherThan(local) {
-		log.Printf("Already up-to-date (%s == %s)\n", remote, local)
+		log.Subf("Already up-to-date (%s == %s)\n", remote, local)
 
 		return nil
 	}
 
-	log.Printf("New version found (%s > %s)\n", remote, local)
+	log.Subf("New version found (%s > %s)\n", remote, local)
 
-	log.Printf("Upgrading %s...\n", u.GetName())
+	log.Infof("Upgrading %s...\n", u.GetName())
 
 	err = u.Installer(remote)
 	if err != nil {
 		return err
 	}
 
-	log.Print("Validating upgrade...")
+	log.Infoln("Validating upgrade...")
 
 	local, err = u.ResolveCurrentVersion()
 	if err != nil {
@@ -74,7 +70,7 @@ func (u *UpgradeConfig) Upgrade() error {
 		return errors.New("installed version does not match requested version")
 	}
 
-	log.Writeln(log.Theme(plain.Success), "success", true, true)
+	log.Successln("success")
 
 	return nil
 }
