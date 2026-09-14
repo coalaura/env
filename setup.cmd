@@ -80,7 +80,7 @@ if errorlevel 1 (
         ) else (
             echo Running upgrader...
 
-            "%UPGRADER_TMP%" go zig upx starship bun biome builder vet time wtf coreutils
+            "%UPGRADER_TMP%" go zig upx starship bun builder vet time wtf coreutils
 
             if errorlevel 1 (
                 set "SETUP_EXIT=1"

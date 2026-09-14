@@ -54,12 +54,6 @@ if command -v starship >/dev/null 2>&1; then
 	cp starship/starship.toml ~/.config/starship.toml
 fi
 
-# biome config
-if command -v biome >/dev/null 2>&1; then
-	echo "Copying biome config..."
-	cp biome/biome.json ~/biome.json
-fi
-
 # opencode config
 if [[ -d ~/.config/opencode ]]; then
 	echo "Copying opencode config..."

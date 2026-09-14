@@ -53,16 +53,6 @@ if %errorlevel%==0 (
     copy /y "git\.gitconfig" "%USERPROFILE%\.config\.gitconfig_env" >nul
 )
 
-:: biome config
-where biome >nul 2>&1
-
-if %errorlevel%==0 (
-    echo Copying biome config...
-
-    copy /y "biome\biome.json" "%USERPROFILE%\biome.json" >nul
-    copy /y "biome\biome.json" "D:\biome.json" >nul
-)
-
 :: opencode config
 if exist "%USERPROFILE%\.config\opencode\" (
 	echo Copying opencode config...
