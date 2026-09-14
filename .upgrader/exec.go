@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/coalaura/plain/ansi"
 )
 
 const (
@@ -30,7 +32,8 @@ func (u *UpgradeConfig) ResolveCurrentVersion() (*SemVer, error) {
 			return nil, err
 		}
 	} else {
-		if _, err := os.Stat(path); err != nil {
+		_, err := os.Stat(path)
+		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return NewEmptySemVer(), nil
 			}
@@ -56,6 +59,8 @@ func ResolveBinaryVersion(path string, args []string) (*SemVer, error) {
 
 		return nil, err
 	}
+
+	out = ansi.StripANSI(out)
 
 	version, err := ParseSemVer(string(out), true)
 	if err != nil {

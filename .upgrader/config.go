@@ -93,6 +93,45 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallBuilder,
 		},
 
+		// Actup
+		{
+			Repository: "coalaura/actup",
+			Prefix:     "v",
+			Releases:   true,
+
+			Binary: "actup",
+			Path:   GetLocalBinaryPath("actup"),
+			Args:   []string{"--version"},
+
+			Installer: InstallActup,
+		},
+
+		// License
+		{
+			Repository: "coalaura/license",
+			Prefix:     "v",
+			Releases:   true,
+
+			Binary: "license",
+			Path:   GetLocalBinaryPath("license"),
+			Args:   []string{"--version"},
+
+			Installer: InstallLicense,
+		},
+
+		// Mksvc
+		{
+			Repository: "coalaura/mksvc",
+			Prefix:     "v",
+			Releases:   true,
+
+			Binary: "mksvc",
+			Path:   GetLocalBinaryPath("mksvc"),
+			Args:   []string{"--version"},
+
+			Installer: InstallMksvc,
+		},
+
 		// Vet
 		{
 			Repository: "coalaura/vet",

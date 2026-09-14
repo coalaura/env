@@ -111,6 +111,43 @@ func InstallBuilder(ver *SemVer) error {
 	return InstallGitHubExecutable("coalaura/builder", tag, "builder-windows-amd64.exe", path, ver, []string{"--version"})
 }
 
+func InstallActup(ver *SemVer) error {
+	home, err := UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	tag := "v" + ver.String()
+	path := filepath.Join(home, ".bin", "actup.exe")
+
+	return InstallGitHubExecutable("coalaura/actup", tag, "actup-windows-amd64.exe", path, ver, []string{"--version"})
+}
+
+func InstallLicense(ver *SemVer) error {
+	home, err := UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	tag := "v" + ver.String()
+	path := filepath.Join(home, ".bin", "license.exe")
+
+	return InstallGitHubExecutable("coalaura/license", tag, "license-windows-amd64.exe", path, ver, []string{"--version"})
+}
+
+func InstallMksvc(ver *SemVer) error {
+	home, err := UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("mksvc_v%s_windows_amd64.exe", ver.String())
+	path := filepath.Join(home, ".bin", "mksvc.exe")
+
+	return InstallGitHubExecutable("coalaura/mksvc", tag, asset, path, ver, []string{"--version"})
+}
+
 func InstallTime(ver *SemVer) error {
 	home, err := UserHomeDir()
 	if err != nil {

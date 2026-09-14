@@ -183,6 +183,25 @@ func InstallBuilder(ver *SemVer) error {
 	return InstallGitHubExecutable("coalaura/builder", tag, "builder-linux-amd64", "/usr/local/bin/builder", ver, []string{"--version"})
 }
 
+func InstallActup(ver *SemVer) error {
+	tag := "v" + ver.String()
+
+	return InstallGitHubExecutable("coalaura/actup", tag, "actup-linux-amd64", "/usr/local/bin/actup", ver, []string{"--version"})
+}
+
+func InstallLicense(ver *SemVer) error {
+	tag := "v" + ver.String()
+
+	return InstallGitHubExecutable("coalaura/license", tag, "license-linux-amd64", "/usr/local/bin/license", ver, []string{"--version"})
+}
+
+func InstallMksvc(ver *SemVer) error {
+	tag := "v" + ver.String()
+	asset := fmt.Sprintf("mksvc_v%s_linux_amd64", ver.String())
+
+	return InstallGitHubExecutable("coalaura/mksvc", tag, asset, "/usr/local/bin/mksvc", ver, []string{"--version"})
+}
+
 func InstallTime(ver *SemVer) error {
 	tag := "v" + ver.String()
 	asset := fmt.Sprintf("time_v%s_linux_amd64", ver.String())
