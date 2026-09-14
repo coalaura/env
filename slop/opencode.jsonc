@@ -212,7 +212,7 @@
 			"description": "OpenRouter",
 			"color": "#f38ba8",
 			"mode": "primary",
-			"model": "deepseek/deepseek-v4.1-flash",
+			"model": "openrouter/deepseek/deepseek-v4.1-flash",
 
 			"permission": {
 				"task": {
