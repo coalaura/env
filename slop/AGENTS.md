@@ -2,6 +2,11 @@
 
 Repository-local instructions and project conventions take precedence over these defaults.
 
+## Line wrapping
+
+- Never hard-wrap Markdown prose, including list-item paragraphs. Keep each paragraph on one source line; use line breaks for structure, not column limits.
+- In code, use ~140 characters as a soft wrapping threshold, not a hard limit. Wrap earlier only for readability or formatter requirements, not to fit 80 columns.
+
 ## Code
 
 - Match existing style, structure, naming and conventions before introducing new patterns.
