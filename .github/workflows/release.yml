@@ -28,21 +28,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set-up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: ".upgrader/go.mod"
-
       - name: Build Upgrader
+        id: build
+        uses: coalaura/build@v1
+        with:
+          os: ${{ matrix.goos }}
+          arch: amd64
+          generate: false
+          target: .upgrader
+          output: build/upgrader_${{ matrix.goos }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+
+      - name: Sign Upgrader
+        id: sign
+        uses: coalaura/sign@v1
+        with:
+          path: ${{ steps.build.outputs.path }}
+          key: ${{ secrets.COALAURA_PFX }}
+          passphrase: ${{ secrets.COALAURA_PFX_PASSWORD }}
+          chain: |
+            https://wiese2.org/pki/issuing.pem
+            https://wiese2.org/pki/root.pem
+
+      - name: Create Checksum
         shell: bash
-        run: |
-          mkdir -p build
-          [[ "${{ matrix.goos }}" == "windows" ]] && EXT=".exe" || EXT=""
-          cd .upgrader
-          OUT="../build/upgrader_${{ matrix.goos }}${EXT}"
-          GOOS=${{ matrix.goos }} GOARCH=amd64 CGO_ENABLED=0 \
-          go build -trimpath -buildvcs=false -o "$OUT" .
-          sha256sum "$OUT" | cut -d " " -f 1 > "$OUT.sha256"
+        run: sha256sum "${{ steps.sign.outputs.path }}" | cut -d " " -f 1 > "${{ steps.sign.outputs.path }}.sha256"
 
       - name: Upload Upgrader
         uses: actions/upload-artifact@v7
