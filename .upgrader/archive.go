@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -54,6 +55,13 @@ func ExtractTarXzFile(path, targetDir string) error {
 }
 
 func ExtractTar(reader io.Reader, targetDir string) error {
+	root, err := os.OpenRoot(targetDir)
+	if err != nil {
+		return err
+	}
+
+	defer root.Close()
+
 	tr := tar.NewReader(reader)
 
 	var (
@@ -77,14 +85,14 @@ func ExtractTar(reader io.Reader, targetDir string) error {
 			return errors.New("archive has too many entries")
 		}
 
-		outPath, err := ArchivePath(targetDir, header.Name)
+		name, err := filepath.Localize(path.Clean(header.Name))
 		if err != nil {
-			return err
+			return errors.New("archive contains invalid path")
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			err = os.MkdirAll(outPath, 0755)
+			err = root.MkdirAll(name, 0755)
 			if err != nil {
 				return err
 			}
@@ -93,17 +101,23 @@ func ExtractTar(reader io.Reader, targetDir string) error {
 				return errors.New("archive exceeds extracted size limit")
 			}
 
-			err = os.MkdirAll(filepath.Dir(outPath), 0755)
+			err = root.MkdirAll(filepath.Dir(name), 0755)
 			if err != nil {
 				return err
 			}
 
-			out, err := OpenFileForWriting(outPath)
+			out, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 			if err != nil {
 				return err
 			}
 
 			n, copyErr := io.CopyN(out, tr, header.Size)
+
+			var chmodErr error
+
+			if copyErr == nil {
+				chmodErr = out.Chmod(os.FileMode(header.Mode).Perm())
+			}
 
 			closeErr := out.Close()
 
@@ -111,22 +125,21 @@ func ExtractTar(reader io.Reader, targetDir string) error {
 				return copyErr
 			}
 
+			if chmodErr != nil {
+				return chmodErr
+			}
+
 			if closeErr != nil {
 				return closeErr
 			}
 
 			total += n
-
-			err = os.Chmod(outPath, os.FileMode(header.Mode).Perm())
-			if err != nil {
-				return err
-			}
 		}
 	}
 }
 
-func ExtractZipFile(path, targetDir string) error {
-	zrd, err := zip.OpenReader(path)
+func ExtractZipFile(archivePath, targetDir string) error {
+	zrd, err := zip.OpenReader(archivePath)
 	if err != nil {
 		return err
 	}
@@ -137,16 +150,28 @@ func ExtractZipFile(path, targetDir string) error {
 		return errors.New("archive has too many entries")
 	}
 
+	err = os.MkdirAll(targetDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	root, err := os.OpenRoot(targetDir)
+	if err != nil {
+		return err
+	}
+
+	defer root.Close()
+
 	var total int64
 
 	for _, file := range zrd.File {
-		outPath, err := ArchivePath(targetDir, file.Name)
+		name, err := filepath.Localize(path.Clean(file.Name))
 		if err != nil {
-			return err
+			return errors.New("archive contains invalid path")
 		}
 
 		if file.FileInfo().IsDir() {
-			err = os.MkdirAll(outPath, 0755)
+			err = root.MkdirAll(name, 0755)
 			if err != nil {
 				return err
 			}
@@ -162,7 +187,7 @@ func ExtractZipFile(path, targetDir string) error {
 			return errors.New("archive exceeds extracted size limit")
 		}
 
-		err = os.MkdirAll(filepath.Dir(outPath), 0755)
+		err = root.MkdirAll(filepath.Dir(name), 0755)
 		if err != nil {
 			return err
 		}
@@ -172,7 +197,7 @@ func ExtractZipFile(path, targetDir string) error {
 			return err
 		}
 
-		out, err := OpenFileForWriting(outPath)
+		out, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			in.Close()
 
