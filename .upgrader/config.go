@@ -67,19 +67,6 @@ func GetConfigs() []*UpgradeConfig {
 			Installer: InstallBun,
 		},
 
-		// Biome JS
-		{
-			Repository: "biomejs/biome",
-			Prefix:     "@biomejs/biome@",
-			Releases:   true,
-
-			Binary: "biome",
-			Path:   GetLocalBinaryPath("biome"),
-			Args:   []string{"version"},
-
-			Installer: InstallBiome,
-		},
-
 		// Builder
 		{
 			Repository: "coalaura/builder",
@@ -89,8 +76,6 @@ func GetConfigs() []*UpgradeConfig {
 			Binary: "builder",
 			Path:   GetLocalBinaryPath("builder"),
 			Args:   []string{"--version"},
-
-			Installer: InstallBuilder,
 		},
 
 		// Actup
@@ -102,8 +87,6 @@ func GetConfigs() []*UpgradeConfig {
 			Binary: "actup",
 			Path:   GetLocalBinaryPath("actup"),
 			Args:   []string{"--version"},
-
-			Installer: InstallActup,
 		},
 
 		// License
@@ -115,21 +98,18 @@ func GetConfigs() []*UpgradeConfig {
 			Binary: "license",
 			Path:   GetLocalBinaryPath("license"),
 			Args:   []string{"--version"},
-
-			Installer: InstallLicense,
 		},
 
-		// Mksvc
+		// MkSVC
 		{
 			Repository: "coalaura/mksvc",
 			Prefix:     "v",
 			Releases:   true,
 
-			Binary: "mksvc",
-			Path:   GetLocalBinaryPath("mksvc"),
-			Args:   []string{"--version"},
-
-			Installer: InstallMksvc,
+			Binary:    "mksvc",
+			Path:      GetLocalBinaryPath("mksvc"),
+			Args:      []string{"--version"},
+			AssetName: VersionedGitHubAssetName,
 		},
 
 		// Vet
@@ -141,8 +121,6 @@ func GetConfigs() []*UpgradeConfig {
 			Binary: "vet",
 			Path:   GetLocalBinaryPath("vet"),
 			Args:   []string{"--version"},
-
-			Installer: InstallVet,
 		},
 
 		// Time
@@ -151,11 +129,10 @@ func GetConfigs() []*UpgradeConfig {
 			Prefix:     "v",
 			Releases:   true,
 
-			Binary: "time",
-			Path:   GetLocalBinaryPath("time"),
-			Args:   []string{"--version"},
-
-			Installer: InstallTime,
+			Binary:    "time",
+			Path:      GetLocalBinaryPath("time"),
+			Args:      []string{"--version"},
+			AssetName: VersionedGitHubAssetName,
 		},
 
 		// Wtf
@@ -164,11 +141,10 @@ func GetConfigs() []*UpgradeConfig {
 			Prefix:     "v",
 			Releases:   true,
 
-			Binary: "wtf",
-			Path:   GetLocalBinaryPath("wtf"),
-			Args:   []string{"--version"},
-
-			Installer: InstallWtf,
+			Binary:    "wtf",
+			Path:      GetLocalBinaryPath("wtf"),
+			Args:      []string{"--version"},
+			AssetName: VersionedGitHubAssetName,
 		},
 
 		// Coreutils

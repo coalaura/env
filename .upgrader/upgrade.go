@@ -4,6 +4,7 @@ import "errors"
 
 type Installer func(*SemVer) error
 type VersionResolver func() (*SemVer, error)
+type AssetNameResolver func(binary, version string) string
 
 type UpgradeConfig struct {
 	Name       string
@@ -11,9 +12,10 @@ type UpgradeConfig struct {
 	Prefix     string
 	Releases   bool
 
-	Binary string
-	Path   string
-	Args   []string
+	Binary    string
+	Path      string
+	Args      []string
+	AssetName AssetNameResolver
 
 	Installer Installer
 	Resolver  VersionResolver
@@ -25,6 +27,24 @@ func (u *UpgradeConfig) GetName() string {
 	}
 
 	return u.Binary
+}
+
+func (u *UpgradeConfig) Install(ver *SemVer) error {
+	if u.Installer != nil {
+		return u.Installer(ver)
+	}
+
+	version := ver.String()
+	assetResolver := u.AssetName
+
+	if assetResolver == nil {
+		assetResolver = DefaultGitHubAssetName
+	}
+
+	asset := assetResolver(u.Binary, version)
+	tag := u.Prefix + version
+
+	return InstallGitHubExecutable(u.Repository, tag, asset, u.Path, ver, u.Args)
 }
 
 func (u *UpgradeConfig) Upgrade() error {
@@ -50,7 +70,7 @@ func (u *UpgradeConfig) Upgrade() error {
 
 	log.Infof("Upgrading %s...\n", u.GetName())
 
-	err = u.Installer(remote)
+	err = u.Install(remote)
 	if err != nil {
 		return err
 	}

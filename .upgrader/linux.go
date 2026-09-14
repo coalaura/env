@@ -171,57 +171,6 @@ func InstallBun(ver *SemVer) error {
 	return ChownToInvokingUser(dst)
 }
 
-func InstallBiome(ver *SemVer) error {
-	tag := "@biomejs/biome@" + ver.String()
-
-	return InstallGitHubExecutable("biomejs/biome", tag, "biome-linux-x64", "/usr/local/bin/biome", ver, []string{"version"})
-}
-
-func InstallBuilder(ver *SemVer) error {
-	tag := "v" + ver.String()
-
-	return InstallGitHubExecutable("coalaura/builder", tag, "builder-linux-amd64", "/usr/local/bin/builder", ver, []string{"--version"})
-}
-
-func InstallActup(ver *SemVer) error {
-	tag := "v" + ver.String()
-
-	return InstallGitHubExecutable("coalaura/actup", tag, "actup-linux-amd64", "/usr/local/bin/actup", ver, []string{"--version"})
-}
-
-func InstallLicense(ver *SemVer) error {
-	tag := "v" + ver.String()
-
-	return InstallGitHubExecutable("coalaura/license", tag, "license-linux-amd64", "/usr/local/bin/license", ver, []string{"--version"})
-}
-
-func InstallMksvc(ver *SemVer) error {
-	tag := "v" + ver.String()
-	asset := fmt.Sprintf("mksvc_v%s_linux_amd64", ver.String())
-
-	return InstallGitHubExecutable("coalaura/mksvc", tag, asset, "/usr/local/bin/mksvc", ver, []string{"--version"})
-}
-
-func InstallTime(ver *SemVer) error {
-	tag := "v" + ver.String()
-	asset := fmt.Sprintf("time_v%s_linux_amd64", ver.String())
-
-	return InstallGitHubExecutable("coalaura/time", tag, asset, "/usr/local/bin/time", ver, []string{"--version"})
-}
-
-func InstallWtf(ver *SemVer) error {
-	tag := "v" + ver.String()
-	asset := fmt.Sprintf("wtf_v%s_linux_amd64", ver.String())
-
-	return InstallGitHubExecutable("coalaura/wtf", tag, asset, "/usr/local/bin/wtf", ver, []string{"--version"})
-}
-
-func InstallVet(ver *SemVer) error {
-	tag := "v" + ver.String()
-
-	return InstallGitHubExecutable("coalaura/vet", tag, "vet-linux-amd64", "/usr/local/bin/vet", ver, []string{"--version"})
-}
-
 func InstallCoreutils(ver *SemVer) error {
 	tag := ver.String()
 	asset := fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String())
@@ -253,4 +202,12 @@ func InstallCoreutils(ver *SemVer) error {
 	}
 
 	return CopyFileMode(src, "/usr/local/bin/coreutils", 0755)
+}
+
+func DefaultGitHubAssetName(binary, _ string) string {
+	return binary + "-linux-amd64"
+}
+
+func VersionedGitHubAssetName(binary, version string) string {
+	return binary + "_v" + version + "_linux_amd64"
 }

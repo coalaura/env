@@ -87,108 +87,6 @@ func InstallBun(ver *SemVer) error {
 	return InstallSingleBinaryFromZip("oven-sh/bun", tag, asset, "bun.exe", GetBunBinaryPath(), ver, []string{"--version"})
 }
 
-func InstallBiome(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "@biomejs/biome@" + ver.String()
-	path := filepath.Join(home, ".bin", "biome.exe")
-
-	return InstallGitHubExecutable("biomejs/biome", tag, "biome-win32-x64.exe", path, ver, []string{"version"})
-}
-
-func InstallBuilder(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-	path := filepath.Join(home, ".bin", "builder.exe")
-
-	return InstallGitHubExecutable("coalaura/builder", tag, "builder-windows-amd64.exe", path, ver, []string{"--version"})
-}
-
-func InstallActup(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-	path := filepath.Join(home, ".bin", "actup.exe")
-
-	return InstallGitHubExecutable("coalaura/actup", tag, "actup-windows-amd64.exe", path, ver, []string{"--version"})
-}
-
-func InstallLicense(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-	path := filepath.Join(home, ".bin", "license.exe")
-
-	return InstallGitHubExecutable("coalaura/license", tag, "license-windows-amd64.exe", path, ver, []string{"--version"})
-}
-
-func InstallMksvc(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-	asset := fmt.Sprintf("mksvc_v%s_windows_amd64.exe", ver.String())
-	path := filepath.Join(home, ".bin", "mksvc.exe")
-
-	return InstallGitHubExecutable("coalaura/mksvc", tag, asset, path, ver, []string{"--version"})
-}
-
-func InstallTime(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-	asset := fmt.Sprintf("time_v%s_windows_amd64.exe", ver.String())
-
-	path := filepath.Join(home, ".bin", "time.exe")
-
-	return InstallGitHubExecutable("coalaura/time", tag, asset, path, ver, []string{"--version"})
-}
-
-func InstallWtf(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-	asset := fmt.Sprintf("wtf_v%s_windows_amd64.exe", ver.String())
-
-	path := filepath.Join(home, ".bin", "wtf.exe")
-
-	return InstallGitHubExecutable("coalaura/wtf", tag, asset, path, ver, []string{"--version"})
-}
-
-func InstallVet(ver *SemVer) error {
-	home, err := UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	tag := "v" + ver.String()
-
-	path := filepath.Join(home, ".bin", "vet.exe")
-
-	return InstallGitHubExecutable("coalaura/vet", tag, "vet-windows-amd64.exe", path, ver, []string{"--version"})
-}
-
 func InstallCoreutils(ver *SemVer) error {
 	home, err := UserHomeDir()
 	if err != nil {
@@ -226,4 +124,12 @@ func InstallCoreutils(ver *SemVer) error {
 	}
 
 	return CopyFile(src, dst)
+}
+
+func DefaultGitHubAssetName(binary, _ string) string {
+	return binary + "-windows-amd64.exe"
+}
+
+func VersionedGitHubAssetName(binary, version string) string {
+	return binary + "_v" + version + "_windows_amd64.exe"
 }
