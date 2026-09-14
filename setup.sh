@@ -60,7 +60,7 @@ TOOLS=(go time wtf)
 
 # skip development tools, if connected via ssh
 if [[ -z "${SSH_CLIENT:-}" ]]; then
-	TOOLS+=(starship zig upx bun builder vet)
+	TOOLS+=(starship zig upx bun builder vet actup license mksvc)
 fi
 
 run_as_root env "GITHUB_TOKEN=${GITHUB_TOKEN:-}" "$UPGRADER_TMP" "${TOOLS[@]}"
