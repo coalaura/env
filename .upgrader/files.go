@@ -14,7 +14,8 @@ func OpenFileForReading(path string) (*os.File, error) {
 func OpenFileForWriting(path string) (*os.File, error) {
 	dir := filepath.Dir(path)
 
-	if _, err := os.Stat(dir); err != nil {
+	_, err := os.Stat(dir)
+	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
@@ -115,9 +116,10 @@ func ReplaceDirectory(src, dst string) error {
 		return err
 	}
 
-	hasBackup := false
+	var hasBackup bool
 
-	if _, err = os.Stat(dst); err == nil {
+	_, err = os.Stat(dst)
+	if err == nil {
 		err = os.Rename(dst, backup)
 		if err != nil {
 			return err

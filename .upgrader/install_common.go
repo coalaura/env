@@ -2,9 +2,11 @@ package main
 
 import (
 	"os"
+
+	"github.com/coalaura/semver"
 )
 
-func InstallSingleBinaryFromTarGz(repository, tag, asset, binName, dstPath string, ver *SemVer, args []string) error {
+func InstallSingleBinaryFromTarGz(repository, tag, asset, binName, dstPath string, ver semver.SemVer, args []string) error {
 	path, err := DownloadGitHubAssetTemp(repository, tag, asset, ".tar.gz")
 	if err != nil {
 		return err
@@ -42,7 +44,7 @@ func InstallSingleBinaryFromTarGz(repository, tag, asset, binName, dstPath strin
 	return os.Chmod(dstPath, 0755)
 }
 
-func InstallSingleBinaryFromZip(repository, tag, asset, binName, dstPath string, ver *SemVer, args []string) error {
+func InstallSingleBinaryFromZip(repository, tag, asset, binName, dstPath string, ver semver.SemVer, args []string) error {
 	path, err := DownloadGitHubAssetTemp(repository, tag, asset, ".zip")
 	if err != nil {
 		return err

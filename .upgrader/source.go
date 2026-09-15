@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
+
+	"github.com/coalaura/semver"
 )
 
 type GoRelease struct {
@@ -26,25 +29,25 @@ type ZigFile struct {
 	SHA256  string `json:"shasum"`
 }
 
-func FetchLatestGoVersion() (*SemVer, error) {
+func FetchLatestGoVersion() (semver.SemVer, error) {
 	resp, err := metadataClient.Get("https://go.dev/dl/?mode=json")
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
 	body, err := ReadResponse(resp, MaxMetadataSize)
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
 	var releases []GoRelease
 
 	err = json.Unmarshal(body, &releases)
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
-	var latest *SemVer
+	latest := semver.Invalid
 
 	for _, release := range releases {
 		if !release.Stable {
@@ -56,57 +59,57 @@ func FetchLatestGoVersion() (*SemVer, error) {
 			continue
 		}
 
-		if latest == nil || version.HigherThan(latest) {
+		if latest.IsInvalid() || version.HigherThan(latest) {
 			latest = version
 		}
 	}
 
-	if latest == nil {
-		return nil, errors.New("no latest Go version found")
+	if latest.IsInvalid() {
+		return semver.Invalid, errors.New("no latest Go version found")
 	}
 
 	return latest, nil
 }
 
-func FetchLatestZigVersion() (*SemVer, error) {
+func FetchLatestZigVersion() (semver.SemVer, error) {
 	resp, err := metadataClient.Get("https://ziglang.org/download/index.json")
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
 	body, err := ReadResponse(resp, MaxMetadataSize)
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
 	var versions map[string]json.RawMessage
 
 	err = json.Unmarshal(body, &versions)
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
-	var latest *SemVer
+	latest := semver.Invalid
 
 	for name := range versions {
-		version, err := ParseSemVer(name, false)
+		version, err := semver.ParseSemVer(name, false)
 		if err != nil {
 			continue
 		}
 
-		if latest == nil || version.HigherThan(latest) {
+		if latest.IsInvalid() || version.HigherThan(latest) {
 			latest = version
 		}
 	}
 
-	if latest == nil {
-		return nil, errors.New("no latest Zig version found")
+	if latest.IsInvalid() {
+		return semver.Invalid, errors.New("no latest Zig version found")
 	}
 
 	return latest, nil
 }
 
-func FetchGoFile(ver *SemVer) (*GoFile, error) {
+func FetchGoFile(ver semver.SemVer) (*GoFile, error) {
 	resp, err := metadataClient.Get("https://go.dev/dl/?mode=json&include=all")
 	if err != nil {
 		return nil, err
@@ -141,7 +144,7 @@ func FetchGoFile(ver *SemVer) (*GoFile, error) {
 	return nil, fmt.Errorf("go %s download not found for %s/%s", ver, runtime.GOOS, runtime.GOARCH)
 }
 
-func FetchZigFile(ver *SemVer) (*ZigFile, error) {
+func FetchZigFile(ver semver.SemVer) (*ZigFile, error) {
 	resp, err := metadataClient.Get("https://ziglang.org/download/index.json")
 	if err != nil {
 		return nil, err
@@ -188,7 +191,7 @@ func FetchZigFile(ver *SemVer) (*ZigFile, error) {
 	return &file, nil
 }
 
-func DownloadGoFile(ver *SemVer) (string, error) {
+func DownloadGoFile(ver semver.SemVer) (string, error) {
 	file, err := FetchGoFile(ver)
 	if err != nil {
 		return "", err
@@ -197,11 +200,19 @@ func DownloadGoFile(ver *SemVer) (string, error) {
 	return DownloadTempFile("https://go.dev/dl/"+file.Filename, GoFileExtension(), file.SHA256)
 }
 
-func DownloadZigFile(ver *SemVer) (string, error) {
+func DownloadZigFile(ver semver.SemVer) (string, error) {
 	file, err := FetchZigFile(ver)
 	if err != nil {
 		return "", err
 	}
 
 	return DownloadTempFile(file.Tarball, ZigFileExtension(), file.SHA256)
+}
+
+func ParseVersionTag(tag, prefix string) (semver.SemVer, error) {
+	if !strings.HasPrefix(tag, prefix) {
+		return semver.Invalid, errors.New("tag prefix does not match")
+	}
+
+	return semver.ParseSemVer(strings.TrimPrefix(tag, prefix), false)
 }

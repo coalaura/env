@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/coalaura/plain/ansi"
+	"github.com/coalaura/semver"
 )
 
 const (
@@ -17,7 +18,7 @@ const (
 	InstallCommandTimeout = 15 * time.Minute
 )
 
-func (u *UpgradeConfig) ResolveCurrentVersion() (*SemVer, error) {
+func (u *UpgradeConfig) ResolveCurrentVersion() (semver.SemVer, error) {
 	path := u.Path
 
 	if path == "" {
@@ -26,26 +27,26 @@ func (u *UpgradeConfig) ResolveCurrentVersion() (*SemVer, error) {
 		path, err = exec.LookPath(u.Binary)
 		if err != nil {
 			if errors.Is(err, exec.ErrNotFound) {
-				return NewEmptySemVer(), nil
+				return semver.NewEmptySemVer(), nil
 			}
 
-			return nil, err
+			return semver.Invalid, err
 		}
 	} else {
 		_, err := os.Stat(path)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				return NewEmptySemVer(), nil
+				return semver.NewEmptySemVer(), nil
 			}
 
-			return nil, err
+			return semver.Invalid, err
 		}
 	}
 
 	return ResolveBinaryVersion(path, u.Args)
 }
 
-func ResolveBinaryVersion(path string, args []string) (*SemVer, error) {
+func ResolveBinaryVersion(path string, args []string) (semver.SemVer, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), VersionCommandTimeout)
 	defer cancel()
 
@@ -54,23 +55,28 @@ func ResolveBinaryVersion(path string, args []string) (*SemVer, error) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return nil, fmt.Errorf("version command timed out after %s", VersionCommandTimeout)
+			return semver.Invalid, fmt.Errorf("version command timed out after %s", VersionCommandTimeout)
 		}
 
-		return nil, err
+		return semver.Invalid, err
 	}
 
 	out = ansi.StripANSI(out)
 
-	version, err := ParseSemVer(string(out), true)
+	versionText := findVersion(out)
+	if len(versionText) == 0 {
+		return semver.Invalid, errors.New("version not found")
+	}
+
+	version, err := semver.ParseSemVer(string(versionText), false)
 	if err != nil {
-		return nil, err
+		return semver.Invalid, err
 	}
 
 	return version, nil
 }
 
-func ValidateBinary(path string, args []string, expected *SemVer) error {
+func ValidateBinary(path string, args []string, expected semver.SemVer) error {
 	version, err := ResolveBinaryVersion(path, args)
 	if err != nil {
 		return err
@@ -105,4 +111,58 @@ func RunCommandOrError(bin string, args ...string) error {
 	}
 
 	return nil
+}
+
+func findVersion(output []byte) []byte {
+	for start := range len(output) {
+		if !isVersionDigit(output[start]) || start > 0 && (isVersionDigit(output[start-1]) || output[start-1] == '.') {
+			continue
+		}
+
+		end := start
+
+		for end < len(output) && isVersionDigit(output[end]) {
+			end++
+		}
+
+		if end == len(output) || output[end] != '.' {
+			continue
+		}
+
+		end++
+		minorStart := end
+
+		for end < len(output) && isVersionDigit(output[end]) {
+			end++
+		}
+
+		if end == minorStart {
+			continue
+		}
+
+		if end < len(output) && output[end] == '.' {
+			end++
+			patchStart := end
+
+			for end < len(output) && isVersionDigit(output[end]) {
+				end++
+			}
+
+			if end == patchStart {
+				continue
+			}
+		}
+
+		if end < len(output) && output[end] == '.' {
+			continue
+		}
+
+		return output[start:end]
+	}
+
+	return nil
+}
+
+func isVersionDigit(ch byte) bool {
+	return ch >= '0' && ch <= '9'
 }

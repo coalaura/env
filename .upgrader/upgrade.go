@@ -1,9 +1,13 @@
 package main
 
-import "errors"
+import (
+	"errors"
 
-type Installer func(*SemVer) error
-type VersionResolver func() (*SemVer, error)
+	"github.com/coalaura/semver"
+)
+
+type Installer func(semver.SemVer) error
+type VersionResolver func() (semver.SemVer, error)
 type AssetNameResolver func(binary, version string) string
 
 type UpgradeConfig struct {
@@ -29,7 +33,7 @@ func (u *UpgradeConfig) GetName() string {
 	return u.Binary
 }
 
-func (u *UpgradeConfig) Install(ver *SemVer) error {
+func (u *UpgradeConfig) Install(ver semver.SemVer) error {
 	if u.Installer != nil {
 		return u.Installer(ver)
 	}

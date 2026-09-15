@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/coalaura/semver"
 )
 
-func InstallGo(ver *SemVer) error {
+func InstallGo(ver semver.SemVer) error {
 	path, err := DownloadGoFile(ver)
 	if err != nil {
 		return err
@@ -36,7 +38,7 @@ func InstallGo(ver *SemVer) error {
 	return ReplaceDirectory(filepath.Join(dir, "go"), "/usr/local/go")
 }
 
-func InstallZig(ver *SemVer) error {
+func InstallZig(ver semver.SemVer) error {
 	path, err := DownloadZigFile(ver)
 	if err != nil {
 		return err
@@ -66,7 +68,7 @@ func InstallZig(ver *SemVer) error {
 	return ReplaceDirectory(payload, "/usr/local/zig")
 }
 
-func InstallUPX(ver *SemVer) error {
+func InstallUPX(ver semver.SemVer) error {
 	tag := "v" + ver.String()
 	asset := fmt.Sprintf("upx-%s-amd64_linux.tar.xz", ver.String())
 
@@ -102,14 +104,14 @@ func InstallUPX(ver *SemVer) error {
 	return CopyFileMode(src, "/usr/local/bin/upx", 0755)
 }
 
-func InstallStarship(ver *SemVer) error {
+func InstallStarship(ver semver.SemVer) error {
 	tag := "v" + ver.String()
 	asset := "starship-x86_64-unknown-linux-gnu.tar.gz"
 
 	return InstallSingleBinaryFromTarGz("starship/starship", tag, asset, "starship", "/usr/local/bin/starship", ver, []string{"--version"})
 }
 
-func InstallBun(ver *SemVer) error {
+func InstallBun(ver semver.SemVer) error {
 	tag := "bun-v" + ver.String()
 	asset := "bun-linux-x64.zip"
 
@@ -171,7 +173,7 @@ func InstallBun(ver *SemVer) error {
 	return ChownToInvokingUser(dst)
 }
 
-func InstallCoreutils(ver *SemVer) error {
+func InstallCoreutils(ver semver.SemVer) error {
 	tag := ver.String()
 	asset := fmt.Sprintf("coreutils-%s-x86_64-unknown-linux-gnu.tar.gz", ver.String())
 
