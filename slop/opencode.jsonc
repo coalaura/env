@@ -105,6 +105,13 @@
 						"context": 131072,
 						"output": 65536
 					}
+				},
+				"qwen/qwen3.8-27b-heretic": {
+					"name": "Qwen3.8 27B Heretic",
+					"limit": {
+						"context": 65536,
+						"output": 65536
+					}
 				}
 			}
 		},

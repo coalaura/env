@@ -74,6 +74,10 @@ if [[ -d ~/.config/opencode ]]; then
 		mkdir ~/.config/opencode/commands
 	fi
 
+	if [[ ! -d ~/.config/opencode/plugins ]]; then
+		mkdir ~/.config/opencode/plugins
+	fi
+
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
 	cp slop/tui.jsonc ~/.config/opencode/tui.jsonc
 	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
@@ -81,6 +85,8 @@ if [[ -d ~/.config/opencode ]]; then
 	cp slop/AGENTS.md ~/.config/opencode/AGENTS.md
 
 	cp slop/commands/banner.md ~/.config/opencode/commands/banner.md
+
+	cp slop/plugins/secrets.js ~/.config/opencode/plugins/secrets.js
 fi
 
 # vscode keybinds and snippets
