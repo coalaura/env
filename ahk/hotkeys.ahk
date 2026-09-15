@@ -60,6 +60,9 @@ ReleasePTT(*)
     SendEvent("{F7 up}")
 }
 
+; F16 starts catlock
+F16::Run("catlock")
+
 ; Ctrl + Alt + Shift + F12 types 16 random letters.
 ^!+F12:: {
     chars := "abcdefghijklmnopqrstuvwxyz"
