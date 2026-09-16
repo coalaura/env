@@ -82,7 +82,10 @@
 			"git tag -l *": "allow",
 
 			// block gh tool (no PRs, etc)
-			"gh*": "deny"
+			"gh*": "deny",
+
+			// bad
+			"ssh*": "deny"
 		},
 		"external_directory": {
 			"~/.ssh/**": "deny",
