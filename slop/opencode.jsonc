@@ -87,10 +87,20 @@
 			// bad
 			"ssh*": "deny"
 		},
+		"edit": {
+			// Prevent modifications to Go modules and sources
+			"~/go/**": "deny",
+
+			"C:\\Program Files\\Go\\src\\**": "deny",
+			"/usr/local/go/src/**": "deny"
+		},
 		"external_directory": {
 			"~/.ssh/**": "deny",
 
-			"~/go/**": "allow"
+			"~/go/**": "allow",
+
+			"C:\\Program Files\\Go\\src\\**": "allow",
+			"/usr/local/go/src/**": "allow"
 		}
 	},
 	"enabled_providers": [ "llama.cpp", "openai", "openrouter" ],
