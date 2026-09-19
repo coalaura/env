@@ -33,6 +33,27 @@
 
 		// Block ssh
 		{ "action": "shell", "resource": "ssh*", "effect": "deny" },
+		{ "action": "shell", "resource": "scp*", "effect": "deny" },
+		{ "action": "shell", "resource": "rclone*", "effect": "deny" },
+
+		// Preemptively block scetchy things
+		{ "action": "shell", "resource": "docker*", "effect": "deny" },
+		{ "action": "shell", "resource": "java*", "effect": "deny" },
+		{ "action": "shell", "resource": "javaw*", "effect": "deny" },
+		{ "action": "shell", "resource": "mkfs*", "effect": "deny" },
+		{ "action": "shell", "resource": "fdisk*", "effect": "deny" },
+		{ "action": "shell", "resource": "parted*", "effect": "deny" },
+		{ "action": "shell", "resource": "mount*", "effect": "deny" },
+		{ "action": "shell", "resource": "umount*", "effect": "deny" },
+		{ "action": "shell", "resource": "dd *", "effect": "deny" },
+		{ "action": "shell", "resource": "systemctl*", "effect": "deny" },
+		{ "action": "shell", "resource": "service*", "effect": "deny" },
+		{ "action": "shell", "resource": "shutdown*", "effect": "deny" },
+		{ "action": "shell", "resource": "reboot*", "effect": "deny" },
+		{ "action": "shell", "resource": "schtasks*", "effect": "deny" },
+		{ "action": "shell", "resource": "sc.exe*", "effect": "deny" },
+		{ "action": "shell", "resource": "reg.exe*", "effect": "deny" },
+		{ "action": "shell", "resource": "regedit*", "effect": "deny" },
 
 		// Prevent modifications to Go modules and sources
 		{ "action": "edit", "resource": "~/go/**", "effect": "deny" },
