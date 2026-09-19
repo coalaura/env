@@ -25,7 +25,7 @@ if not exist "%LOCALAPPDATA%\clink" (
     mkdir "%LOCALAPPDATA%\clink"
 )
 
-xcopy /y /q "clink\*" "%LOCALAPPDATA%\clink\"
+xcopy /y /q "clink\*" "%LOCALAPPDATA%\clink\" >nul
 
 :: starship config
 where starship >nul 2>&1
@@ -54,38 +54,33 @@ if %errorlevel%==0 (
 )
 
 :: opencode config
-if exist "%USERPROFILE%\.config\opencode\" (
+set "OPENCODE_DIR=%USERPROFILE%\.config\opencode"
+
+if exist "%OPENCODE_DIR%\" (
 	echo Copying opencode config...
 
-	if exist "%USERPROFILE%\.config\opencode\opencode.json" (
-		del "%USERPROFILE%\.config\opencode\opencode.json"
-	)
 
-	if exist "%USERPROFILE%\.config\opencode\tui.json" (
-		del "%USERPROFILE%\.config\opencode\tui.json"
-	)
+	:: non jsonc/json
+	del /f /q "%OPENCODE_DIR%\opencode.json" >nul 2>&1
+	del /f /q "%OPENCODE_DIR%\cli.jsonc" >nul 2>&1
+	del /f /q "%OPENCODE_DIR%\dcp.json" >nul 2>&1
 
-	if exist "%USERPROFILE%\.config\opencode\dcp.json" (
-		del "%USERPROFILE%\.config\opencode\dcp.json"
-	)
+	:: old v1
+	del /f /q "%OPENCODE_DIR%\tui.json" >nul 2>&1
+	del /f /q "%OPENCODE_DIR%\tui.jsonc" >nul 2>&1
 
-	if not exist "%USERPROFILE%\.config\opencode\commands" (
-		mkdir "%USERPROFILE%\.config\opencode\commands"
-	)
+	:: cleanly copy commands
+	robocopy "slop\commands" "%OPENCODE_DIR%\commands" /MIR >nul
 
-	if not exist "%USERPROFILE%\.config\opencode\plugins" (
-		mkdir "%USERPROFILE%\.config\opencode\plugins"
-	)
+	:: cleanly copy plugins
+	robocopy "slop\plugins" "%OPENCODE_DIR%\plugins" /MIR >nul
 
-	copy /y "slop\opencode.jsonc" "%USERPROFILE%\.config\opencode\opencode.jsonc"
-	copy /y "slop\tui.jsonc" "%USERPROFILE%\.config\opencode\tui.jsonc"
-	copy /y "slop\dcp.jsonc" "%USERPROFILE%\.config\opencode\dcp.jsonc"
+	:: copy configs
+	copy /y "slop\opencode.jsonc" "%OPENCODE_DIR%\opencode.jsonc" >nul
+	copy /y "slop\cli.json" "%OPENCODE_DIR%\cli.json" >nul
+	copy /y "slop\dcp.jsonc" "%OPENCODE_DIR%\dcp.jsonc" >nul
 
-	copy /y "slop\AGENTS.md" "%USERPROFILE%\.config\opencode\AGENTS.md"
-
-	copy /y "slop\commands\banner.md" "%USERPROFILE%\.config\opencode\commands\banner.md"
-
-	copy /y "slop\plugins\secrets.js" "%USERPROFILE%\.config\opencode\plugins\secrets.js"
+	copy /y "slop\AGENTS.md" "%OPENCODE_DIR%\AGENTS.md" >nul
 )
 
 :: vscode keybinds and snippets
@@ -105,7 +100,7 @@ if exist "%APPDATA%\Code\User" (
 if exist "%USERPROFILE%\Desktop\hotkeys.ahk" (
 	echo Copying autohotkeys...
 
-	copy /y "ahk\hotkeys.ahk" "%USERPROFILE%\Desktop\hotkeys.ahk"
+	copy /y "ahk\hotkeys.ahk" "%USERPROFILE%\Desktop\hotkeys.ahk" >nul
 )
 
 echo Done.

@@ -62,8 +62,8 @@ if [[ -d ~/.config/opencode ]]; then
 		rm ~/.config/opencode/opencode.json
 	fi
 
-	if [[ -f ~/.config/opencode/tui.json ]]; then
-		rm ~/.config/opencode/tui.json
+	if [[ -f ~/.config/opencode/cli.json ]]; then
+		rm ~/.config/opencode/cli.json
 	fi
 
 	if [[ -f ~/.config/opencode/dcp.json ]]; then
@@ -79,7 +79,7 @@ if [[ -d ~/.config/opencode ]]; then
 	fi
 
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
-	cp slop/tui.jsonc ~/.config/opencode/tui.jsonc
+	cp slop/cli.jsonc ~/.config/opencode/cli.jsonc
 	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
 
 	cp slop/AGENTS.md ~/.config/opencode/AGENTS.md

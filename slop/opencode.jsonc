@@ -1,114 +1,63 @@
 {
 	"$schema": "https://opencode.ai/config.json",
-	"lsp": {
-		"gopls": {
-			"command": [ "gopls" ],
-			"extensions": [ ".go" ]
-		},
-
-		// Avoid automatically downloading other LSPs
-		// https://raw.githubusercontent.com/anomalyco/opencode/dev/packages/opencode/src/lsp/server.ts
-		"deno": { "disabled": true },
-		"typescript": { "disabled": true },
-		"vue": { "disabled": true },
-		"eslint": { "disabled": true },
-		"oxlint": { "disabled": true },
-		"biome": { "disabled": true },
-		"ruby-lsp": { "disabled": true },
-		"ty": { "disabled": true },
-		"pyright": { "disabled": true },
-		"elixir-ls": { "disabled": true },
-		"zls": { "disabled": true },
-		"csharp": { "disabled": true },
-		"razor": { "disabled": true },
-		"fsharp": { "disabled": true },
-		"sourcekit-lsp": { "disabled": true },
-		"rust": { "disabled": true },
-		"clangd": { "disabled": true },
-		"svelte": { "disabled": true },
-		"astro": { "disabled": true },
-		"jdtls": { "disabled": true },
-		"kotlin-ls": { "disabled": true },
-		"yaml-ls": { "disabled": true },
-		"lua-ls": { "disabled": true },
-		"php intelephense": { "disabled": true },
-		"prisma": { "disabled": true },
-		"dart": { "disabled": true },
-		"ocaml-lsp": { "disabled": true },
-		"bash": { "disabled": true },
-		"terraform": { "disabled": true },
-		"texlab": { "disabled": true },
-		"dockerfile": { "disabled": true },
-		"gleam": { "disabled": true },
-		"clojure-lsp": { "disabled": true },
-		"nixd": { "disabled": true },
-		"tinymist": { "disabled": true },
-		"haskell-language-server": { "disabled": true },
-		"julials": { "disabled": true }
-	},
-	"plugin": [
-		"@tarquinen/opencode-dcp@v3.1.15",
-		"context-mode@1.0.169"
+	"plugins": [
+		// "@tarquinen/opencode-dcp@v3.1.15",
+		// "context-mode@1.0.169"
 	],
-	"permission": {
-		"read": {
-			"*": "allow",
+	"permissions": [
+		{ "action": "read", "resource": "*", "effect": "allow" },
 
-			"*.env": "deny",
-			"*.env.*": "deny",
-			"*.env.example": "allow",
+		{ "action": "read", "resource": "*.env", "effect": "deny" },
+		{ "action": "read", "resource": "*.env.*", "effect": "deny" },
+		{ "action": "read", "resource": "*.env.example", "effect": "allow" },
 
-			"*/config.yml": "deny",
-			"*/config.yaml": "deny",
-			"*/config.toml": "deny",
+		{ "action": "read", "resource": "*/config.yml", "effect": "deny" },
+		{ "action": "read", "resource": "*/config.yaml", "effect": "deny" },
+		{ "action": "read", "resource": "*/config.toml", "effect": "deny" },
 
-			"~/.ssh/*": "deny"
-		},
-		"bash": {
-			// block adding, committing or pushing
-			"git add": "deny",
-			"git add *": "deny",
-			"git commit": "deny",
-			"git commit *": "deny",
-			"git push": "deny",
-			"git push *": "deny",
+		{ "action": "read", "resource": "~/.ssh/*", "effect": "deny" },
 
-			// block creating tags but allow listing
-			"git tag *": "deny",
-			"git tag": "allow",
-			"git tag --list": "allow",
-			"git tag --list *": "allow",
-			"git tag -l": "allow",
-			"git tag -l *": "allow",
+		// Block adding, committing or pushing
+		{ "action": "shell", "resource": "git add *", "effect": "deny" },
+		{ "action": "shell", "resource": "git commit *", "effect": "deny" },
+		{ "action": "shell", "resource": "git push *", "effect": "deny" },
 
-			// block gh tool (no PRs, etc)
-			"gh*": "deny",
+		// Block creating tags but allow listing
+		{ "action": "shell", "resource": "git tag *", "effect": "deny" },
+		{ "action": "shell", "resource": "git tag", "effect": "allow" },
+		{ "action": "shell", "resource": "git tag --list *", "effect": "allow" },
+		{ "action": "shell", "resource": "git tag -l *", "effect": "allow" },
 
-			// bad
-			"ssh*": "deny"
-		},
-		"edit": {
-			// Prevent modifications to Go modules and sources
-			"~/go/**": "deny",
+		// Block gh tool (no PRs, etc)
+		{ "action": "shell", "resource": "gh*", "effect": "deny" },
 
-			"C:\\Program Files\\Go\\src\\**": "deny",
-			"/usr/local/go/src/**": "deny"
-		},
-		"external_directory": {
-			"~/.ssh/**": "deny",
+		// Block ssh
+		{ "action": "shell", "resource": "ssh*", "effect": "deny" },
 
-			"~/go/**": "allow",
+		// Prevent modifications to Go modules and sources
+		{ "action": "edit", "resource": "~/go/**", "effect": "deny" },
+		{ "action": "edit", "resource": "C:/Program Files/Go/src/**", "effect": "deny" },
+		{ "action": "edit", "resource": "/usr/local/go/src/**", "effect": "deny" },
 
-			"C:\\Program Files\\Go\\src\\**": "allow",
-			"/usr/local/go/src/**": "allow"
-		}
+		{ "action": "external_directory", "resource": "~/.ssh/**", "effect": "deny" },
+
+		{ "action": "external_directory", "resource": "~/go/**", "effect": "allow" },
+		{ "action": "external_directory", "resource": "C:/Program Files/Go/src/**", "effect": "allow" },
+		{ "action": "external_directory", "resource": "/usr/local/go/src/**", "effect": "allow" }
+	],
+	"experimental": {
+		"policies": [
+			{ "effect": "deny", "action": "provider.use", "resource": "*" },
+			{ "effect": "allow", "action": "provider.use", "resource": "llama.cpp" },
+			{ "effect": "allow", "action": "provider.use", "resource": "openai" },
+			{ "effect": "allow", "action": "provider.use", "resource": "openrouter" }
+		]
 	},
-	"enabled_providers": [ "llama.cpp", "openai", "openrouter" ],
-	"provider": {
+	"providers": {
 		"llama.cpp": {
-			"npm": "@ai-sdk/openai-compatible",
+			"package": "@opencode/ai/providers/openai-compatible",
 			"name": "LLama.cpp (local)",
-			"options": {
+			"settings": {
 				"baseURL": "http://localhost:1234/v1"
 			},
 			"models": {
@@ -128,31 +77,11 @@
 				}
 			}
 		},
-		"openai": {
-			"whitelist": [
-				"gpt-5.6-luna",
-				"gpt-5.6-sol",
-				"gpt-5.6-terra",
-				"gpt-6-astra",
-			]
-		},
 		"openrouter": {
-			"whitelist": [
-				"deepseek/deepseek-v4.1-flash",
-				"google/gemini-3.8-flash",
-				"inception/mercury-2.5-preview",
-				"openai/gpt-5.6-luna",
-				"openai/gpt-5.6-sol-flex",
-				"openai/gpt-5.6-terra",
-				"openai/gpt-6-astra-flex",
-				"x-ai/grok-4.6",
-				"z-ai/glm-5.3-flash",
-				"z-ai/glm-5.3"
-			],
 			"models": {
 				// Optimize providers for openweight models
 				"deepseek/deepseek-v4.1-flash": {
-					"options": {
+					"body": {
 						"provider": {
 							"order": [
 								"siliconflow/fp8",
@@ -165,7 +94,7 @@
 					}
 				},
 				"z-ai/glm-5.3-flash": {
-					"options": {
+					"body": {
 						"provider": {
 							"order": [
 								"fireworks",
@@ -177,7 +106,7 @@
 					}
 				},
 				"z-ai/glm-5.3": {
-					"options": {
+					"body": {
 						"provider": {
 							"order": [
 								"together",
@@ -192,7 +121,7 @@
 
 				// Avoid retaining providers
 				"x-ai/grok-4.6": {
-					"options": {
+					"body": {
 						"provider": {
 							"only": [
 								"xai/zdr"
@@ -202,7 +131,7 @@
 					}
 				},
 				"google/gemini-3.8-flash": {
-					"options": {
+					"body": {
 						"provider": {
 							"only": [
 								"google-vertex/global"
@@ -214,9 +143,9 @@
 
 				// OpenAI flex models
 				"openai/gpt-5.6-sol-flex": {
-					"id": "openai/gpt-5.6-sol",
+					"modelID": "openai/gpt-5.6-sol",
 					"name": "GPT-5.6 Sol (Flex)",
-					"options": {
+					"body": {
 						"provider": {
 							"order": [
 								"openai/flex"
@@ -226,9 +155,9 @@
 					}
 				},
 				"openai/gpt-6-astra-flex": {
-					"id": "openai/gpt-6-astra",
+					"modelID": "openai/gpt-6-astra",
 					"name": "GPT-6 Astra (Flex)",
-					"options": {
+					"body": {
 						"provider": {
 							"order": [
 								"openai/flex"
@@ -240,16 +169,16 @@
 			}
 		}
 	},
-	"agent": {
+	"agents": {
 		// Agent for local models, no parallel agents
 		"llama.cpp": {
 			"description": "LLama.cpp",
 			"color": "#89b4fa",
 			"mode": "primary",
 			"model": "llama.cpp/qwen/qwen3.8-27b",
-			"permission": {
-				"task": "deny"
-			}
+			"permissions": [
+				{ "action": "subagent", "resource": "*", "effect": "deny" }
+			]
 		},
 
 		// OpenAI agent, only calls OpenAI subagents
@@ -258,12 +187,10 @@
 			"color": "#f9e2af",
 			"mode": "primary",
 			"model": "openai/gpt-5.6-sol",
-			"permission": {
-				"task": {
-					"*": "deny",
-					"openai-*": "allow"
-				}
-			}
+			"permissions": [
+				{ "action": "subagent", "resource": "*", "effect": "deny" },
+				{ "action": "subagent", "resource": "openai-*", "effect": "allow" }
+			]
 		},
 
 		"openai-explore": {
@@ -291,13 +218,10 @@
 			"color": "#f38ba8",
 			"mode": "primary",
 			"model": "openrouter/deepseek/deepseek-v4.1-flash",
-
-			"permission": {
-				"task": {
-					"*": "deny",
-					"router-*": "allow"
-				}
-			}
+			"permissions": [
+				{ "action": "subagent", "resource": "*", "effect": "deny" },
+				{ "action": "subagent", "resource": "router-*", "effect": "allow" }
+			]
 		},
 
 		"router-explore": {
@@ -331,10 +255,6 @@
 		},
 		"explore": {
 			"color": "#fab387"
-		},
-
-		"scout": {
-			"disable": true
 		}
 	},
 	"default_agent": "openai",

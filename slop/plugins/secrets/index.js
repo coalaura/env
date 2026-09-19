@@ -1,3 +1,5 @@
+import { Plugin } from "@opencode/plugin";
+
 const patterns = [
 	// AI providers
 	{ name: "openrouter", prefix: 9, pattern: /\bsk-or-v1-[0-9a-f]{64}\b/gi },
@@ -188,10 +190,17 @@ function redact(value) {
 	}
 }
 
-export const SecretRedactor = async () => {
-	return {
-		"experimental.chat.messages.transform": async (_, output) => {
-			redact(output.messages);
-		},
-	}
+function redactMessages(event) {
+	redact(event.messages);
 }
+
+export default Plugin.define({
+	id: "coalaura.secret-redactor",
+
+	async setup(ctx) {
+		await ctx.session.hook("context", redactMessages);
+		await ctx.session.hook("compaction", redactMessages);
+		await ctx.session.hook("generate", redactMessages);
+		await ctx.session.hook("title", redactMessages);
+	},
+});
