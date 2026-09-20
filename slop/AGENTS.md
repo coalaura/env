@@ -25,6 +25,7 @@ Repository-local instructions and project conventions take precedence over these
 - Verify with `vet.exe`/`vet`; it is always on PATH - never search for or try to install it. It runs go vet, staticcheck and the house rules; do not run them separately. If a rule is unclear, run `vet --explain [rule]` (e.g. `vet --explain breathe`). Never silence a diagnostic with an ignore directive or by restructuring around the check - fix what it points at.
 - Vet takes optional `--os [windows/linux/darwin]` and `--arch [amd64/arm64]` flags (defaulting to the host) and `--cgo` if the project needs cgo (off by default). `--fix` auto-applies fixes vet deems very safe; review the diff and fix the rest by hand. If the project has OS/arch-specific build constraints (`//go:build windows` etc.), vet every relevant target; otherwise plain `vet` suffices.
 - To inspect a dependency, use `go doc [pkg]` or read its source under `~/go/pkg/mod`. Never search for it anywhere else.
+- To inspect the standard library, read its source under `C:\Program Files\Go\src` on windows and `/usr/local/go/src` on linux. Scope searches to that directory or below.
 
 ## Performance
 
