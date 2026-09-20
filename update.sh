@@ -79,7 +79,7 @@ if [[ -d ~/.config/opencode ]]; then
 	fi
 
 	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
-	cp slop/cli.jsonc ~/.config/opencode/cli.jsonc
+	cp slop/tui.jsonc ~/.config/opencode/tui.jsonc
 	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
 
 	cp slop/AGENTS.md ~/.config/opencode/AGENTS.md

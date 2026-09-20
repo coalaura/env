@@ -59,15 +59,14 @@ set "OPENCODE_DIR=%USERPROFILE%\.config\opencode"
 if exist "%OPENCODE_DIR%\" (
 	echo Copying opencode config...
 
-
 	:: non jsonc/json
 	del /f /q "%OPENCODE_DIR%\opencode.json" >nul 2>&1
-	del /f /q "%OPENCODE_DIR%\cli.jsonc" >nul 2>&1
+	del /f /q "%OPENCODE_DIR%\tui.json" >nul 2>&1
 	del /f /q "%OPENCODE_DIR%\dcp.json" >nul 2>&1
 
-	:: old v1
-	del /f /q "%OPENCODE_DIR%\tui.json" >nul 2>&1
-	del /f /q "%OPENCODE_DIR%\tui.jsonc" >nul 2>&1
+	:: not yet v2
+	del /f /q "%OPENCODE_DIR%\cli.json" >nul 2>&1
+	del /f /q "%OPENCODE_DIR%\cli.jsonc" >nul 2>&1
 
 	:: cleanly copy commands
 	robocopy "slop\commands" "%OPENCODE_DIR%\commands" /MIR >nul
@@ -77,7 +76,7 @@ if exist "%OPENCODE_DIR%\" (
 
 	:: copy configs
 	copy /y "slop\opencode.jsonc" "%OPENCODE_DIR%\opencode.jsonc" >nul
-	copy /y "slop\cli.json" "%OPENCODE_DIR%\cli.json" >nul
+	copy /y "slop\tui.jsonc" "%OPENCODE_DIR%\tui.jsonc" >nul
 	copy /y "slop\dcp.jsonc" "%OPENCODE_DIR%\dcp.jsonc" >nul
 
 	copy /y "slop\AGENTS.md" "%OPENCODE_DIR%\AGENTS.md" >nul
