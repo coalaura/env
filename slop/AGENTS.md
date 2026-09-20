@@ -50,6 +50,8 @@ Allocation and copy discipline is the default, not a later optimization pass. Ai
 - Do not run the application or start long-lived processes such as servers, watchers or daemons unless explicitly requested. Verify with builds, tests, linters and static checks.
 - After completing a task, include a short lowercase commit message covering all uncommitted changes, not just this task's. Do not spend significant effort deriving it. Skip the commit message entirely if there are no uncommitted changes or if you are running as a subagent (e.g. exploring, planning, etc).
 - Stay inside the working directory: scope every search and glob to `./` or narrower. Leave it only when the task strictly requires it (e.g. `~/go/pkg/mod`), never to browse the home directory.
+- Never reach for webfetch/websearch by default. Answer from the repository, local files, installed dependencies (`~/go/pkg/mod`, `node_modules`) and local tooling (`go doc`) first.
+- Use the web only when the information provably does not exist locally, or the user explicitly asks for up-to-date external information. Say which case applies when you do.
 
 ## Dependencies
 
