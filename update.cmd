@@ -74,6 +74,9 @@ if exist "%OPENCODE_DIR%\" (
 	:: cleanly copy plugins
 	robocopy "slop\plugins" "%OPENCODE_DIR%\plugins" /MIR >nul
 
+	:: cleanly copy skills
+	robocopy "slop\skills" "%OPENCODE_DIR%\skills" /MIR >nul
+
 	:: copy configs
 	copy /y "slop\opencode.jsonc" "%OPENCODE_DIR%\opencode.jsonc" >nul
 	copy /y "slop\tui.jsonc" "%OPENCODE_DIR%\tui.jsonc" >nul

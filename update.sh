@@ -55,38 +55,35 @@ if command -v starship >/dev/null 2>&1; then
 fi
 
 # opencode config
-if [[ -d ~/.config/opencode ]]; then
-	echo "Copying opencode config..."
+OPENCODE_DIR="$HOME/.config/opencode"
 
-	if [[ -f ~/.config/opencode/opencode.json ]]; then
-		rm ~/.config/opencode/opencode.json
-	fi
+if [ -d "$OPENCODE_DIR" ]; then
+    echo "Copying opencode config..."
 
-	if [[ -f ~/.config/opencode/cli.json ]]; then
-		rm ~/.config/opencode/cli.json
-	fi
+    # non jsonc/json
+    rm -f "$OPENCODE_DIR/opencode.json"
+    rm -f "$OPENCODE_DIR/tui.json"
+    rm -f "$OPENCODE_DIR/dcp.json"
 
-	if [[ -f ~/.config/opencode/dcp.json ]]; then
-		rm ~/.config/opencode/dcp.json
-	fi
+    # not yet v2
+    rm -f "$OPENCODE_DIR/cli.json"
+    rm -f "$OPENCODE_DIR/cli.jsonc"
 
-	if [[ ! -d ~/.config/opencode/commands ]]; then
-		mkdir ~/.config/opencode/commands
-	fi
+    # cleanly copy commands
+    rsync -a --delete "slop/commands/" "$OPENCODE_DIR/commands/"
 
-	if [[ ! -d ~/.config/opencode/plugins ]]; then
-		mkdir ~/.config/opencode/plugins
-	fi
+    # cleanly copy plugins
+    rsync -a --delete "slop/plugins/" "$OPENCODE_DIR/plugins/"
 
-	cp slop/opencode.jsonc ~/.config/opencode/opencode.jsonc
-	cp slop/tui.jsonc ~/.config/opencode/tui.jsonc
-	cp slop/dcp.jsonc ~/.config/opencode/dcp.jsonc
+    # cleanly copy skills
+    rsync -a --delete "slop/skills/" "$OPENCODE_DIR/skills/"
 
-	cp slop/AGENTS.md ~/.config/opencode/AGENTS.md
+    # copy configs
+    cp "slop/opencode.jsonc" "$OPENCODE_DIR/opencode.jsonc"
+    cp "slop/tui.jsonc" "$OPENCODE_DIR/tui.jsonc"
+    cp "slop/dcp.jsonc" "$OPENCODE_DIR/dcp.jsonc"
 
-	cp slop/commands/banner.md ~/.config/opencode/commands/banner.md
-
-	cp slop/plugins/secrets.js ~/.config/opencode/plugins/secrets.js
+    cp "slop/AGENTS.md" "$OPENCODE_DIR/AGENTS.md"
 fi
 
 # vscode keybinds and snippets
