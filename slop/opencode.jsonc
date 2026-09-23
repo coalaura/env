@@ -291,7 +291,7 @@
 			"description": "OpenAI",
 			"color": "#f9e2af",
 			"mode": "primary",
-			"model": "openai/gpt-5.6-sol",
+			"model": "openai/gpt-6-sol",
 			"permission": {
 				"task": {
 					"*": "deny",
@@ -315,7 +315,7 @@
 		"openai-quick": {
 			"mode": "subagent",
 			"color": "#f5e0dc",
-			"model": "openai/gpt-5.6-luna",
+			"model": "openai/gpt-6-luna",
 			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
 		},
 
