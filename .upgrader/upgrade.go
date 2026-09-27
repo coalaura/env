@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 
+	"github.com/coalaura/plain/minimal"
 	"github.com/coalaura/semver"
 )
 
@@ -79,22 +80,22 @@ func (u *UpgradeConfig) Upgrade() error {
 		return err
 	}
 
-	log.Infoln("Validating upgrade...")
+	log.Info("Validating upgrade...")
 
 	local, err = u.ResolveCurrentVersion()
 	if err != nil {
-		log.Errorln("failed")
+		log.Writeln(minimal.AnsiError + "failed")
 
 		return err
 	}
 
 	if !remote.Equal(local) {
-		log.Errorln("failed")
+		log.Writeln(minimal.AnsiError + "failed")
 
 		return errors.New("installed version does not match requested version")
 	}
 
-	log.Successln("success")
+	log.Writeln(minimal.AnsiSuccess + "success")
 
 	return nil
 }
