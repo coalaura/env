@@ -81,4 +81,4 @@ Signing modifies the binary in place. Use `${{ steps.sign.outputs.path }}` after
 
 Builder detects Windows PE, macOS Mach-O, and Linux ELF binaries automatically, timestamps the signature, and verifies it before succeeding.
 
-`coalaura/sign@v1` has its own `builder-version`, independent of `coalaura/build`'s `version`. Leave both at their defaults unless a specific Builder version is required.
+`coalaura/sign@v1` also has `version`, which works the same as `coalaura/build`'s `version`. Leave both at their defaults unless a specific Builder version is required.
