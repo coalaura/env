@@ -148,23 +148,45 @@
 		},
 		"openai": {
 			"whitelist": [
-				"gpt-5.6-terra",
 				"gpt-6-astra",
 				"gpt-6-luna",
 				"gpt-6-sol",
 				"gpt-6.1-sol"
-			]
+			],
+			"models": {
+				// Set default reasoning efforts
+				"gpt-6-astra": {
+					"options": {
+						"reasoningEffort": "high"
+					}
+				},
+				"gpt-6-luna": {
+					"options": {
+						"reasoningEffort": "high"
+					}
+				},
+				"gpt-6-sol": {
+					"options": {
+						"reasoningEffort": "high"
+					}
+				},
+				"gpt-6.1-sol": {
+					"options": {
+						"reasoningEffort": "high"
+					}
+				}
+			}
 		},
 		"openrouter": {
 			"whitelist": [
 				"deepseek/deepseek-v4.1-flash",
 				"google/gemini-3.8-flash",
 				"inception/mercury-2.5-preview",
-				"openai/gpt-5.6-terra",
 				"openai/gpt-6-astra-flex",
 				"openai/gpt-6-luna",
 				"openai/gpt-6.1-sol-flex",
 				"x-ai/grok-4.6",
+				"xiaomi/mimo-v2.6-pro",
 				"z-ai/glm-5.3-flash",
 				"z-ai/glm-5.3"
 			],
@@ -172,6 +194,7 @@
 				// Optimize providers for openweight models
 				"deepseek/deepseek-v4.1-flash": {
 					"options": {
+						"reasoningEffort": "high",
 						"provider": {
 							"order": [
 								"coreweave/fp8",
@@ -183,8 +206,20 @@
 						}
 					}
 				},
+				"xiaomi/mimo-v2.6-pro": {
+					"options": {
+						"reasoningEffort": "high",
+						"provider": {
+							"order": [
+								"deepinfra/fp8"
+							],
+							"allow_fallbacks": false
+						}
+					}
+				},
 				"z-ai/glm-5.3-flash": {
 					"options": {
+						"reasoningEffort": "high",
 						"provider": {
 							"order": [
 								"fireworks",
@@ -197,6 +232,7 @@
 				},
 				"z-ai/glm-5.3": {
 					"options": {
+						"reasoningEffort": "max",
 						"provider": {
 							"order": [
 								"together",
@@ -276,6 +312,7 @@
 			"color": "#f9e2af",
 			"mode": "primary",
 			"model": "openai/gpt-6.1-sol",
+			"reasoningEffort": "high",
 			"permission": {
 				"task": {
 					"*": "deny",
@@ -287,19 +324,22 @@
 		"openai-explore": {
 			"mode": "subagent",
 			"color": "#fab387",
-			"model": "openai/gpt-5.6-terra",
+			"model": "openai/gpt-6-luna",
+			"reasoningEffort": "high",
 			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
 		},
 		"openai-general": {
 			"mode": "subagent",
 			"color": "#f9e2af",
-			"model": "openai/gpt-5.6-terra",
+			"model": "openai/gpt-6.1-sol",
+			"reasoningEffort": "high",
 			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
 		},
 		"openai-quick": {
 			"mode": "subagent",
 			"color": "#f5e0dc",
 			"model": "openai/gpt-6-luna",
+			"reasoningEffort": "high",
 			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
 		},
 
