@@ -17,6 +17,7 @@ Repository-local instructions and project conventions take precedence over these
 - Let the code breathe: blank lines between control-flow blocks and between setup, iteration and follow-up work. A statement sits directly above a check only if it feeds it.
 - Keep changes focused. No unrelated rewrites or opportunistic refactors.
 - Split files by coherent responsibility and keep related behavior together.
+- Write fractional literals with a leading zero: `0.123`, not `.123` for readability.
 
 ## Go
 
