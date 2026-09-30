@@ -18,6 +18,7 @@ Repository-local instructions and project conventions take precedence over these
 - Keep changes focused. No unrelated rewrites or opportunistic refactors.
 - Split files by coherent responsibility and keep related behavior together.
 - Write fractional literals with a leading zero: `0.123`, not `.123` for readability.
+- Indent with tabs, never spaces (tab width 4). Use spaces only where the file format requires them (e.g. YAML) and never mix tabs and spaces within a file.
 
 ## Go
 
@@ -29,6 +30,24 @@ Repository-local instructions and project conventions take precedence over these
 - Vet takes optional `--os [windows/linux/darwin]` and `--arch [amd64/arm64]` flags (defaulting to the host) and `--cgo` if the project needs cgo (off by default). `--fix` auto-applies fixes vet deems very safe; review the diff and fix the rest by hand. If the project has OS/arch-specific build constraints (`//go:build windows` etc.), vet every relevant target; otherwise plain `vet` suffices.
 - To inspect a dependency, use `go doc [pkg]` or read its source under `~/go/pkg/mod`. Never search for it anywhere else.
 - To inspect the standard library, read its source under `C:\Program Files\Go\src` on windows and `/usr/local/go/src` on linux. Scope searches to that directory or below.
+
+## JavaScript
+
+- Always use braces for the bodies of `if`, `else`, `for`, `while` and `do`, even for a single statement, and put the body on its own line inside the braces. Never `if (done) return;` or `if (done) { return; }`.
+- Write object properties in explicit form: `{ name: name }`, not `{ name }`. Method shorthand (`{ run() { ... } }`) is fine.
+- Use template literals instead of `+` string concatenation: `` `Hello ${name}` ``, not `"Hello " + name`.
+- Build DOM with `document.createElement`, `textContent`, element properties and `append`/`replaceChildren`, not by assigning HTML strings to `innerHTML`, `outerHTML` or `insertAdjacentHTML`. Clear an element with `replaceChildren()`, not `innerHTML = ""`. Never put dynamic or user-provided data into an HTML string.
+
+## CSS
+
+- Start every stylesheet with any `@import` (CSS requires this), then `@font-face` rules.
+- Order the remaining rules in these groups, never interleaved:
+	1. Global rules (`*`, `:root`, global scrollbar/selection styles)
+	2. `html` and `body`
+	3. Element selectors (`a`, `p`, `h1`, ...)
+	4. Classes, ids and everything else, roughly in DOM order
+	5. Other at-rules (`@media`, `@keyframes`, ...)
+- Keep states and pseudo-elements (`:hover`, `::before`) directly after their base selector.
 
 ## Performance
 
