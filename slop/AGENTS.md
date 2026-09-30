@@ -5,12 +5,14 @@ Repository-local instructions and project conventions take precedence over these
 ## Line wrapping
 
 - Never hard-wrap Markdown prose, including list-item paragraphs. Keep each paragraph on one source line; use line breaks for structure, not column limits.
-- In code, use ~140 characters as a soft wrapping threshold, not a hard limit. Wrap earlier only for readability or formatter requirements, not to fit 80 columns.
+- Never wrap code to fit a line length. If a condition, `switch` case or expression grows too long, extract variables or helpers or restructure it instead of wrapping.
+- Keep a struct/composite literal either entirely on one line or one field per line, never mixed.
 
 ## Code
 
 - Match existing style, structure, naming and conventions before introducing new patterns.
 - Prefer clear, explicit code over dense, clever or over-abstracted code.
+- Comment only when necessary: non-obvious intent, invariants or workarounds. Never restate what the code does.
 - Use descriptive identifiers. Avoid one-/two-letter names for variables, functions, types and fields.
 - Let the code breathe: blank lines between control-flow blocks and between setup, iteration and follow-up work. A statement sits directly above a check only if it feeds it.
 - Keep changes focused. No unrelated rewrites or opportunistic refactors.
