@@ -10,6 +10,7 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 - `clink/`: lua scripts and settings for clink
 - `code/`: `keybinds.json` and `settings.json` for vscode
 - `discord/`: catppuccin discord theme for vencord
+- `equalized/`: equalizer APO config for better sound
 - `fonts/`: required/nice fonts
 - `git/`: git configuration and better defaults
 - `rio/`: rio configuration and catppuccin themes
