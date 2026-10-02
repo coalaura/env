@@ -85,8 +85,8 @@ F16::Run("catlock")
     ProcessClose(activePID)
 }
 
-; Ctrl + Alt + W inspect focused window.
-^!w::
+; Ctrl + Alt + Shift + W inspect focused window.
+^+!w::
 {
     hwnd := WinExist("A")
     if !hwnd {
