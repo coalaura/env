@@ -6,24 +6,14 @@ echo "Updating configuration files..."
 
 mkdir -p ~/.config
 
-# .bash_profile
-echo "Copying .bash_profile..."
+# bash configs
+echo "Copying bash env..."
+
+cp bash/.shenv ~/.shenv
 
 cp bash/.bash_profile ~/.bash_profile
-
-# .profile
-echo "Copying .profile..."
-
 cp bash/.profile ~/.profile
-
-# .bashrc
-echo "Copying .bashrc..."
-
 cp bash/.bashrc ~/.bashrc
-
-# .inputrc
-echo "Copying .inputrc..."
-
 cp bash/.inputrc ~/.inputrc
 
 # git config

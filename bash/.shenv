@@ -1,0 +1,38 @@
+# ~/.shenv - shared environment
+# by coalaura
+
+function _path_prepend() {
+	local dir="$1"
+
+	if [[ ! -d "$dir" ]]; then
+		return
+	fi
+
+	case ":$PATH:" in
+		*":$dir:"*) ;;
+		*) PATH="$dir:$PATH" ;;
+	esac
+}
+
+# safely append to path
+function _path_append() {
+	local dir="$1"
+
+	if [[ ! -d "$dir" ]]; then
+		return
+	fi
+
+	case ":$PATH:" in
+		*":$dir:"*) ;;
+		*) PATH="$PATH:$dir" ;;
+	esac
+}
+
+_path_prepend "$HOME/.bun/bin"
+_path_prepend "/usr/local/zig"
+_path_prepend "/usr/local/go/bin"
+
+_path_append "$HOME/go/bin"
+_path_append "$HOME/.local/bin"
+
+export PATH

@@ -2,6 +2,10 @@
 # ~/.bashrc
 # by coalaura
 
+if [ -f "$HOME/.shenv" ]; then
+    . "$HOME/.shenv"
+fi
+
 # If not running interactively, don't do anything
 if [[ $- != *i* ]]; then
 	return
@@ -467,34 +471,6 @@ function _apply_go_env() {
 		export CGO_CXXFLAGS="$cflags"
 		export CGO_LDFLAGS="-Wl,--gc-sections"
 	fi
-}
-
-# safely prepend to path
-function _path_prepend() {
-	local dir="$1"
-
-	if [[ ! -d "$dir" ]]; then
-		return
-	fi
-
-	case ":$PATH:" in
-		*":$dir:"*) ;;
-		*) PATH="$dir:$PATH" ;;
-	esac
-}
-
-# safely append to path
-function _path_append() {
-	local dir="$1"
-
-	if [[ ! -d "$dir" ]]; then
-		return
-	fi
-
-	case ":$PATH:" in
-		*":$dir:"*) ;;
-		*) PATH="$PATH:$dir" ;;
-	esac
 }
 
 ##
@@ -1909,14 +1885,6 @@ export EDITOR=nano
 
 # ignore .cmd extension for complete
 export FIGNORE=".cmd:.exe"
-
-# ensure path
-_path_prepend "$HOME/.bun/bin"
-_path_prepend "/usr/local/zig"
-_path_prepend "/usr/local/go/bin"
-
-_path_append "$HOME/go/bin"
-_path_append "$HOME/.local/bin"
 
 # write history immediately
 PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
