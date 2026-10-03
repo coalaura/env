@@ -65,7 +65,7 @@ func (u *UpgradeConfig) Upgrade() error {
 		return err
 	}
 
-	if !remote.HigherThan(local) {
+	if !local.Equal(semver.NewEmptySemVer()) && !remote.HigherThan(local) {
 		log.Subf("Already up-to-date (%s == %s)\n", remote, local)
 
 		return nil

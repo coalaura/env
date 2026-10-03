@@ -62,6 +62,11 @@ func ResolveBinaryVersion(path string, args []string) (semver.SemVer, error) {
 	}
 
 	out = ansi.StripANSI(out)
+	out = bytes.TrimSpace(out)
+
+	if bytes.Equal(out, []byte("dev")) {
+		return semver.NewEmptySemVer(), nil
+	}
 
 	versionText := findVersion(out)
 	if len(versionText) == 0 {
