@@ -1127,6 +1127,37 @@ commands["unpack"] = function(args)
     return ""
 end
 
+-- search shell history (literal by default, -r for regex)
+commands["hist"] = function(args)
+    if not args or args == "" then
+        utils.errorf("usage: hist [-r] <pattern>")
+
+        return ""
+    end
+
+    local use_regex = false
+
+    if args:match("^%-r%s") then
+        use_regex = true
+
+        args = args:sub(3)
+    end
+
+    local pattern = utils.trim(args)
+
+    if pattern == "" then
+        utils.errorf("usage: hist [-r] <pattern>")
+
+        return ""
+    end
+
+    if use_regex then
+        return string.format("history | grep.exe --color=auto -e \"%s\"", utils.escape_input(pattern))
+    end
+
+    return string.format("history | grep.exe --color=auto -F -e \"%s\"", utils.escape_input(pattern))
+end
+
 -- download and run vencord installer
 commands["vencord"] = function()
     local tmp = os.getenv("TMP") or os.getenv("TEMP") or utils.home()

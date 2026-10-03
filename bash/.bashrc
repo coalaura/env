@@ -1656,6 +1656,31 @@ function unpack() {
 	)
 }
 
+# search shell history (literal by default, -r for regex)
+function hist() {
+	local use_regex=false
+
+	if [[ "${1:-}" == "-r" ]]; then
+		use_regex=true
+
+		shift
+	fi
+
+	if (( $# == 0 )); then
+		_print_error "usage: hist [-r] <pattern>"
+
+		return 1
+	fi
+
+	local pattern="$*"
+
+	if [[ "$use_regex" == true ]]; then
+		history | grep --color=auto -e "$pattern"
+	else
+		history | grep --color=auto -F -e "$pattern"
+	fi
+}
+
 # download and run vencord installer
 function vencord() {
 	sh -c "$(curl -sS https://vencord.dev/install.sh)"
