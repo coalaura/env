@@ -62,9 +62,8 @@ func ResolveBinaryVersion(path string, args []string) (semver.SemVer, error) {
 	}
 
 	out = ansi.StripANSI(out)
-	out = bytes.TrimSpace(out)
 
-	if bytes.Equal(out, []byte("dev")) {
+	if isDevVersionOutput(out) {
 		return semver.NewEmptySemVer(), nil
 	}
 
@@ -116,6 +115,33 @@ func RunCommandOrError(bin string, args ...string) error {
 	}
 
 	return nil
+}
+
+func isDevVersionOutput(output []byte) bool {
+	output = bytes.TrimSpace(output)
+	if bytes.ContainsAny(output, "\r\n") {
+		return false
+	}
+
+	var (
+		fields [3][]byte
+		count  = 0
+	)
+
+	for field := range bytes.FieldsSeq(output) {
+		if count == len(fields) {
+			return false
+		}
+
+		fields[count] = field
+		count++
+	}
+
+	if count == 0 || !bytes.Equal(fields[count-1], []byte("dev")) {
+		return false
+	}
+
+	return count == 1 || bytes.Equal(fields[count-2], []byte("version"))
 }
 
 func findVersion(output []byte) []byte {
