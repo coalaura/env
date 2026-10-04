@@ -1,5 +1,5 @@
 ---
-name: github-build
+name: build-actions
 description: Build and sign Go binaries in GitHub Actions with coalaura/build and coalaura/sign. Use when creating, editing, or reviewing release workflows, PACE builds, cross-compilation, CGO builds, or code signing with coalaura/builder.
 metadata:
   tooling: coalaura/build, coalaura/sign
