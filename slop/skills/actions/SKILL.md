@@ -1,6 +1,6 @@
 ---
 name: github-build
-description: Build and sign Go binaries in GitHub Actions with coalaura/build and coalaura/sign. Use when creating, editing, or reviewing release workflows, cross-compilation, CGO builds, or code signing with coalaura/builder.
+description: Build and sign Go binaries in GitHub Actions with coalaura/build and coalaura/sign. Use when creating, editing, or reviewing release workflows, PACE builds, cross-compilation, CGO builds, or code signing with coalaura/builder.
 metadata:
   tooling: coalaura/build, coalaura/sign
 ---
@@ -31,10 +31,11 @@ Typical build:
 Important behavior:
 
 - Targets are `linux`, `windows`, or `darwin`; `arch` defaults to `amd64`.
+- Set `pace: true` under `with:` to use PACE instead of stock Go, matching Builder's `--pace` flag. `pace: false` uses stock Go. All other inputs and defaults work the same.
 - Builds are pure Go by default. Set `cgo: true` when needed; CGO uses Zig.
 - CGO linking is static by default. `link: dynamic` requires CGO.
 - `optimization: optimize` is the default and uses `GOAMD64=v3` on amd64; use `compatible` for broad CPU compatibility.
-- `go generate ./...` runs by default; set `generate: false` when it should not.
+- `go generate ./...` (`pace generate ./...` with `pace: true`) runs by default; set `generate: false` when it should not.
 - `package` selects an explicit Go package; `target` selects a project/build target.
 - Set `output` whenever another step needs the binary, then use `${{ steps.build.outputs.path }}`.
 - `pre` is only for installing packages/tools into the Builder image, not for commands that operate on the checked-out project.

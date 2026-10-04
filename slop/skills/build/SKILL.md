@@ -1,6 +1,6 @@
 ---
 name: build
-description: Build, run, test, or benchmark Go projects, especially when CGO, native dependencies, cross-compilation, or linker/toolchain configuration is involved. Use coalaura/builder to handle reproducible Go and Zig/CGO build environments instead of manually assembling compiler environment variables.
+description: Build, run, test, or benchmark Go projects, especially when PACE, CGO, native dependencies, cross-compilation, or linker/toolchain configuration is involved. Use coalaura/builder to handle reproducible Go, PACE, and Zig/CGO build environments instead of manually assembling compiler environment variables.
 metadata:
   tooling: builder
 ---
@@ -29,12 +29,26 @@ builder build go linux --arch arm64 --cgo
 builder build go windows --arch amd64 --cgo --compat --output app.exe
 ```
 
+## PACE
+
+Add `--pace` to use `pace` instead of `go`. Keep the `go` language argument; every other argument, flag, and default works the same, including CGO and cross-compilation options.
+
+```sh
+builder build go --pace
+builder run go --pace -- arg1 arg2
+builder test go --pace ./...
+builder bench go --pace ./...
+builder build go linux --arch arm64 --cgo --pace
+```
+
+Use `--pace` when validating PACE directives; stock Go ignores them. Consult the `pace` skill for directive semantics and restrictions.
+
 ## Important defaults
 
 - Builds are pure Go unless `--cgo` is specified.
 - CGO builds for Linux and Windows are static by default; use `--dyn` when dynamic linking is required.
 - Optimized mode is the default. On amd64 this targets `GOAMD64=v3`; use `--compat` when broad CPU compatibility matters.
-- `go generate ./...` runs by default. Use `--no-gen` when generation is unnecessary or when only validating existing generated sources.
+- `go generate ./...` (`pace generate ./...` with `--pace`) runs by default. Use `--no-gen` when generation is unnecessary or when only validating existing generated sources.
 - Only `builder build` accepts another target OS and `--arch`; run, test, and benchmark operate on the host.
 - `builder test` defaults to `./...`.
 - `builder bench` runs Go benchmarks with `-run=^$ -bench=. -benchmem`.

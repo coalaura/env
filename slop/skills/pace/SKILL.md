@@ -27,6 +27,8 @@ pace tool ...
 
 Use `pace`, not `go`, when testing behavior that depends on a PACE directive.
 
+When using Builder, add `--pace` while keeping the `go` language argument, for example `builder test go --pace ./...`. Every other argument and flag works the same; see the `build` skill for CGO and cross-compilation guidance. In GitHub Actions, set `pace: true` on `coalaura/build`; `pace: false` selects stock Go, and all other inputs work the same.
+
 Stock Go ignores PACE's `//go:` directives. When compatibility matters, it can be useful to additionally build or test with stock `go` to verify the fallback path.
 
 Do not modify or inspect GOROOT as part of normal PACE usage.
@@ -40,3 +42,5 @@ Preserve a valid stock-Go fallback unless the user explicitly does not require s
 Treat PACE features as compiler mechanisms, not portable language guarantees. Follow all constraints from the versioned reference exactly.
 
 For `//go:abiinternal`, never invent register names, ABI assignments, supported architectures, or relaxed assembly restrictions. Consult the reference.
+
+Choose body register mappings with both Go's natural ABIInternal assignment and the assembly instruction's fixed-register requirements in mind. Mappings determine the required entry and return shuffles; they do not change the caller's convention. Prefer identity mappings where useful and inspect generated code when performance matters. See the amd64 `CMPXCHG` example under "Choosing mappings" in the reference.

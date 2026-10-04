@@ -18,7 +18,7 @@ Use `pace` in place of `go` when PACE behavior is required:
 pace build ./...
 pace test ./...
 pace run .
-````
+```
 
 PACE uses its own compiler and assembler while otherwise using the matching Go toolchain.
 
@@ -199,7 +199,7 @@ needs an entry adaptation equivalent to:
 MOVQ AX, DX
 ```
 
-The compiler determines natural ABIInternal register assignments using Go's normal ABI analysis. Do not hardcode the natural calling convention when reasoning about the directive.
+The compiler determines natural ABIInternal register assignments using Go's normal ABI analysis for the function signature and target architecture. Mapping entries select body registers, not caller registers; their textual order does not change the natural assignment. See "Choosing mappings" for a concrete amd64 example.
 
 ## Value restrictions
 
@@ -322,6 +322,50 @@ Prefer mappings that already match Go's natural ABIInternal register assignment 
 Identity mappings require no adaptation.
 
 Mappings may deliberately choose different registers when that makes the assembly body cleaner or faster; PACE inserts only the required parallel copies.
+
+### amd64 example: keep natural assignments where possible
+
+On amd64, ABIInternal assigns single-register integer arguments in declaration order using `AX, BX, CX, DI, SI, R8, R9, R10, R11`. Results start independently from the same register sequence. `DX` is an allowed body mapping register, but is not in that natural argument sequence.
+
+For the `SwapIfLessInteger` signature above, the natural boundary assignment is:
+
+| Value | Argument on entry | Result on return |
+| --- | --- | --- |
+| `addr` | `AX` | — |
+| `new` | `BX` | — |
+| `width` | `CX` | — |
+| `signed` | `DI` | — |
+| `old` | — | `AX` |
+
+This mapping shifts the first three inputs away from their natural registers:
+
+```go
+//go:abiinternal addr=BX new=CX width=DX signed=DI -> old=AX
+```
+
+An equivalent safe entry-copy sequence is:
+
+```asm
+MOVQ CX, DX // width: preserve before CX is overwritten
+MOVQ BX, CX // new: preserve before BX is overwritten
+MOVQ AX, BX // addr
+```
+
+`signed` stays in `DI`. PACE schedules the parallel copies to preserve live inputs; the exact instruction order is an implementation detail. Moves the body then needs to satisfy its own register requirements are additional work.
+
+Instead, keep `new`, `width`, and `signed` in their natural registers and move only `addr`:
+
+```go
+//go:abiinternal addr=DX new=BX width=CX signed=DI -> old=AX
+```
+
+The only required entry adaptation is:
+
+```asm
+MOVQ AX, DX
+```
+
+This frees `AX` for the implicit accumulator operand of `CMPXCHG`, keeps the address in `DX`, and lets the body leave `old` in the natural result register `AX` without a return shuffle. Choose the mapping and body together so redundant loads disappear rather than reintroducing avoidable register moves inside the body.
 
 Do not assume changing mappings automatically improves performance. Inspect generated code when performance matters.
 
