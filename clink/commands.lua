@@ -1127,6 +1127,165 @@ commands["unpack"] = function(args)
     return ""
 end
 
+-- packs files into an archive or compressed file based on the target's extension
+commands["pack"] = function(args)
+    if not args or args == "" then
+        utils.errorf("usage: pack <target> [files...]")
+
+        return ""
+    end
+
+    local parsed = utils.split_args(args)
+    local target = parsed[1]
+
+    if not target or target == "" then
+        utils.errorf("usage: pack <target> [files...]")
+
+        return ""
+    end
+
+    local files = {}
+
+    for i = 2, #parsed do
+        table.insert(files, parsed[i])
+    end
+
+    -- no inputs given: pack the current directory
+    if #files == 0 then
+        table.insert(files, ".")
+    end
+
+    for _, entry in ipairs(files) do
+        if not utils.exists(entry) then
+            utils.errorf("file '%s' not found", entry)
+
+            return ""
+        end
+    end
+
+    local lower = target:lower()
+    local esc_target = utils.escape_path(target)
+    local kind
+
+    -- resolve the format first so multi-part suffixes (.tar.gz) win over plain ones (.gz)
+    if lower:match("%.tar%.gz$") or lower:match("%.tgz$") then
+        kind = "tar.gz"
+    elseif lower:match("%.tar%.bz2$") or lower:match("%.tbz2$") then
+        kind = "tar.bz2"
+    elseif lower:match("%.tar%.xz$") or lower:match("%.txz$") then
+        kind = "tar.xz"
+    elseif lower:match("%.tar%.zst$") or lower:match("%.tzst$") then
+        kind = "tar.zst"
+    elseif lower:match("%.tar$") then
+        kind = "tar"
+    elseif lower:match("%.zip$") then
+        kind = "zip"
+    elseif lower:match("%.gz$") then
+        kind = "gz"
+    elseif lower:match("%.bz2$") then
+        kind = "bz2"
+    elseif lower:match("%.xz$") then
+        kind = "xz"
+    elseif lower:match("%.zst$") then
+        kind = "zst"
+    else
+        utils.errorf("unsupported or unrecognized archive format '%s'", target)
+
+        return ""
+    end
+
+    -- single-stream compressors hold exactly one regular file
+    if kind == "gz" or kind == "bz2" or kind == "xz" or kind == "zst" then
+        if #files ~= 1 or not os.isfile(files[1]) then
+            utils.errorf("'%s' compresses a single file; pass exactly one regular file", target)
+
+            return ""
+        end
+    end
+
+    local out_dir = path.getdirectory(target)
+
+    if out_dir and out_dir ~= "" and out_dir ~= "." and not os.isdir(out_dir) then
+        os.execute(string.format("if not exist %s mkdir %s", utils.escape_path(out_dir), utils.escape_path(out_dir)))
+    end
+
+    utils.printf("packing %s into %s", table.concat(files, " "), utils.clean_path(target))
+
+    local esc_files = {}
+
+    for _, entry in ipairs(files) do
+        table.insert(esc_files, utils.escape_path(entry))
+    end
+
+    local inputs = table.concat(esc_files, " ")
+
+    -- tar.exe (bsdtar) infers compression from the target's extension
+    if kind == "tar" or kind == "tar.gz" or kind == "tar.bz2" or kind == "tar.xz" or kind == "zip" then
+        return string.format("tar.exe -a -cf %s -- %s", esc_target, inputs)
+    end
+
+    -- bsdtar's zstd support varies by build, so pipe through zstd.exe instead
+    if kind == "tar.zst" then
+        if not utils.has_command("zstd.exe") then
+            utils.errorf("zstd not found")
+
+            return ""
+        end
+
+        return string.format("tar.exe -cf - -- %s | zstd.exe -qc -o %s", inputs, esc_target)
+    end
+
+    local esc_file = esc_files[1]
+
+   if kind == "gz" then
+        if utils.has_command("gzip.exe") then
+            return string.format("gzip.exe -c %s > %s", esc_file, esc_target)
+        end
+
+        if utils.has_command("coreutils.exe") then
+            return string.format("coreutils gzip -c %s > %s", esc_file, esc_target)
+        end
+
+        utils.errorf("gzip not found")
+
+        return ""
+    end
+
+    if kind == "bz2" then
+        if utils.has_command("bzip2.exe") then
+            return string.format("bzip2.exe -c %s > %s", esc_file, esc_target)
+        end
+
+        utils.errorf("bzip2 not found")
+
+        return ""
+    end
+
+    if kind == "xz" then
+        if utils.has_command("xz.exe") then
+            return string.format("xz.exe -c %s > %s", esc_file, esc_target)
+        end
+
+        utils.errorf("xz not found")
+
+        return ""
+    end
+
+    if kind == "zst" then
+        if utils.has_command("zstd.exe") then
+            return string.format("zstd.exe -qc %s -o %s", esc_file, esc_target)
+        end
+
+        utils.errorf("zstd not found")
+
+        return ""
+    end
+
+    utils.errorf("unsupported or unrecognized archive format '%s'", target)
+
+    return ""
+end
+
 -- search shell history (literal by default, -r for regex)
 commands["hist"] = function(args)
     if not args or args == "" then

@@ -1656,6 +1656,90 @@ function unpack() {
 	)
 }
 
+# pack files into an archive or compressed file based on the target's extension
+function pack() {
+	(
+		set -euo pipefail
+
+		local target="${1:-}"
+
+		local files=()
+		if (( $# > 1 )); then
+			files=("${@:2}")
+		fi
+
+		if [[ -z "$target" ]]; then
+			_print_error "usage: pack <target> [files...]"
+
+			return 1
+		fi
+
+		# no inputs given: pack the current directory
+		if (( ${#files[@]} == 0 )); then
+			files=(.)
+		fi
+
+		local f
+		for f in "${files[@]}"; do
+			if [[ ! -e "$f" ]]; then
+				_print_error "file '$f' not found"
+
+				return 1
+			fi
+		done
+
+		# resolve the format first so multi-part suffixes (.tar.gz) win over plain ones (.gz)
+		local kind
+		case "${target,,}" in
+			*.tar.gz|*.tgz)   kind="tar.gz" ;;
+			*.tar.bz2|*.tbz2) kind="tar.bz2" ;;
+			*.tar.xz|*.txz)   kind="tar.xz" ;;
+			*.tar.zst|*.tzst) kind="tar.zst" ;;
+			*.tar)            kind="tar" ;;
+			*.zip)            kind="zip" ;;
+			*.gz)             kind="gz" ;;
+			*.bz2)            kind="bz2" ;;
+			*.xz)             kind="xz" ;;
+			*.zst)            kind="zst" ;;
+			*)
+				_print_error "unsupported or unrecognized archive format '$target'"
+
+				return 1
+				;;
+		esac
+
+		# single-stream compressors hold exactly one regular file
+		case "$kind" in
+			gz|bz2|xz|zst)
+				if (( ${#files[@]} != 1 )) || [[ ! -f "${files[0]}" ]]; then
+					_print_error "'$target' compresses a single file; pass exactly one regular file"
+
+					return 1
+				fi
+				;;
+		esac
+
+		mkdir -p -- "$(dirname -- "$target")"
+
+		_print_info "packing ${files[*]} into $target"
+
+		case "$kind" in
+			tar)     tar -cf "$target" -- "${files[@]}" ;;
+			tar.gz)  tar -czf "$target" -- "${files[@]}" ;;
+			tar.bz2) tar -cjf "$target" -- "${files[@]}" ;;
+			tar.xz)  tar -cJf "$target" -- "${files[@]}" ;;
+			tar.zst) tar --zstd -cf "$target" -- "${files[@]}" ;;
+			zip)     zip -rq "$target" "${files[@]}" ;;
+			gz)      gzip -c "${files[0]}" > "$target" ;;
+			bz2)     bzip2 -c "${files[0]}" > "$target" ;;
+			xz)      xz -c "${files[0]}" > "$target" ;;
+			zst)     zstd -qc "${files[0]}" -o "$target" ;;
+		esac
+
+		_print_success "packed"
+	)
+}
+
 # search shell history (literal by default, -r for regex)
 function hist() {
 	local use_regex=false
