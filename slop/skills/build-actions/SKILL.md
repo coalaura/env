@@ -83,3 +83,11 @@ Signing modifies the binary in place. Use `${{ steps.sign.outputs.path }}` after
 Builder detects Windows PE, macOS Mach-O, and Linux ELF binaries automatically, timestamps the signature, and verifies it before succeeding.
 
 `coalaura/sign@v1` also has `version`, which works the same as `coalaura/build`'s `version`. Leave both at their defaults unless a specific Builder version is required.
+
+## Release and attestations
+
+- Use `softprops/action-gh-release@v3` to publish releases, not shell-based `gh release` commands. Set `files`, `fail_on_unmatched_files: true`, `generate_release_notes: true`, and `prerelease: ${{ contains(github.ref_name, '-') }}`; authenticate with `${{ secrets.GITHUB_TOKEN }}`.
+- Upload signed matrix outputs under unique `signed-<project>-<os>-<arch>` artifact names with `if-no-files-found: error`. In the release job, download only those artifacts with `actions/download-artifact@v8` and `merge-multiple: true` into `dist`.
+- Generally attest the final signed binaries before publication with `actions/attest@v4`. Generate `SHA256SUMS` inside `dist` using `sha256sum -b <project>-* > SHA256SUMS`, then pass `subject-checksums: dist/SHA256SUMS`. Include only binaries in the manifest and do not modify them afterwards.
+- Publish the binaries and `SHA256SUMS`; omit generated attestation bundles unless requested. GitHub already stores the provenance. Avoid broad attestation subject globs that include checksums or unrelated files.
+- Keep workflow permissions at `contents: read`; grant the release job `contents: write`, `id-token: write`, `attestations: write`, and `artifact-metadata: write`. Make it depend on all jobs required before publication.
