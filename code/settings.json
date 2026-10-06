@@ -16,7 +16,9 @@
         80, 140
     ],
     "editor.unicodeHighlight.nonBasicASCII": false,
+    "diffEditor.maxComputationTime": 0,
     "diffEditor.ignoreTrimWhitespace": false,
+    "workbench.experimental.modernUI": false,
     "workbench.colorCustomizations": {
         "editorRuler.foreground": "#35384e"
     },
@@ -684,6 +686,7 @@
         "igfa",
         "igna",
         "imagehash",
+        "incohesive",
         "infnoise",
         "Infof",
         "inlinable",
@@ -1033,6 +1036,7 @@
         "softcuffs",
         "somethin",
         "sourceful",
+        "sourcerer",
         "spawnable",
         "specialcarbine",
         "speciality",
@@ -1253,9 +1257,6 @@
     "fileutils.moveFile.typeahead.enabled": true,
     "fileutils.newFile.typeahead.enabled": false,
     "fileutils.newFolder.typeahead.enabled": false,
-    "github.copilot.chat.copilotDebugCommand.enabled": false,
-    "github.copilot.chat.exploreAgent.enabled": false,
-    "github.copilot.chat.tools.viewImage.enabled": false,
     "gitHistory.sideBySide": true,
     "go.diagnostic.vulncheck": "Imports",
     "go.editorContextMenuCommands": {
@@ -1273,8 +1274,8 @@
     },
     "go.toolsEnvVars": {
         "CGO_ENABLED": "1",
-        "CC": "zig cc",
-        "CXX": "zig c++",
+        "CC": "zig",
+        "CXX": "zig",
         "GOEXPERIMENT": "jsonv2"
     },
     "go.toolsManagement.autoUpdate": true,
@@ -1398,6 +1399,5 @@
     "phpfmt.enable_auto_align": true,
     "redhat.telemetry.enabled": false,
     "zig.zls.enabled": "on",
-    "githubLocalActions.dockerDesktopPath": "C:/Program Files/Docker/Docker/Docker Desktop.exe",
-    "workbench.experimental.modernUI": false
+    "githubLocalActions.dockerDesktopPath": "C:/Program Files/Docker/Docker/Docker Desktop.exe"
 }
