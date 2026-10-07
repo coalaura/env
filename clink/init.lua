@@ -130,6 +130,9 @@ os.setalias("..", "cd ..")
 os.setalias("...", "cd ..\\..")
 os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
 
+-- password-only ssh, ignoring ssh config
+os.setalias("sshpw", "ssh -F /dev/null -o BatchMode=no -o PubkeyAuthentication=no -o PreferredAuthentications=password -o NumberOfPasswordPrompts=3 $*")
+
 os.setalias("bench", "builder bench $*")
 os.setalias("test", "builder test $*")
 os.setalias("run", "builder run $*")

@@ -1949,6 +1949,9 @@ alias home='cd ~'
 alias cls='clear'
 alias prun='php artisan serve --port=80'
 
+# password-only ssh, ignoring ssh config
+alias sshpw='ssh -F /dev/null -o BatchMode=no -o PubkeyAuthentication=no -o PreferredAuthentications=password -o NumberOfPasswordPrompts=3'
+
 alias bench='builder bench'
 alias test='builder test'
 alias run='builder run'
