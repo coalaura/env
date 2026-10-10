@@ -1274,8 +1274,6 @@
     },
     "go.toolsEnvVars": {
         "CGO_ENABLED": "1",
-        "CC": "zig",
-        "CXX": "zig",
         "GOEXPERIMENT": "jsonv2"
     },
     "go.toolsManagement.autoUpdate": true,
