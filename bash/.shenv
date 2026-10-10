@@ -35,4 +35,16 @@ _path_prepend "/usr/local/go/bin"
 _path_append "$HOME/go/bin"
 _path_append "$HOME/.local/bin"
 
+# go env variables
+if command -v go &>/dev/null && command -v zig &>/dev/null; then
+    zig="$(command -v zig)"
+
+    cc="$zig cc"
+    cxx="$zig c++"
+
+    if [[ "$(go env CC)" != "$cc" || "$(go env CXX)" != "$cxx" ]]; then
+        go env -w "CC=$cc" "CXX=$cxx"
+    fi
+fi
+
 export PATH

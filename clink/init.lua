@@ -80,6 +80,40 @@ local function ensure_git_include()
     ))
 end
 
+local function ensure_go_env()
+    local zig = path.join(utils.home(), ".zig\\zig.exe")
+
+    if not os.isfile(zig) then
+        return
+    end
+
+    local handle = io.popen("go env CC CXX 2>nul")
+
+    if not handle then
+        return
+    end
+
+    local current_cc = handle:read("*l")
+    local current_cxx = handle:read("*l")
+
+    handle:close()
+
+    if not current_cc or not current_cxx then
+        return
+    end
+
+    local cc = string.format("'%s' cc", zig)
+    local cxx = string.format("'%s' c++", zig)
+
+    if current_cc == cc and current_cxx == cxx then
+        return
+    end
+
+    os.execute(string.format(
+        "go env -w \"CC=%s\" \"CXX=%s\"",
+        cc, cxx
+    ))
+end
 
 --
 -- Shell settings
@@ -160,6 +194,12 @@ end)
 --
 
 ensure_git_include()
+
+--
+-- Go settings
+--
+
+ensure_go_env()
 
 --
 -- Startup
