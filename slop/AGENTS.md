@@ -67,6 +67,9 @@ Allocation and copy discipline is the default, not a later optimization pass. Ai
 
 ## Correctness
 
+- Match the project's existing testing practices and scope. If the project has no tests, do not force adding tests or introduce a test suite by default.
+- When tests already exist, add focused tests where useful and match their framework, style, structure and level of detail. If existing tests are very limited, you may ask whether to add more before expanding coverage substantially.
+- Creating temporary tests to verify behavior during development is always fine; this does not require adding them to the project's permanent test suite.
 - Never weaken, remove, skip or loosen tests or assertions to make them pass. Fix the underlying cause.
 - When an approach stops producing new information, change strategy rather than chasing it indefinitely.
 - If ambiguity materially affects behavior, architecture, APIs, security or data, ask rather than inventing requirements. Infer minor details from existing code when safe.
