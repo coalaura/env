@@ -34,6 +34,8 @@ Important behavior:
 - Set `pace: true` under `with:` to use PACE instead of stock Go, matching Builder's `--pace` flag. `pace: false` uses stock Go. All other inputs and defaults work the same.
 - Builds are pure Go by default. Set `cgo: true` when needed; CGO uses Zig.
 - CGO linking is static by default. `link: dynamic` requires CGO.
+- `libc: auto` (the default) lets Builder select musl for static Linux CGO builds and GNU/glibc for dynamic builds. Set `libc: musl` or `libc: gnu` to pass `--musl` or `--gnu` independently of `link`; explicit choices require `os: linux` and `cgo: true`.
+- Native dependencies must match the selected libc. Zig's bundled glibc supports dynamic linking only; `link: static` with `libc: gnu` requires an external static glibc toolchain.
 - `optimization: optimize` is the default and uses `GOAMD64=v3` on amd64; use `compatible` for broad CPU compatibility.
 - `go generate ./...` (`pace generate ./...` with `pace: true`) runs by default; set `generate: false` when it should not.
 - `package` selects an explicit Go package; `target` selects a project/build target.

@@ -47,6 +47,8 @@ Use `--pace` when validating PACE directives; stock Go ignores them. Consult the
 
 - Builds are pure Go unless `--cgo` is specified.
 - CGO builds for Linux and Windows are static by default; use `--dyn` when dynamic linking is required.
+- Linux CGO defaults to musl for static linking and GNU/glibc for dynamic linking. Override with `--musl` or `--gnu` (mutually exclusive, Linux CGO only); these flags do not change the link mode.
+- Native dependencies must match the selected libc. Zig's bundled glibc supports dynamic linking only; static GNU builds require an external static glibc toolchain.
 - Optimized mode is the default. On amd64 this targets `GOAMD64=v3`; use `--compat` when broad CPU compatibility matters.
 - `go generate ./...` (`pace generate ./...` with `--pace`) runs by default. Use `--no-gen` when generation is unnecessary or when only validating existing generated sources.
 - Only `builder build` accepts another target OS and `--arch`; run, test, and benchmark operate on the host.
