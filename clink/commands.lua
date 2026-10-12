@@ -973,6 +973,127 @@ end
 
 clink.argmatcher("ghup"):addarg(clink.dirmatches)
 
+-- show TCP listeners and UDP bound sockets by port or process name
+commands["listen"] = function(args)
+    local parsed = utils.split_args(args or "")
+
+    if #parsed ~= 1 then
+        utils.errorf("usage: listen <port|name>")
+
+        return
+    end
+
+    local query = parsed[1]
+    local port
+
+    if query:match("^%d+$") then
+        port = tonumber(query)
+
+        if not port or port < 1 or port > 65535 then
+            utils.errorf("invalid port '%s'", query)
+
+            return
+        end
+    end
+
+    local processes = {}
+
+    local tasklist = io.popen("tasklist.exe /FO CSV /NH 2>nul")
+
+    if not tasklist then
+        utils.errorf("failed to list processes")
+
+        return
+    end
+
+    for line in tasklist:lines() do
+        local name, pid = line:match('^"([^"]+)","(%d+)"')
+
+        if name then
+            processes[tonumber(pid)] = name
+        end
+    end
+
+    tasklist:close()
+
+    local netstat = io.popen("netstat.exe -ano 2>nul")
+
+    if not netstat then
+        utils.errorf("failed to list sockets")
+
+        return
+    end
+
+    local matches = {}
+
+    for line in netstat:lines() do
+        local protocol, address, _, state, pid = line:match("^%s*(TCP)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%d+)%s*$")
+
+        if protocol and state ~= "LISTENING" then
+            protocol = nil
+        end
+
+        if not protocol then
+            protocol, address, _, pid = line:match("^%s*(UDP)%s+(%S+)%s+(%S+)%s+(%d+)%s*$")
+        end
+
+        if protocol then
+            local socket_port = tonumber(address:match(":(%d+)$"))
+            local process_id = tonumber(pid)
+
+            local name = processes[process_id] or "(unknown)"
+
+            if socket_port and (port and socket_port == port or not port and name:lower():find(query:lower(), 1, true)) then
+                table.insert(matches, {
+                    protocol = protocol,
+                    address = address,
+                    port = socket_port,
+                    pid = process_id,
+                    name = name
+                })
+            end
+        end
+    end
+
+    netstat:close()
+
+    if #matches == 0 then
+        if port then
+            utils.errorf("no TCP/UDP listeners on port %d", port)
+        else
+            utils.errorf("no TCP/UDP listeners for '%s'", query)
+        end
+
+        return
+    end
+
+    table.sort(matches, function(left, right)
+        if left.port ~= right.port then
+            return left.port < right.port
+        end
+
+        if left.protocol ~= right.protocol then
+            return left.protocol < right.protocol
+        end
+
+        if left.address ~= right.address then
+            return left.address < right.address
+        end
+
+        return left.pid < right.pid
+    end)
+
+    if port then
+        utils.printf("listening on :%d", port)
+    else
+        utils.printf("listeners matching '%s'", query)
+    end
+
+    for _, entry in ipairs(matches) do
+        utils.subf("%-3s %-35s %6d  %s", entry.protocol, entry.address, entry.pid, entry.name)
+    end
+end
+
 -- create an ssh tunnel for a specific port
 commands["tunnel"] = function(args)
     if not args then

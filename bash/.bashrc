@@ -1573,6 +1573,112 @@ function ghup() (
 	fi
 )
 
+# show TCP listeners and UDP bound sockets by port or process name
+function listen() (
+	local query="${1:-}"
+
+	if (( $# != 1 )) || [[ -z "$query" ]]; then
+		_print_error "usage: listen <port|name>"
+
+		return 1
+	fi
+
+	if ! command -v ss >/dev/null 2>&1; then
+		_print_error "ss is required"
+
+		return 1
+	fi
+
+	local target_port=""
+	local target_name=""
+
+	if [[ "$query" =~ ^[0-9]+$ ]]; then
+		target_port="${query#"${query%%[!0]*}"}"
+		target_port="${target_port:-0}"
+
+		if (( ${#target_port} > 5 )) || (( target_port < 1 || target_port > 65535 )); then
+			_print_error "invalid port '$query'"
+
+			return 1
+		fi
+	else
+		target_name="${query,,}"
+	fi
+
+	local sockets
+
+	if ! sockets="$(ss -H -O -lntup)"; then
+		_print_error "failed to list sockets"
+
+		return 1
+	fi
+
+	local protocol state recvq sendq address peer owners port remaining name pid line
+	local owner_pattern='"([^"]+)",pid=([0-9]+)'
+	local -a matches=()
+
+	while IFS= read -r line; do
+		read -r protocol state recvq sendq address peer owners <<< "$line"
+
+		if [[ "$protocol" != "tcp" && "$protocol" != "udp" ]]; then
+			continue
+		fi
+
+		port="${address##*:}"
+
+		if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+			continue
+		fi
+
+		if [[ -n "$target_port" && "$port" != "$target_port" ]]; then
+			continue
+		fi
+
+		remaining="$owners"
+		local has_owner=false
+
+		while [[ "$remaining" =~ $owner_pattern ]]; do
+			name="${BASH_REMATCH[1]}"
+			pid="${BASH_REMATCH[2]}"
+
+			remaining="${remaining#*"${BASH_REMATCH[0]}"}"
+			has_owner=true
+
+			if [[ -z "$target_name" || "${name,,}" == *"$target_name"* ]]; then
+				matches+=("$port"$'\t'"${protocol^^}"$'\t'"$address"$'\t'"$pid"$'\t'"$name")
+			fi
+		done
+
+		if [[ -n "$target_port" && "$has_owner" == false ]]; then
+			matches+=("$port"$'\t'"${protocol^^}"$'\t'"$address"$'\t'"-"$'\t'"(unknown)")
+		fi
+	done <<< "$sockets"
+
+	if (( ${#matches[@]} == 0 )); then
+		if [[ -n "$target_port" ]]; then
+			_print_error "no TCP/UDP listeners on port $target_port"
+		else
+			_print_error "no TCP/UDP listeners for '$query'"
+		fi
+
+		return 1
+	fi
+
+	if [[ -n "$target_port" ]]; then
+		_print_info "listening on :$target_port"
+	else
+		_print_info "listeners matching '$query'"
+	fi
+
+	local summary
+
+	printf '%s\n' "${matches[@]}" | LC_ALL=C sort -t $'\t' -k1,1n -k2,2 -k3,3 -k4,4n -k5,5 -u | while IFS=$'\t' read -r port protocol address pid name; do
+		printf -v summary '%-3s %-35s %6s  %s' "$protocol" "$address" "$pid" "$name"
+
+		_print_sub "$summary"
+	done
+)
+
 # create an ssh tunnel for a specific port
 function tunnel() {
 	(
