@@ -5,11 +5,11 @@ local utils = require("utils")
 -- Helper functions
 --
 
-local function init_coreutils()
-    local pipe = io.popen("coreutils --list")
+local function init_uutils(name)
+    local pipe = io.popen(name .. " --list")
 
     if not pipe then
-        utils.errorf("failed to initialize coreutils")
+        utils.errorf("failed to initialize %s", name)
 
         return
     end
@@ -18,8 +18,8 @@ local function init_coreutils()
         local cmd = line:match("^%s*(.-)%s*$")
 
         -- skip rm (custom command in commands.lua)
-        if cmd and cmd ~= "" and cmd ~= "coreutils" and cmd ~= "rm" then
-            os.setalias(cmd, string.format("coreutils %s $*", cmd))
+        if cmd and cmd ~= "" and cmd ~= name and cmd ~= "rm" then
+            os.setalias(cmd, string.format(name .. " %s $*", cmd))
         end
     end
 
@@ -138,7 +138,7 @@ end)
 os.setenv("STARSHIP_CONFIG", path.join(utils.home(), ".config\\starship.toml"))
 
 -- initialize coreutils
-init_coreutils()
+init_uutils("coreutils")
 
 -- initialize openssh
 init_openssh()
