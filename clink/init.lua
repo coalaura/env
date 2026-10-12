@@ -110,7 +110,7 @@ local function ensure_go_env()
     end
 
     os.execute(string.format(
-        "go env -w \"CC=%s\" \"CXX=%s\"",
+        "go env -w \"CC=%s\" \"CXX=%s\" \"CGO_ENABLED=1\"",
         cc, cxx
     ))
 end
@@ -142,15 +142,6 @@ init_uutils("coreutils")
 
 -- initialize openssh
 init_openssh()
-
--- ensure paths
-add_to_path({
-    path.join(utils.home(), ".bin"),
-    path.join(utils.home(), ".zig"),
-})
-
--- initialized environment variables
-os.setenv("CGO_ENABLED", "1")
 
 -- initialize other aliases
 os.setalias("clear", "cls")

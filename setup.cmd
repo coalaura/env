@@ -66,6 +66,10 @@ if errorlevel 1 goto :FAIL
 
 if errorlevel 1 goto :FAIL
 
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0path.ps1"
+
+if errorlevel 1 goto :FAIL
+
 call update.cmd
 
 if errorlevel 1 goto :FAIL
