@@ -163,6 +163,7 @@ os.setalias("which", "where $*")
 os.setalias("..", "cd ..")
 os.setalias("...", "cd ..\\..")
 os.setalias("home", string.format("cd %s", utils.escape_path(utils.home())))
+os.setalias("opencode", "opencode.exe --hostname 127.0.0.1 --port 0 $*")
 
 -- password-only ssh, ignoring ssh config
 os.setalias("sshpw", "ssh -F /dev/null -o BatchMode=no -o PubkeyAuthentication=no -o PreferredAuthentications=password -o NumberOfPasswordPrompts=3 $*")
