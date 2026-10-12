@@ -8,13 +8,13 @@ set "SETUP_IS_ADMIN=0"
 net session >nul 2>&1
 
 if errorlevel 1 (
-    echo Setup requires admin privileges, relaunching...
-    
-    sudo rio -e "setup.cmd"
+	echo Setup requires admin privileges, relaunching...
 
-    if errorlevel 1 set "SETUP_EXIT=1"
-    
-    goto :END
+	sudo rio -e "setup.cmd"
+
+	if errorlevel 1 set "SETUP_EXIT=1"
+
+	goto :END
 )
 
 set "SETUP_IS_ADMIN=1"
@@ -24,82 +24,115 @@ echo Pulling...
 
 git pull
 
-if errorlevel 1 (
-    set "SETUP_EXIT=1"
-
-    goto :END
-)
+if errorlevel 1 goto :FAIL
 
 :: default binary folder
 if not exist "%USERPROFILE%\.bin" (
-    mkdir "%USERPROFILE%\.bin"
+	mkdir "%USERPROFILE%\.bin"
+
+	if errorlevel 1 goto :FAIL
 )
 
-:: environment upgrader
-echo Loading upgrader...
+set "PATH=%USERPROFILE%\.bin;%PATH%"
+set "TAP_BIN="
 
-set "UPGRADER_DIR=%ProgramData%\env-upgrader"
+if exist "%USERPROFILE%\.bin\tap.exe" set "TAP_BIN=%USERPROFILE%\.bin\tap.exe"
 
-if not exist "%UPGRADER_DIR%" (
-    mkdir "%UPGRADER_DIR%"
+if not defined TAP_BIN (
+	for /f "delims=" %%T in ('where tap.exe 2^>nul') do if not defined TAP_BIN set "TAP_BIN=%%T"
 )
 
-icacls "%UPGRADER_DIR%" /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" >nul
+if defined TAP_BIN goto :UPDATE_TAP
+
+set "TAP_BIN=%USERPROFILE%\.bin\tap.exe"
+
+call :INSTALL_TAP
+
+if errorlevel 1 goto :FAIL
+
+goto :INSTALL_PACKAGES
+
+:UPDATE_TAP
+
+echo Checking for tap updates...
+
+"%TAP_BIN%" tap
+
+if errorlevel 1 goto :FAIL
+
+:INSTALL_PACKAGES
+
+"%TAP_BIN%" get go zig upx starship bun builder vet time wtf coreutils actup license mksvc
+
+if errorlevel 1 goto :FAIL
+
+call update.cmd
+
+if errorlevel 1 goto :FAIL
+
+goto :END
+
+:INSTALL_TAP
+
+set "TAP_TMP=%USERPROFILE%\.bin\.tap-%RANDOM%-%RANDOM%"
+
+mkdir "%TAP_TMP%"
+
+if errorlevel 1 exit /b 1
+
+echo Checking the latest tap release...
+
+curl.exe -fsSL --connect-timeout 15 --max-time 60 -o NUL -w "%%{url_effective}" "https://github.com/coalaura/tap/releases/latest" >"%TAP_TMP%\release"
+
+if errorlevel 1 goto :TAP_INSTALL_FAILED
+
+set "TAP_RELEASE="
+set "TAP_VERSION="
+set /p TAP_RELEASE=<"%TAP_TMP%\release"
+
+for /f "tokens=7 delims=/" %%V in ("%TAP_RELEASE%") do set "TAP_VERSION=%%V"
+
+if not defined TAP_VERSION goto :TAP_INSTALL_FAILED
+
+set "TAP_RELEASE=https://github.com/coalaura/tap/releases/download/%TAP_VERSION%"
+
+echo Installing tap %TAP_VERSION%...
+
+curl.exe -fsSL --connect-timeout 15 --max-time 900 -o "%TAP_TMP%\tap.exe" "%TAP_RELEASE%/tap-windows-amd64.exe"
+
+if errorlevel 1 goto :TAP_INSTALL_FAILED
+
+curl.exe -fsSL --connect-timeout 15 --max-time 900 -o "%TAP_TMP%\SHA256SUMS" "%TAP_RELEASE%/SHA256SUMS"
+
+if errorlevel 1 goto :TAP_INSTALL_FAILED
+
+powershell.exe -NoProfile -Command "$expected = @(Get-Content -LiteralPath ($env:TAP_TMP + '\SHA256SUMS') | Where-Object { $_ -match '^[0-9a-fA-F]{64} [ *]tap-windows-amd64\.exe$' }); if ($expected.Count -ne 1) { exit 1 }; $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath ($env:TAP_TMP + '\tap.exe')).Hash; if ($actual -ine $expected[0].Substring(0, 64)) { exit 1 }"
 
 if errorlevel 1 (
-    echo Failed to secure upgrader directory
+	echo Failed to verify tap
 
-    set "SETUP_EXIT=1"
-
-    goto :CLEAN_UPGRADER
+	goto :TAP_INSTALL_FAILED
 )
 
-set "UPGRADER_TMP=%UPGRADER_DIR%\env_upgrader_%RANDOM%_%RANDOM%.exe"
-set "UPGRADER_HASH=%UPGRADER_TMP%.sha256"
+move /y "%TAP_TMP%\tap.exe" "%TAP_BIN%" >nul
 
-curl -fsSL --connect-timeout 15 --max-time 900 -o "%UPGRADER_TMP%" "https://coalaura.github.io/env/bin/upgrader-win.exe"
+if errorlevel 1 goto :TAP_INSTALL_FAILED
 
-if errorlevel 1 (
-    echo Failed to download upgrader
+rmdir /s /q "%TAP_TMP%"
 
-    set "SETUP_EXIT=1"
-) else (
-    curl -fsSL --connect-timeout 15 --max-time 900 -o "%UPGRADER_HASH%" "https://coalaura.github.io/env/bin/upgrader-win.exe.sha256"
+exit /b 0
 
-    if errorlevel 1 (
-        echo Failed to download upgrader checksum
+:TAP_INSTALL_FAILED
 
-        set "SETUP_EXIT=1"
-    ) else (
-        powershell.exe -NoProfile -Command "$expected = (Get-Content -Raw -LiteralPath $env:UPGRADER_HASH).Trim().ToLowerInvariant(); if ($expected -notmatch '^[0-9a-f]{64}$') { exit 1 }; $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:UPGRADER_TMP).Hash.ToLowerInvariant(); if ($actual -cne $expected) { exit 1 }"
+echo Failed to install tap
 
-        if errorlevel 1 (
-            echo Failed to verify upgrader
+rmdir /s /q "%TAP_TMP%"
 
-            set "SETUP_EXIT=1"
-        ) else (
-            echo Running upgrader...
+exit /b 1
 
-            "%UPGRADER_TMP%" go zig upx starship bun builder vet time wtf coreutils actup license mksvc
+:FAIL
 
-            if errorlevel 1 (
-                set "SETUP_EXIT=1"
-            )
-        )
-    )
-)
-
-:CLEAN_UPGRADER
-
-if defined UPGRADER_TMP del /q "%UPGRADER_TMP%" "%UPGRADER_HASH%" 2>nul
-
-if "%SETUP_EXIT%"=="0" (
-    call update.cmd
-
-    if errorlevel 1 (
-        set "SETUP_EXIT=1"
-    )
-)
+set "SETUP_EXIT=1"
 
 :END
 

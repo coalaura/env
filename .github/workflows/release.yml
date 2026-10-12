@@ -6,7 +6,7 @@ on:
       - master
     paths:
       - "discord/theme.css"
-      - ".upgrader/**"
+      - ".github/workflows/release.yml"
   workflow_dispatch:
 
 permissions:
@@ -19,46 +19,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-go:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [windows, linux]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Build Upgrader
-        id: build
-        uses: coalaura/build@v1
-        with:
-          os: ${{ matrix.goos }}
-          arch: amd64
-          generate: false
-          target: .upgrader
-          output: build/upgrader_${{ matrix.goos }}${{ matrix.goos == 'windows' && '.exe' || '' }}
-
-      - name: Sign Upgrader
-        id: sign
-        uses: coalaura/sign@v1
-        with:
-          path: ${{ steps.build.outputs.path }}
-          key: ${{ secrets.COALAURA_PFX }}
-          passphrase: ${{ secrets.COALAURA_PFX_PASSWORD }}
-          chain: |
-            https://wiese2.org/pki/issuing.pem
-            https://wiese2.org/pki/root.pem
-
-      - name: Create Checksum
-        shell: bash
-        run: sha256sum "${{ steps.sign.outputs.path }}" | cut -d " " -f 1 > "${{ steps.sign.outputs.path }}.sha256"
-
-      - name: Upload Upgrader
-        uses: actions/upload-artifact@v7
-        with:
-          name: upgrader_${{ matrix.goos }}
-          path: build/*
-
   build-css:
     runs-on: ubuntu-latest
     steps:
@@ -112,7 +72,7 @@ jobs:
           path: css/discord.min.css
 
   deploy:
-    needs: [build-go, build-css]
+    needs: build-css
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -126,14 +86,9 @@ jobs:
       - name: Organize Deployment Directory
         shell: bash
         run: |
-          mkdir -p dist/bin dist/css
+          mkdir -p dist/css
 
           cp temp_artifacts/css-theme/discord.min.css dist/css/
-
-          cp temp_artifacts/upgrader_linux/upgrader_linux dist/bin/upgrader-linux
-          cp temp_artifacts/upgrader_linux/upgrader_linux.sha256 dist/bin/upgrader-linux.sha256
-          cp temp_artifacts/upgrader_windows/upgrader_windows.exe dist/bin/upgrader-win.exe
-          cp temp_artifacts/upgrader_windows/upgrader_windows.exe.sha256 dist/bin/upgrader-win.exe.sha256
 
           ls -R dist/
 
