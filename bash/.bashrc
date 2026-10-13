@@ -642,21 +642,128 @@ function ngx() {
 # perform system maintenance and updates
 function update() {
 	(
-		set -euo pipefail
+		set +e
+		set -uo pipefail
+
+		local failed=0
+		local prune_containers=false
 
 		function print_time() {
 			printf "\033[90m[\033[0m\033[36m$(date '+%H:%M:%S')\033[0m\033[90m] ->\033[0m %s\n" "$1"
+		}
+
+		function print_output() {
+			printf "\033[90m[$(date '+%H:%M:%S')] -> %s\033[0m\n" "$1"
 		}
 
 		function get_space() {
 			df --output=used -B1 / | tail -n1 | xargs
 		}
 
-		read -r used_before < <(get_space)
+		function run_root() {
+			if (( EUID == 0 )); then
+				"$@"
+			else
+				sudo "$@"
+			fi
+		}
+
+		function run_step() {
+			local show_output=false
+
+			if [[ "$1" == "--show" ]]; then
+				show_output=true
+				shift
+			fi
+
+			local label="$1"
+			shift
+
+			print_time "$label"
+
+			local output status line
+
+			output=$("$@" 2>&1)
+			status=$?
+
+			if (( status == 130 || status == 143 )); then
+				exit "$status"
+			fi
+
+			if (( status != 0 )); then
+				((failed += 1))
+
+				print_time "$label failed (exit $status)"
+			fi
+
+			if (( status != 0 )) || [[ "$show_output" == true ]]; then
+				while IFS= read -r line; do
+					if [[ -n "$line" ]]; then
+						print_output "$line"
+					fi
+				done <<< "$output"
+			fi
+
+			return "$status"
+		}
+
+		function update_env() {
+			(
+				cd "$1" || exit 1
+
+				bash setup.sh
+			)
+		}
+
+		function remove_orphans() {
+			local output status
+			local -a orphans=()
+
+			output=$(pacman -Qtdq 2>&1)
+			status=$?
+
+			if (( status == 1 )) && [[ -z "$output" ]]; then
+				return 0
+			fi
+
+			if (( status != 0 )); then
+				printf '%s\n' "$output" >&2
+
+				return "$status"
+			fi
+
+			if [[ -n "$output" ]]; then
+				readarray -t orphans <<< "$output"
+
+				run_root pacman -Rns --noconfirm "${orphans[@]}"
+			fi
+		}
+
+		if (( $# > 1 )) || [[ "${1:-}" != "" && "${1:-}" != "--prune-containers" ]]; then
+			print_time "usage: update [--prune-containers]"
+
+			return 2
+		fi
+
+		if [[ "${1:-}" == "--prune-containers" ]]; then
+			prune_containers=true
+		fi
+
+		trap 'print_time "interrupted"; exit 130' INT
+		trap 'print_time "terminated"; exit 143' TERM
+
+		if (( EUID != 0 )); then
+			sudo -v || return 1
+		fi
+
+		local used_before="" used_after=""
+
+		used_before=$(get_space) || used_before=""
 
 		##
 		# env update
 		##
+
 		local env_dir=""
 
 		if [[ -n "${USERPROFILE:-}" && -d "$USERPROFILE/env" ]]; then
@@ -666,120 +773,191 @@ function update() {
 		fi
 
 		if [[ -n "$env_dir" ]]; then
-			print_time "env update ($env_dir)"
-
-			(
-				cd "$env_dir" || exit 1
-
-				sudo --preserve-env=SSH_CLIENT,SSH_AUTH_SOCK,USERPROFILE,HOME bash setup.sh
-			) || print_time "env update failed, continuing"
+			run_step "env update ($env_dir)" update_env "$env_dir"
 		fi
 
 		##
 		# arch (pacman, paru, yay)
 		##
+
 		if command -v pacman &> /dev/null; then
-			if command -v paru &> /dev/null; then
-				print_time "paru -syu"
-				paru -Syu --noconfirm > /dev/null
-			elif command -v yay &> /dev/null; then
-				print_time "yay -syu"
-				yay -Syu --noconfirm > /dev/null
+			local arch_status=0
+
+			if (( EUID != 0 )) && command -v paru &> /dev/null; then
+				run_step "paru -syu" paru -Syu --noconfirm || arch_status=$?
+			elif (( EUID != 0 )) && command -v yay &> /dev/null; then
+				run_step "yay -syu" yay -Syu --noconfirm || arch_status=$?
 			else
-				print_time "pacman -syu"
-				sudo pacman -Syu --noconfirm > /dev/null
+				run_step "pacman -syu" run_root pacman -Syu --noconfirm || arch_status=$?
+
+				if command -v paru &> /dev/null || command -v yay &> /dev/null; then
+					print_time "AUR update skipped (running as root)"
+				fi
 			fi
 
-			print_time "pacman -sc"
+			if (( arch_status == 0 )); then
+				if command -v paccache &> /dev/null; then
+					run_step "paccache -rk2" run_root paccache -rk2
+					run_step "paccache -ruk0" run_root paccache -ruk0
+				else
+					run_step "pacman -sc" run_root pacman -Sc --noconfirm
+				fi
 
-			if command -v paccache &> /dev/null; then
-				sudo paccache -rk2 -ruk0 >/dev/null 2>&1 || true
+				run_step "pacman -rns (orphans)" remove_orphans
 			else
-				sudo pacman -Sc --noconfirm > /dev/null
-			fi
-
-			print_time "pacman -rns (orphans)"
-
-			readarray -t orphans < <(pacman -Qtdq 2>/dev/null || true)
-			if (( ${#orphans[@]} )); then
-				sudo pacman -Rns --noconfirm "${orphans[@]}" > /dev/null 2>&1 || true
+				print_time "pacman cleanup skipped (update failed)"
 			fi
 		fi
 
 		##
 		# debian (apt)
 		##
+
 		if command -v apt-get &> /dev/null; then
-			print_time "apt update"
-			sudo apt-get update -qq
-
-			print_time "apt full-upgrade"
-			sudo env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y -qq > /dev/null
-
-			print_time "apt autoremove"
-			sudo env DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y -qq > /dev/null
-
-			print_time "apt clean"
-			sudo apt-get clean -qq > /dev/null
+			if run_step "apt update" run_root apt-get update --error-on=any -qq; then
+				if run_step "apt full-upgrade" run_root env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y -qq; then
+					if run_step "apt autoremove" run_root env DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y -qq; then
+						run_step "apt clean" run_root apt-get clean -qq
+					else
+						print_time "apt clean skipped (autoremove failed)"
+					fi
+				else
+					print_time "apt cleanup skipped (upgrade failed)"
+				fi
+			else
+				print_time "apt upgrade and cleanup skipped (update failed)"
+			fi
 		fi
 
 		##
 		# other (flatpak, snap)
 		##
-		if command -v flatpak &> /dev/null; then
-			print_time "flatpak update"
-			flatpak update -y > /dev/null 2>&1 || true
 
-			print_time "flatpak uninstall unused"
-			flatpak uninstall --unused -y > /dev/null 2>&1 || true
+		if command -v flatpak &> /dev/null; then
+			if run_step "flatpak update" flatpak update -y; then
+				run_step "flatpak uninstall unused" flatpak uninstall --unused -y
+			else
+				print_time "flatpak cleanup skipped (update failed)"
+			fi
 		fi
 
 		if command -v snap &> /dev/null; then
-			print_time "snap refresh"
-			sudo snap refresh > /dev/null 2>&1 || true
+			run_step "snap refresh" run_root snap refresh
 		fi
 
 		##
 		# docker
 		##
+
 		if command -v docker &> /dev/null; then
-			print_time "docker system prune"
-			sudo docker system prune --force > /dev/null 2>&1 || true
+			local endpoint=""
+			local -a docker_cmd=(docker)
+
+			if [[ -n "${DOCKER_CONTEXT:-}" ]]; then
+				endpoint=$(docker context inspect "$DOCKER_CONTEXT" --format '{{.Endpoints.docker.Host}}' 2>/dev/null)
+			elif [[ -n "${DOCKER_HOST:-}" ]]; then
+				endpoint="$DOCKER_HOST"
+			else
+				endpoint=$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null)
+			fi
+
+			if [[ "$endpoint" == unix://* ]]; then
+				if ! docker info > /dev/null 2>&1 && [[ "$endpoint" == "unix:///var/run/docker.sock" || "$endpoint" == "unix:///run/docker.sock" ]]; then
+					docker_cmd=(run_root env -u DOCKER_CONTEXT -u DOCKER_HOST docker --host "$endpoint")
+				fi
+
+				if "${docker_cmd[@]}" info > /dev/null 2>&1; then
+					run_step "docker image prune" "${docker_cmd[@]}" image prune --force
+					run_step "docker builder prune" "${docker_cmd[@]}" builder prune --force --filter until=168h --keep-storage 10GB
+
+					if [[ "$prune_containers" == true ]]; then
+						run_step "docker container prune" "${docker_cmd[@]}" container prune --force
+						run_step "docker network prune" "${docker_cmd[@]}" network prune --force
+					fi
+				else
+					print_time "docker cleanup skipped (daemon unavailable)"
+				fi
+			else
+				print_time "docker cleanup skipped (remote or unknown endpoint)"
+			fi
 		fi
 
 		##
 		# logs & temp
 		##
-		if command -v journalctl &> /dev/null; then
-			print_time "journalctl vacuum"
-			sudo journalctl --vacuum-time=14d >/dev/null 2>&1 || true
+
+		if [[ -d /run/systemd/system ]] && command -v journalctl &> /dev/null; then
+			run_step "journalctl vacuum" run_root journalctl --rotate --vacuum-time=14d
 		fi
 
-		print_time "clean old logs"
-		sudo find /var/log -type f \( -name "*.log" -o -name "*.gz" \) -mtime +14 -delete > /dev/null 2>&1 || true
+		if command -v logrotate &> /dev/null && [[ -f /etc/logrotate.conf ]]; then
+			run_step "logrotate" run_root logrotate /etc/logrotate.conf
+		fi
 
-		print_time "clean old /tmp"
-		sudo find /tmp -type f -atime +7 -delete > /dev/null 2>&1 || true
+		if command -v systemd-tmpfiles &> /dev/null; then
+			run_step "clean old temp files" run_root systemd-tmpfiles --clean
+		fi
 
-		print_time "clean old /var/tmp"
-		sudo find /var/tmp -type f -atime +7 -delete > /dev/null 2>&1 || true
+		##
+		# health checks
+		##
+
+		if command -v needrestart &> /dev/null; then
+			run_step --show "needrestart" run_root needrestart -r l
+		fi
+
+		if command -v pacman &> /dev/null && command -v pacdiff &> /dev/null; then
+			run_step --show "pacdiff (pending configuration files)" run_root pacdiff -o
+		fi
+
+		if ! command -v pacman &> /dev/null && command -v dpkg &> /dev/null; then
+			run_step --show "dpkg audit" run_root dpkg --audit
+		fi
+
+		if [[ -d /run/systemd/system ]] && command -v systemctl &> /dev/null; then
+			run_step --show "systemctl failed services" systemctl --failed --no-legend --no-pager
+		fi
+
+		if [[ -f /run/reboot-required ]]; then
+			print_time "reboot required"
+		fi
 
 		##
 		# summary
 		##
-		read -r used_after < <(get_space)
 
-		freed=$((used_before - used_after))
+		used_after=$(get_space) || used_after=""
 
-		if (( freed > 0 )); then
-			freed_human=$(numfmt --to=iec "$freed" 2>/dev/null || echo "${freed}B")
-			print_time "completed (freed $freed_human)"
-		elif (( freed < 0 )); then
-			used_human=$(numfmt --to=iec "$(( -freed ))" 2>/dev/null || echo "$(( -freed ))B")
-			print_time "completed (used additional $used_human space)"
-		else
-			print_time "completed"
+		local summary="completed"
+
+		if (( failed > 0 )); then
+			summary="completed with $failed failed step(s)"
 		fi
+
+		if [[ "$used_before" =~ ^[0-9]+$ && "$used_after" =~ ^[0-9]+$ ]]; then
+			local freed=$((used_before - used_after))
+			local freed_human="" used_human=""
+
+			if (( freed > 0 )); then
+				freed_human=$(numfmt --to=iec "$freed" 2>/dev/null || echo "${freed}B")
+
+				print_time "$summary (root filesystem: $freed_human less used)"
+			elif (( freed < 0 )); then
+				used_human=$(numfmt --to=iec "$(( -freed ))" 2>/dev/null || echo "$(( -freed ))B")
+
+				print_time "$summary (root filesystem: $used_human more used)"
+			else
+				print_time "$summary"
+			fi
+		else
+			print_time "$summary (disk usage unavailable)"
+		fi
+
+		if (( failed > 0 )); then
+			return 1
+		fi
+
+		return 0
 	)
 }
 
