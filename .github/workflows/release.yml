@@ -78,19 +78,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download Artifacts
+      - name: Download CSS Artifact
         uses: actions/download-artifact@v8
         with:
-          path: temp_artifacts
-
-      - name: Organize Deployment Directory
-        shell: bash
-        run: |
-          mkdir -p dist/css
-
-          cp temp_artifacts/css-theme/discord.min.css dist/css/
-
-          ls -R dist/
+          name: css-theme
+          path: dist/css
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
