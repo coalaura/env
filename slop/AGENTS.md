@@ -8,6 +8,11 @@ Repository-local instructions and project conventions take precedence over these
 - Never wrap code to fit a line length. If a condition, `switch` case or expression grows too long, extract variables or helpers or restructure it instead of wrapping.
 - Keep a struct/composite literal either entirely on one line or one field per line, never mixed.
 
+## Characters
+
+- Prefer ASCII wherever it represents the content cleanly: `-` instead of en/em or other dashes, `"` and `'` instead of curly, low-9, guillemet or other typographic quotes, `!=` instead of `≠`, `~` instead of `≅`, `->` instead of `→`.
+- Avoid non-ASCII in code and Markdown. Use it only where it is genuinely needed (e.g. text in SVGs or other graphics), and write it as a numeric entity where the format supports it: `&#8800;`, not `≠`.
+
 ## Code
 
 - Match existing style, structure, naming and conventions before introducing new patterns.
