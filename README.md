@@ -5,11 +5,12 @@ All my configuration files and environment setup for Windows (Rio/Clink) and Lin
 ## Structure
 
 - `ahk/`: autohotkey scripts
-- `bash/`: `.bashrc`, `.bash_profile`, `.profile` and `.inputrc` for linux
+- `bash/`: shell configuration and readline settings for linux
 - `clink/`: lua scripts and settings for clink
-- `code/`: `keybinds.json` and `settings.json` for vscode
+- `code/`: keybindings, settings and snippets for vscode
 - `discord/`: catppuccin discord theme for vencord
-- `equalized/`: equalizer APO config for better sound
+- `equalizer/`: equalizer APO config for better sound
+- `firefox/`: firefox preferences and browser chrome styles
 - `fonts/`: required/nice fonts
 - `git/`: git configuration and better defaults
 - `rio/`: rio configuration and catppuccin themes
