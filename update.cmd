@@ -123,8 +123,8 @@ if exist "%FIREFOX_DIR%\profiles.ini" (
 			)
 
 			if exist "!FIREFOX_PROFILE!\" (
-				if not exist "!FIREFOX_PROFILE!\chrome\" mkdir (
-					"!FIREFOX_PROFILE!\chrome"
+				if not exist "!FIREFOX_PROFILE!\chrome\" (
+					mkdir "!FIREFOX_PROFILE!\chrome"
 				)
 
 				copy /y "firefox\userChrome.css" "!FIREFOX_PROFILE!\chrome\userChrome.css" >nul
