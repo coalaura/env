@@ -98,6 +98,46 @@ if exist "%APPDATA%\Code\User" (
     copy /y "code\default.code-snippets" "%APPDATA%\Code\User\snippets\default.code-snippets" >nul
 )
 
+:: firefox config
+setlocal disabledelayedexpansion
+
+set "FIREFOX_DIR=%APPDATA%\Mozilla\Firefox"
+
+if exist "%FIREFOX_DIR%\profiles.ini" (
+	echo Copying firefox config...
+
+	set "FIREFOX_RELATIVE=1"
+
+	for /f "usebackq tokens=1,* delims==" %%A in ("%FIREFOX_DIR%\profiles.ini") do (
+		if "%%A"=="IsRelative" (
+			set "FIREFOX_RELATIVE=%%B"
+		)
+
+		if "%%A"=="Path" (
+			set "FIREFOX_PROFILE=%%B"
+
+			setlocal enabledelayedexpansion
+
+			if "!FIREFOX_RELATIVE!"=="1" (
+				set "FIREFOX_PROFILE=!FIREFOX_DIR!\!FIREFOX_PROFILE!"
+			)
+
+			if exist "!FIREFOX_PROFILE!\" (
+				if not exist "!FIREFOX_PROFILE!\chrome\" mkdir (
+					"!FIREFOX_PROFILE!\chrome"
+				)
+
+				copy /y "firefox\userChrome.css" "!FIREFOX_PROFILE!\chrome\userChrome.css" >nul
+				copy /y "firefox\user.js" "!FIREFOX_PROFILE!\user.js" >nul
+			)
+
+			endlocal
+		)
+	)
+)
+
+endlocal
+
 :: autohotkey
 if exist "%USERPROFILE%\Desktop\hotkeys.ahk" (
 	echo Copying autohotkeys...

@@ -87,4 +87,35 @@ if [[ -d "$HOME/.config/Code/User" ]]; then
 	cp code/default.code-snippets "$HOME/.config/Code/User/snippets/default.code-snippets"
 fi
 
+# firefox config
+for FIREFOX_DIR in "$HOME/.mozilla/firefox" "$HOME/.config/mozilla/firefox" "$HOME/snap/firefox/common/.mozilla/firefox" "$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox"; do
+	[[ -f "$FIREFOX_DIR/profiles.ini" ]] || continue
+
+	echo "Copying firefox config..."
+
+	FIREFOX_RELATIVE=1
+
+	while IFS='=' read -r FIREFOX_KEY FIREFOX_VALUE || [[ -n "$FIREFOX_KEY" ]]; do
+		FIREFOX_VALUE="${FIREFOX_VALUE%$'\r'}"
+
+		case "$FIREFOX_KEY" in
+			IsRelative) FIREFOX_RELATIVE="$FIREFOX_VALUE" ;;
+			Path)
+				FIREFOX_PROFILE="$FIREFOX_VALUE"
+
+				if [[ "$FIREFOX_RELATIVE" == "1" ]]; then
+					FIREFOX_PROFILE="$FIREFOX_DIR/$FIREFOX_PROFILE"
+				fi
+
+				[[ -d "$FIREFOX_PROFILE" ]] || continue
+
+				mkdir -p "$FIREFOX_PROFILE/chrome"
+
+				cp -f firefox/userChrome.css "$FIREFOX_PROFILE/chrome/userChrome.css"
+				cp -f firefox/user.js "$FIREFOX_PROFILE/user.js"
+				;;
+		esac
+	done < "$FIREFOX_DIR/profiles.ini"
+done
+
 echo "Done."

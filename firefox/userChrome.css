@@ -1,0 +1,11 @@
+#tabbrowser-tabs .tab-background {
+	border-radius: 5px !important;
+}
+
+:root {
+	--border-radius-xsmall: 2px !important;
+	--border-radius-small: 4px !important;
+	--border-radius-medium: 6px !important;
+	--border-radius-large: 8px !important;
+	--border-radius-xlarge: 10px !important;
+}
