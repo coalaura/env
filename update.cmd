@@ -101,38 +101,18 @@ if exist "%APPDATA%\Code\User" (
 :: firefox config
 setlocal disabledelayedexpansion
 
-set "FIREFOX_DIR=%APPDATA%\Mozilla\Firefox"
+set "FIREFOX_DIR=%APPDATA%\Mozilla\Firefox\Profiles"
 
-if exist "%FIREFOX_DIR%\profiles.ini" (
+if exist "%FIREFOX_DIR%\" (
 	echo Copying firefox config...
 
-	set "FIREFOX_RELATIVE=1"
-
-	for /f "usebackq tokens=1,* delims==" %%A in ("%FIREFOX_DIR%\profiles.ini") do (
-		if "%%A"=="IsRelative" (
-			set "FIREFOX_RELATIVE=%%B"
+	for /d %%P in ("%FIREFOX_DIR%\*") do (
+		if not exist "%%P\chrome\" (
+			mkdir "%%P\chrome"
 		)
 
-		if "%%A"=="Path" (
-			set "FIREFOX_PROFILE=%%B"
-
-			setlocal enabledelayedexpansion
-
-			if "!FIREFOX_RELATIVE!"=="1" (
-				set "FIREFOX_PROFILE=!FIREFOX_DIR!\!FIREFOX_PROFILE!"
-			)
-
-			if exist "!FIREFOX_PROFILE!\" (
-				if not exist "!FIREFOX_PROFILE!\chrome\" (
-					mkdir "!FIREFOX_PROFILE!\chrome"
-				)
-
-				copy /y "firefox\userChrome.css" "!FIREFOX_PROFILE!\chrome\userChrome.css" >nul
-				copy /y "firefox\user.js" "!FIREFOX_PROFILE!\user.js" >nul
-			)
-
-			endlocal
-		)
+		copy /y "firefox\userChrome.css" "%%P\chrome\userChrome.css" >nul
+		copy /y "firefox\user.js" "%%P\user.js" >nul
 	)
 )
 
