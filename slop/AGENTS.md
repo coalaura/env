@@ -87,4 +87,5 @@ Allocation and copy discipline is the default, not a later optimization pass. Ai
 ## Dependencies
 
 - Ask before adding or upgrading dependencies.
-- Use Bun, not npm, for JavaScript dependency management and scripts: `bun install`, `bun add`, `bun remove` and `bun run <script>`. Use `bunx` instead of `npx`.
+- Use Bun, not npm/node, for JavaScript dependency management, scripts and JS execution: `bun install`, `bun add`, `bun remove` and `bun run <script>`. Use `bunx` instead of `npx`.
+- On Windows, `node` and `npm` on PATH are `node.cmd`/`npm.cmd` shims that only run `bun %*`. They exist purely for compatibility.
