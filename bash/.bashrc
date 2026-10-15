@@ -640,6 +640,7 @@ function ngx() {
 }
 
 # perform system maintenance and updates
+# perform system maintenance and updates
 function update() {
 	(
 		set +e
@@ -647,13 +648,20 @@ function update() {
 
 		local failed=0
 		local prune_containers=false
+		local use_color=false
+		local active_step=""
+		local package_operation=false
+
+		if [[ -t 1 && "${TERM:-dumb}" != "dumb" && -z "${NO_COLOR:-}" ]]; then
+			use_color=true
+		fi
 
 		function print_time() {
-			printf "\033[90m[\033[0m\033[36m$(date '+%H:%M:%S')\033[0m\033[90m] ->\033[0m %s\n" "$1"
-		}
-
-		function print_output() {
-			printf "\033[90m[$(date '+%H:%M:%S')] -> %s\033[0m\n" "$1"
+			if [[ "$use_color" == true ]]; then
+				printf "\033[90m[\033[0m\033[36m%s\033[0m\033[90m] ->\033[0m %s\n" "$(date '+%H:%M:%S')" "$1"
+			else
+				printf '[%s] -> %s\n' "$(date '+%H:%M:%S')" "$1"
+			fi
 		}
 
 		function get_space() {
@@ -668,26 +676,37 @@ function update() {
 			fi
 		}
 
-		function run_step() {
-			local show_output=false
+		function stop_update() {
+			local status="$1"
+			local reason="$2"
 
-			if [[ "$1" == "--show" ]]; then
-				show_output=true
-				shift
+			print_time "$reason${active_step:+ ($active_step)}"
+
+			if [[ "$package_operation" == true ]]; then
+				print_time "package operation incomplete; verify the update and boot files before rebooting"
 			fi
 
+			exit "$status"
+		}
+
+		function run_step() {
 			local label="$1"
 			shift
 
+			active_step="$label"
+
 			print_time "$label"
 
-			local output status line
+			local status
 
-			output=$("$@" 2>&1)
+			# keep stdin, stdout and stderr attached to the caller
+			"$@"
 			status=$?
 
-			if (( status == 130 || status == 143 )); then
-				exit "$status"
+			if (( status == 130 )); then
+				stop_update "$status" "interrupted"
+			elif (( status == 143 )); then
+				stop_update "$status" "terminated"
 			fi
 
 			if (( status != 0 )); then
@@ -696,13 +715,7 @@ function update() {
 				print_time "$label failed (exit $status)"
 			fi
 
-			if (( status != 0 )) || [[ "$show_output" == true ]]; then
-				while IFS= read -r line; do
-					if [[ -n "$line" ]]; then
-						print_output "$line"
-					fi
-				done <<< "$output"
-			fi
+			active_step=""
 
 			return "$status"
 		}
@@ -739,6 +752,117 @@ function update() {
 			fi
 		}
 
+		function check_boot_files() {
+			(
+				set +u
+				shopt -s nullglob
+
+				local problems=0
+				local target kernel package file preset variable value
+				local -a presets=(/etc/mkinitcpio.d/*.preset)
+				local -a kernels=(/usr/lib/modules/*/pkgbase)
+
+				if (( ${#presets[@]} == 0 && ${#kernels[@]} == 0 )); then
+					printf '%s\n' "boot-file check skipped (no mkinitcpio presets or installed kernels)"
+
+					return 0
+				fi
+
+				# separate boot filesystems must be mounted before checking or updating
+				local targets
+				targets=$(findmnt --fstab --raw --noheadings --output TARGET) || return 1
+
+				while IFS= read -r target; do
+					case "$target" in
+						/boot|/boot/efi|/efi)
+							if ! mountpoint -q "$target"; then
+								printf 'boot filesystem is not mounted: %s\n' "$target"
+
+								return 1
+							fi
+							;;
+					esac
+				done <<< "$targets"
+
+				# an interrupted kernel upgrade can remove the preset itself
+				for kernel in "${kernels[@]}"; do
+					package=$(< "$kernel")
+
+					if [[ ! -s "${kernel%/*}/vmlinuz" ]]; then
+						printf 'missing kernel image: %s/vmlinuz\n' "${kernel%/*}"
+						((problems += 1))
+					fi
+
+					if [[ ! -s "/etc/mkinitcpio.d/$package.preset" ]]; then
+						printf 'missing kernel preset: /etc/mkinitcpio.d/%s.preset\n' "$package"
+						((problems += 1))
+					fi
+				done
+
+				for file in "${presets[@]}"; do
+					(
+						# presets are shell configuration; isolate each one
+						PRESETS=()
+						ALL_kver=""
+
+						source "$file" || exit 1
+
+						if (( ${#PRESETS[@]} == 0 )); then
+							printf 'no enabled presets: %s\n' "$file"
+
+							exit 1
+						fi
+
+						local missing=0
+
+						for preset in "${PRESETS[@]}"; do
+							variable="${preset}_kver"
+							value="${!variable:-${ALL_kver:-}}"
+
+							if [[ "$value" != "none" && "$value" != /* ]]; then
+								value="/usr/lib/modules/$value/vmlinuz"
+							fi
+
+							if [[ "$value" != "none" && ! -s "$value" ]]; then
+								printf 'missing kernel for %s (%s): %s\n' "$file" "$preset" "$value"
+								missing=1
+							fi
+
+							local outputs=0
+
+							for variable in "${preset}_image" "${preset}_uki"; do
+								value="${!variable:-}"
+
+								if [[ -z "$value" ]]; then
+									continue
+								fi
+
+								((outputs += 1))
+
+								if [[ ! -s "$value" ]]; then
+									printf 'missing boot image for %s (%s): %s\n' "$file" "$preset" "$value"
+									missing=1
+								fi
+							done
+
+							if (( outputs == 0 )); then
+								printf 'no boot image configured: %s (%s)\n' "$file" "$preset"
+								missing=1
+							fi
+						done
+
+						exit "$missing"
+					) || ((problems += 1))
+				done
+
+				if (( problems > 0 )); then
+					return 1
+				fi
+
+				printf '%s\n' "configured kernel and initramfs/UKI files are present"
+			)
+		}
+
 		if (( $# > 1 )) || [[ "${1:-}" != "" && "${1:-}" != "--prune-containers" ]]; then
 			print_time "usage: update [--prune-containers]"
 
@@ -749,8 +873,8 @@ function update() {
 			prune_containers=true
 		fi
 
-		trap 'print_time "interrupted"; exit 130' INT
-		trap 'print_time "terminated"; exit 143' TERM
+		trap 'stop_update 130 "interrupted"' INT
+		trap 'stop_update 143 "terminated"' TERM
 
 		if (( EUID != 0 )); then
 			sudo -v || return 1
@@ -782,6 +906,19 @@ function update() {
 
 		if command -v pacman &> /dev/null; then
 			local arch_status=0
+			local check_boot=false
+
+			if command -v mkinitcpio &> /dev/null && [[ -z "${WSL_INTEROP:-}${WSL_DISTRO_NAME:-}" ]]; then
+				check_boot=true
+
+				if ! run_step "mkinitcpio boot files (before update)" run_root bash -c "$(declare -f check_boot_files); check_boot_files"; then
+					print_time "update stopped; repair the boot files or mounts before continuing"
+
+					return 1
+				fi
+			fi
+
+			package_operation=true
 
 			if (( EUID != 0 )) && command -v paru &> /dev/null; then
 				run_step "paru -syu" paru -Syu --noconfirm || arch_status=$?
@@ -795,17 +932,37 @@ function update() {
 				fi
 			fi
 
-			if (( arch_status == 0 )); then
-				if command -v paccache &> /dev/null; then
-					run_step "paccache -rk2" run_root paccache -rk2
-					run_step "paccache -ruk0" run_root paccache -ruk0
-				else
-					run_step "pacman -sc" run_root pacman -Sc --noconfirm
-				fi
-
-				run_step "pacman -rns (orphans)" remove_orphans
-			else
+			if (( arch_status != 0 )); then
 				print_time "pacman cleanup skipped (update failed)"
+				print_time "update stopped; verify the package transaction and boot files before rebooting"
+
+				return "$arch_status"
+			fi
+
+			run_step "pacman -rns (orphans)" remove_orphans || arch_status=$?
+
+			# verify boot files before pruning packages that may be needed for recovery
+			if [[ "$check_boot" == true ]]; then
+				if ! run_step "mkinitcpio boot files" run_root bash -c "$(declare -f check_boot_files); check_boot_files"; then
+					print_time "update stopped; repair the boot files before rebooting"
+
+					return 1
+				fi
+			fi
+
+			if (( arch_status != 0 )); then
+				print_time "pacman cache cleanup skipped (orphan removal failed)"
+
+				return "$arch_status"
+			fi
+
+			package_operation=false
+
+			if command -v paccache &> /dev/null; then
+				run_step "paccache -rk2" run_root paccache -rk2
+				run_step "paccache -ruk0" run_root paccache -ruk0
+			else
+				run_step "pacman -sc" run_root pacman -Sc --noconfirm
 			fi
 		fi
 
@@ -814,20 +971,30 @@ function update() {
 		##
 
 		if command -v apt-get &> /dev/null; then
+			package_operation=true
+
 			if run_step "apt update" run_root apt-get update --error-on=any -qq; then
 				if run_step "apt full-upgrade" run_root env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y -qq; then
 					if run_step "apt autoremove" run_root env DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y -qq; then
 						run_step "apt clean" run_root apt-get clean -qq
 					else
 						print_time "apt clean skipped (autoremove failed)"
+
+						return 1
 					fi
 				else
 					print_time "apt cleanup skipped (upgrade failed)"
+
+					return 1
 				fi
 			else
 				print_time "apt upgrade and cleanup skipped (update failed)"
+
+				return 1
 			fi
 		fi
+
+		package_operation=false
 
 		##
 		# other (flatpak, snap)
@@ -903,19 +1070,19 @@ function update() {
 		##
 
 		if command -v needrestart &> /dev/null; then
-			run_step --show "needrestart" run_root needrestart -r l
+			run_step "needrestart" run_root needrestart -r l
 		fi
 
 		if command -v pacman &> /dev/null && command -v pacdiff &> /dev/null; then
-			run_step --show "pacdiff (pending configuration files)" run_root pacdiff -o
+			run_step "pacdiff (pending configuration files)" run_root pacdiff -o
 		fi
 
 		if ! command -v pacman &> /dev/null && command -v dpkg &> /dev/null; then
-			run_step --show "dpkg audit" run_root dpkg --audit
+			run_step "dpkg audit" run_root dpkg --audit
 		fi
 
 		if [[ -d /run/systemd/system ]] && command -v systemctl &> /dev/null; then
-			run_step --show "systemctl failed services" systemctl --failed --no-legend --no-pager
+			run_step "systemctl failed services" systemctl --failed --no-legend --no-pager
 		fi
 
 		if [[ -f /run/reboot-required ]]; then
