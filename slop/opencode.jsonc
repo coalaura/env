@@ -1,5 +1,5 @@
 {
-	"$schema": "https://opencode.ai/config.json",
+	// "$schema": "https://opencode.ai/config.json",
 	"lsp": {
 		"gopls": {
 			"command": [ "gopls" ],
@@ -179,9 +179,9 @@
 		},
 		"openrouter": {
 			"whitelist": [
-				"deepseek/deepseek-v4.1-flash",
+				"deepseek/deepseek-v4.1-flash-1017",
 				"google/gemini-3.8-flash",
-				"inception/mercury-2.5-preview",
+				"inception/mercury-3-preview",
 				"openai/gpt-6-astra-flex",
 				"openai/gpt-6-luna",
 				"openai/gpt-6.1-sol-flex",
@@ -192,7 +192,7 @@
 			],
 			"models": {
 				// Optimize providers for openweight models
-				"deepseek/deepseek-v4.1-flash": {
+				"deepseek/deepseek-v4.1-flash-1017": {
 					"options": {
 						"reasoningEffort": "high",
 						"provider": {
@@ -348,7 +348,7 @@
 			"description": "OpenRouter",
 			"color": "#f38ba8",
 			"mode": "primary",
-			"model": "openrouter/deepseek/deepseek-v4.1-flash",
+			"model": "openrouter/deepseek/deepseek-v4.1-flash-1017",
 
 			"permission": {
 				"task": {
