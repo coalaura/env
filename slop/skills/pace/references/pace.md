@@ -1,390 +1,157 @@
-# PACE 1.27.1
+# PACE 1.27.3
 
-PACE 1.27.1 is based on Go 1.27.1.
+PACE 1.27.3 requires exactly Go 1.27.3. Source: [upstream README on the `pace` branch](https://github.com/coalaura/pace/blob/pace/README.md).
 
-PACE adds three source-compatible compiler directives:
+This reference covers all nine PACE directives. Stock Go ignores them, so preserve equivalent fallback implementations and architecture-appropriate build constraints. Compiler contracts and optimizations apply only when building with PACE.
 
-- `//go:inline`
-- `//go:linkinternal`
-- `//go:abiinternal`
+## Toolchain and validation
 
-Stock Go ignores these unknown `//go:` directives, so the same source can retain ordinary fallback behavior.
+- Invoke `pace` wherever stock Go would use `go`, including `build`, `test`, `list` and `tool`. PACE uses its own compiler and assembler with the matching Go toolchain.
+- `pace version` reports `go version go1.27.3 <os>/<arch> (pace)`; `pace env GOVERSION` remains `go1.27.3`.
+- Automatic `GOTOOLCHAIN` switching is disabled. PACE does not collect or upload Go telemetry; distinct compiler/assembler tool IDs let it safely share Go's normal build cache.
+- Use `pace test ./...` and `pace build ./...` to validate directive behavior. Separately use `go test ./...` and `go build ./...` to validate the stock fallback. Neither substitutes for the other.
+- Use this reference to learn PACE behavior; do not inspect or modify GOROOT.
 
-## Toolchain behavior
+## //go:inline
 
-Use `pace` in place of `go` when PACE behavior is required:
+Place above a function to bypass normal inlining cost/profitability heuristics. Ordinary eligibility restrictions, unsupported-operation checks and recursion safeguards still apply; this cannot make arbitrary functions inlinable. `//go:noinline` takes precedence if both are present.
 
-```sh
-pace build ./...
-pace test ./...
-pace run .
-```
+## //go:align N
 
-PACE uses its own compiler and assembler while otherwise using the matching Go toolchain.
+Requests minimum function-entry alignment of `N` bytes, a positive power-of-two integer in `8..2048`. Applies to emitted Go functions and methods with bodies, including generic instances; bodyless declarations are rejected. It does not affect callers through inlining and composes with `//go:inline` and `//go:noinline`.
 
-`pace version` reports:
+## //go:nobounds
 
-```text
-go version go1.27.1 <os>/<arch> (pace)
-```
+Suppresses runtime index/slice bounds checks originating in the annotated function body, including slice-to-array conversions. Invalid accesses have unsafe/unspecified consequences instead of Go's normal bounds panic. Compile-time bounds errors, nil checks and `checkptr` remain in effect.
 
-`pace env GOVERSION` remains:
+The policy follows the original function through inlining and across packages; callees retain their own policy. Composes with `//go:inline`. Prove bounds independently before using it.
 
-```text
-go1.27.1
-```
+## //go:makenozero
 
-PACE 1.27.1 requires exactly Go 1.27.1.
-
-Automatic `GOTOOLCHAIN` switching is disabled under `pace`; PACE must not silently switch into a stock Go toolchain.
-
-PACE does not collect or upload Go telemetry.
-
-PACE compiler and assembler tool IDs differ from stock Go, so both may safely use the normal Go build cache.
-
-Do not inspect GOROOT to discover PACE behavior. The remainder of this document is the source of truth for this skill.
-
-# //go:inline
-
-Syntax:
+Place the argument-free directive immediately above a single-name local short declaration whose initializer is a slice `make`:
 
 ```go
-//go:inline
-func function(...) ...
+//go:makenozero
+buffer := make([]byte, 16, 32)
 ```
 
-`//go:inline` forces an otherwise eligible function past normal inlining cost/profitability heuristics.
+The entire backing allocation is uninitialized: all 32 bytes here, including capacity beyond the length. Without explicit capacity, the allocation has the requested length. Initial values are unspecified even if memory happens to contain zeros; initialize every byte or element before relying on its value or exposing it. Stock Go zero-initializes normally.
 
-It does not make fundamentally unsupported functions inlinable.
+- Elements must be pointer-free: scalars such as `uint64`, arrays such as `[32]byte`, or structs recursively containing pointer-free fields. Pointers, strings, interfaces, slices, maps, functions, channels and aggregates containing them are rejected. Generic constraints must prove a supported core type.
+- Arguments, multiple RHS expressions and other placements are rejected. It may share a contiguous directive block with `//go:muststack` in either order; no blank lines or unrelated comments may separate the directives or declaration.
+- Ordinary escape analysis still chooses stack or heap storage; the uninitialized property survives inlining, including across packages. Normal length/capacity checks, signed/unsigned conversions, 32-bit narrowing, byte-size overflow checks and the distinction between length and capacity panics are retained.
+- PACE omits stack backing-storage zeroing or uses existing `runtime.mallocgc(size, nil, false)` for the heap; no runtime changes are needed. It deliberately does not reproduce `runtime.maxAlloc`: allocations exceeding that runtime limit are invalid and may fail differently from ordinary `make`, even with representable dimensions and byte size. Arithmetic overflow is still caught first.
 
-The compiler must still enforce normal semantic restrictions such as unsupported operations and recursion safeguards.
+## //go:muststack
 
-If both are present:
+A compile-time performance assertion that the following local variable and storage directly created by its initializer stay on the stack. Place the argument-free directive immediately above a new single-name local `:=` declaration:
 
 ```go
-//go:inline
-//go:noinline
-func function() {}
+//go:muststack
+//go:makenozero
+buffer := make([]byte, 4096)
 ```
 
-`//go:noinline` takes precedence.
+The assertion includes slice backing arrays, `new(T)` and `&T{}`. Ordinary escape analysis still decides allocation: later escaping uses, variable-capacity slices, or runtime helpers with heap fallbacks cause compilation to fail at the declaration with the variable name. It neither overrides escape analysis nor guarantees anything about allocations inside called functions.
 
-Use `//go:inline` when the caller deliberately wants a function inlined regardless of the compiler's normal cost decision.
+Arguments, duplicates, multiple names, reassignments and other placements are rejected. `//go:makenozero` is optional in the example; the two directives can appear in either order in one contiguous block, without intervening blank lines or unrelated comments.
 
-Do not describe it as an unconditional guarantee that arbitrary functions can be inlined.
+## //go:immutable
 
-# //go:linkinternal
-
-Syntax:
+Makes a variable and its owned storage immutable after initialization. The initializer or implicit zero value is the sole permitted write. Place the argument-free directive immediately above a single-name package/local `var` declaration or a new single-name local `:=` declaration:
 
 ```go
-//go:linkinternal import/path.Function
-func function(...) ... {
-    // stock-Go fallback
-}
+//go:immutable
+var table = [4]uint64{10, 20, 30, 40}
 ```
 
-Example:
+### Declarations and ownership
+
+- No intervening blank lines or comments. Individual declarations in `var (...)` may be annotated, but not the whole group. Arguments, duplicates, blank identifiers, multiple names, `//go:embed`, `//go:linkname` on the variable, and combinations with `//go:muststack` or `//go:makenozero` are rejected.
+- Supported values are booleans, numbers, and arrays/structs recursively containing only those types. Generic constraints must establish a supported core type. Strings, pointers, maps, interfaces, functions, channels and other reference-containing aggregates are rejected.
+- Slices of supported pointer-free elements require a fresh slice literal, builtin `make`, `nil`, or an implicit nil initializer. Existing slices, function results and conversions are rejected because exclusive ownership cannot be established.
+
+### Permitted uses
+
+- PACE rejects reassignment, compound assignment, increment/decrement, field/element writes, assignment through `range`/`select`, address-taking, slicing, and implicit pointer-receiver calls or method values. Independent copies of pointer-free values may be passed or modified normally.
+- Immutable slices permit element reads, `len`, `cap`, `range`, comparison with `nil`, `copy` with the immutable slice as source, conversion to string where Go allows it, and blank assignment (`_ = data`).
+- Immutable slices cannot be returned, assigned to another variable, interface-boxed, channel-sent, sliced, appended to, cleared, or passed to arbitrary functions/methods. Even harmless but unproven aliases are rejected. `//go:readonly` parameters do not relax this: they still permit retention and mutation through other aliases.
+- Checks cover closures, other files and importing packages, and run before inlining/generic instantiation, even for uninstantiated generic functions. Exported contracts survive package boundaries. The guarantee covers PACE-compiled, type-safe Go; fabricated unsafe pointers and external assembly cannot be checked. Stock Go does not enforce it.
+
+### Storage and optimization
+
+Wholly static package initializers, including implicit zero values and eligible fresh slice backing arrays, use readonly symbols and the linker's `.rodata` or equivalent. Runtime-written initializers, including partially static composites, retain writable storage. Locals use normal escape analysis and stack/heap allocation; there is no runtime memory-protection transition.
+
+Existing SSA optimizations may fold/eliminate loads under their usual safety conditions; constant-index loads from eligible local-package readonly globals can become immediates, including across calls. Loop hoisting, removal of every redundant load and folding of imported data are not guaranteed. No new optimizer pass or runtime support is required.
+
+## //go:readonly src, table
+
+On a bodyless function, promises no writes through the listed named input parameters or references reachable from them:
+
+```go
+//go:readonly source
+//go:noescape
+func checksum(source []byte) uint64
+```
+
+`//go:readonly` is independent of `//go:noescape`: references may still be retained beyond the call, and memory may still be modified through an unannotated alias parameter or global state. Combine the directives only when both contracts hold. Existing escape-analysis summaries let callers benefit, including across packages. This is a function contract, not a declaration of immutable storage.
+
+## //go:linkinternal import/path.Function
+
+Lets a function inherit the target's compiler intrinsic identity while keeping an ordinary Go fallback:
 
 ```go
 import "sync/atomic"
 
 //go:linkinternal internal/runtime/atomic.Cas64
-func cas64(ptr *uint64, old, new uint64) bool {
-    return atomic.CompareAndSwapUint64(ptr, old, new)
+func compareAndSwap64(address *uint64, oldValue, newValue uint64) bool {
+	return atomic.CompareAndSwapUint64(address, oldValue, newValue)
 }
 ```
 
-`//go:linkinternal` changes the compiler intrinsic identity of the annotated function.
+Specify exactly one target; its final `.` separates package path and function name. Intrinsic lookup uses that identity under normal architecture, race-detector and other applicability rules. If no intrinsic applies, PACE uses the fallback body. The author must match the intrinsic's signature and semantics; the identity survives package boundaries.
 
-When checking whether the annotated function has an intrinsic, PACE performs the lookup as though it were the named target function.
+This does not import the target package, bypass internal-package visibility, alias linker symbols, behave like `//go:linkname`, or create a call/jump to the target.
 
-It does not:
+## //go:abiinternal
 
-* import an internal package,
-* bypass Go's internal-package visibility rules,
-* alias linker symbols,
-* behave like `//go:linkname`,
-* create a call or jump to the target.
-
-Existing compiler intrinsic policy still applies, including architecture, race-detector and other applicability rules.
-
-If the target does not have an applicable intrinsic, the annotated function's ordinary Go body is used.
-
-The fallback body therefore remains meaningful and should normally implement equivalent semantics.
-
-The target format is exactly one:
-
-```text
-import/path.Function
-```
-
-The package path may contain dots; the final `.` separates the function name.
-
-The author is responsible for ensuring the annotated function's signature and semantics are appropriate for the intrinsic being inherited.
-
-The intrinsic identity is preserved across packages, so callers of an exported annotated function can receive the intrinsic behavior too.
-
-# //go:abiinternal
-
-`//go:abiinternal` lets ordinary stock-compatible Plan 9 assembly implement a function directly using Go's ABIInternal register ABI, with an explicit body register mapping.
-
-Call sites still use Go's normal ABIInternal convention.
-
-The directive does not create a custom calling convention for callers.
-
-## Syntax
-
-Every parameter and result must be named and mapped exactly once:
+Lets stock-compatible Plan 9 assembly implement a bodyless function using ABIInternal with explicit body register mappings. Callers retain Go's normal calling convention. Every parameter and result must be named and mapped exactly once, with exactly one `->` separating inputs from results:
 
 ```go
 //go:abiinternal addr=DX new=BX width=CX signed=DI -> old=AX
-func SwapIfLessInteger(
-    addr *uint64,
-    new uint64,
-    width uint8,
-    signed bool,
-) (old uint64)
+func SwapIfLessInteger(addr *uint64, new uint64, width uint8, signed bool) (old uint64)
 ```
 
-There must be exactly one `->`.
+Targets must be distinct within each side of `->`. Unknown/duplicate names, missing mappings and unnamed values are errors. Textual mapping order does not change the natural ABI assignment, which comes from the signature and target architecture.
 
-Mappings before `->` are parameters.
+### Assembly and value restrictions
 
-Mappings after `->` are results.
+- Only scalars assigned to exactly one integer ABI register: integers, booleans, pointers and pointer-sized values. Aggregates, floats/SIMD, stack-assigned arguments/results, methods, `init`, Go bodies, and combinations with `//go:linkname` or `//go:cgo_unsafe_args` are rejected.
+- Keep ordinary ABI0 argument size and named `FP` loads/stores in the assembly. For the example, use `$0-32`; `addr+0(FP)` maps to `DX`, and `old+24(FP)` to `AX`. Names/offsets must match whole declared values; use appropriate instruction widths. Address-taking and subfield access through mapped `FP` operands are unsupported.
+- Stock Go uses ABI0 assembly and its usual wrapper. PACE emits ABIInternal, rewrites named `FP` operands to mapped registers, removes mapped identity integer moves, and inserts entry/return parallel copies between natural and mapped registers. It omits identities and breaks cycles using the reserved scratch register. Mappings are package-local, passed to the assembler in a work-directory sidecar, and not exported.
+- Mapped inputs are live register aliases, not persistent stack slots: later `FP` reads observe any register clobbers. Results must be in their mapped registers at every `RET`.
+- Assembly must be zero-frame `NOSPLIT` leaf code: no calls, tail calls, explicit stack operations or stack operands; branches must target local labels. Normal argument information and stack maps are retained. Explicit `<ABIInternal>` selectors remain restricted to privileged packages.
+- Preserve fixed-register invariants, including link registers and amd64's `R14` (goroutine) and zeroed `X15`. There is no ABI0 wrapper to restore them.
 
-Every named parameter and result must appear exactly once.
+### Architectures and registers
 
-Unknown names, duplicate names, missing mappings and duplicate simultaneous target registers are errors.
+Only these canonical target names are accepted; aliases and reserved adaptation scratch registers are unavailable as mapping targets:
 
-Unnamed parameters/results are unsupported.
+| Architecture | Allowed targets | Adaptation scratch | Integer copy |
+| --- | --- | --- | --- |
+| amd64 | `AX BX CX DX DI SI R8 R9 R10 R11 R13` | `R12` | `MOVQ` |
+| arm64 | `R0-R15 R17 R19-R26` | `R16` | `MOVD` |
+| loong64 | `R4-R19 R21 R23-R28` | `R20` | `MOVV` |
+| ppc64 / ppc64le | `R3-R12 R14-R29` | `R31` | `MOVD` |
+| riscv64 | `X5-X26 X28-X30` | `X31` | `MOV` |
+| s390x | `R2-R9` | `R1` | `MOVD` |
 
-## Source compatibility
+Stack, frame, link, goroutine, platform-reserved, assembler-temporary, other fixed ABI, floating-point and vector registers excluded by the table are unavailable. Targets without integer ABIInternal parameter registers in Go 1.27.3 (`386`, `arm`, `mips`, `mipsle`, `mips64`, `mips64le`, `wasm`) reject the directive.
 
-The assembly remains ordinary stock-compatible Plan 9 assembly using ABI0-style named `FP` operands:
+### Choosing mappings
 
-```asm
-TEXT ·SwapIfLessInteger(SB), NOSPLIT, $0-32
-    MOVQ addr+0(FP), DX
-    MOVQ new+8(FP), BX
+PACE adapts the author's mapping; it does not optimize the choice. Prefer identity mappings where compatible with the body's instruction requirements, and inspect generated code when performance matters.
 
-    // body...
+On amd64, single-register integer arguments use `AX BX CX DI SI R8 R9 R10 R11` in declaration order; results independently start from the same sequence. `DX` is an allowed body target but not a natural argument register.
 
-    MOVQ AX, old+24(FP)
-    RET
-```
-
-Under stock Go:
-
-* the directive is ignored,
-* the assembly remains ABI0,
-* Go generates/uses its ordinary ABI wrapper.
-
-Under PACE:
-
-* the assembly definition becomes ABIInternal,
-* named `FP` accesses for mapped values are rewritten to their requested registers,
-* redundant mapped identity moves are removed,
-* the assembler inserts only the register adaptation needed between Go's natural ABIInternal assignment and the requested body mapping.
-
-For example, on amd64 a function whose natural first argument arrives in `AX` but maps it as:
-
-```text
-addr=DX
-```
-
-needs an entry adaptation equivalent to:
-
-```asm
-MOVQ AX, DX
-```
-
-The compiler determines natural ABIInternal register assignments using Go's normal ABI analysis for the function signature and target architecture. Mapping entries select body registers, not caller registers; their textual order does not change the natural assignment. See "Choosing mappings" for a concrete amd64 example.
-
-## Value restrictions
-
-PACE 1.27.1 supports values that:
-
-* are integers, booleans, pointers or pointer-shaped values, and
-* occupy exactly one integer ABIInternal register.
-
-Unsupported values include:
-
-* aggregates requiring multiple registers,
-* floating-point values,
-* SIMD/vector values,
-* stack-assigned arguments/results.
-
-Methods are unsupported.
-
-`init` functions are unsupported.
-
-The declaration must be bodyless and have an assembly definition.
-
-`//go:abiinternal` cannot be combined with:
-
-```text
-//go:linkname
-//go:cgo_unsafe_args
-```
-
-## Assembly restrictions
-
-The assembly implementation must be:
-
-* `NOSPLIT`,
-* zero-frame,
-* leaf code.
-
-It must not contain:
-
-* calls,
-* tail calls,
-* explicit stack operations,
-* stack operands.
-
-Branches must target labels within the same function.
-
-Named `FP` operands must correspond exactly to the whole declared parameter/result at its expected ABI0 offset.
-
-Do not:
-
-* take the address of a mapped argument,
-* address a subfield through the mapped `FP` operand.
-
-Mapped values are live register aliases, not persistent stack slots.
-
-Once the body changes a mapped input register, later references to that mapped `FP` operand observe that register's current value.
-
-At every `RET`, results must be present in their requested mapping registers. PACE adapts those registers back to Go's natural ABIInternal result registers.
-
-Parallel register copies are scheduled correctly, including cycles, using an architecture-specific reserved scratch register.
-
-Explicit assembly `<ABIInternal>` selectors remain restricted exactly as in stock Go; PACE does not expose them to ordinary user assembly.
-
-## Supported architectures
-
-PACE 1.27.1 supports `//go:abiinternal` on:
-
-```text
-amd64
-arm64
-loong64
-ppc64
-ppc64le
-riscv64
-s390x
-```
-
-It rejects the directive on:
-
-```text
-386
-arm
-mips
-mipsle
-mips64
-mips64le
-wasm
-```
-
-because those targets do not provide the required integer-register ABIInternal configuration in this Go release.
-
-## Mapping registers
-
-Use only the canonical register names listed here.
-
-Aliases are not accepted.
-
-| Architecture    | Allowed targets                       | Reserved adaptation scratch | Integer copy |
-| --------------- | ------------------------------------- | --------------------------- | ------------ |
-| amd64           | `AX BX CX DX DI SI R8 R9 R10 R11 R13` | `R12`                       | `MOVQ`       |
-| arm64           | `R0-R15 R17 R19-R26`                  | `R16`                       | `MOVD`       |
-| loong64         | `R4-R19 R21 R23-R28`                  | `R20`                       | `MOVV`       |
-| ppc64 / ppc64le | `R3-R12 R14-R29`                      | `R31`                       | `MOVD`       |
-| riscv64         | `X5-X26 X28-X30`                      | `X31`                       | `MOV`        |
-| s390x           | `R2-R9`                               | `R1`                        | `MOVD`       |
-
-Stack, frame, link, goroutine, platform-reserved, assembler-temporary, fixed ABI, floating-point and vector registers excluded by the table must not be used as mapping targets.
-
-Architecture-specific fixed-register invariants remain the assembly author's responsibility.
-
-In particular, preserve link registers on link-register architectures.
-
-On amd64, preserve the ABI invariants for `R14` and zeroed `X15`.
-
-## Choosing mappings
-
-PACE does not optimize the mapping chosen by the author.
-
-Prefer mappings that already match Go's natural ABIInternal register assignment where that is useful.
-
-Identity mappings require no adaptation.
-
-Mappings may deliberately choose different registers when that makes the assembly body cleaner or faster; PACE inserts only the required parallel copies.
-
-### amd64 example: keep natural assignments where possible
-
-On amd64, ABIInternal assigns single-register integer arguments in declaration order using `AX, BX, CX, DI, SI, R8, R9, R10, R11`. Results start independently from the same register sequence. `DX` is an allowed body mapping register, but is not in that natural argument sequence.
-
-For the `SwapIfLessInteger` signature above, the natural boundary assignment is:
-
-| Value | Argument on entry | Result on return |
-| --- | --- | --- |
-| `addr` | `AX` | — |
-| `new` | `BX` | — |
-| `width` | `CX` | — |
-| `signed` | `DI` | — |
-| `old` | — | `AX` |
-
-This mapping shifts the first three inputs away from their natural registers:
-
-```go
-//go:abiinternal addr=BX new=CX width=DX signed=DI -> old=AX
-```
-
-An equivalent safe entry-copy sequence is:
-
-```asm
-MOVQ CX, DX // width: preserve before CX is overwritten
-MOVQ BX, CX // new: preserve before BX is overwritten
-MOVQ AX, BX // addr
-```
-
-`signed` stays in `DI`. PACE schedules the parallel copies to preserve live inputs; the exact instruction order is an implementation detail. Moves the body then needs to satisfy its own register requirements are additional work.
-
-Instead, keep `new`, `width`, and `signed` in their natural registers and move only `addr`:
-
-```go
-//go:abiinternal addr=DX new=BX width=CX signed=DI -> old=AX
-```
-
-The only required entry adaptation is:
-
-```asm
-MOVQ AX, DX
-```
-
-This frees `AX` for the implicit accumulator operand of `CMPXCHG`, keeps the address in `DX`, and lets the body leave `old` in the natural result register `AX` without a return shuffle. Choose the mapping and body together so redundant loads disappear rather than reintroducing avoidable register moves inside the body.
-
-Do not assume changing mappings automatically improves performance. Inspect generated code when performance matters.
-
-## Validation
-
-When testing PACE-specific code, use:
-
-```sh
-pace test ./...
-pace build ./...
-```
-
-When checking stock compatibility, separately use:
-
-```sh
-go test ./...
-go build ./...
-```
-
-Do not use a successful stock-Go build as evidence that a PACE directive actually took effect: stock Go intentionally ignores these directives.
-
-Likewise, do not use only a PACE build to prove that the intended stock fallback remains valid.
+For `SwapIfLessInteger` above, natural inputs are `addr=AX new=BX width=CX signed=DI` and the result is `old=AX`. Mapping only `addr` to `DX` needs just `MOVQ AX, DX` on entry and no return shuffle. This frees `AX` for `CMPXCHG`'s implicit accumulator while keeping the other values in place. Choose mapping and body together so redundant loads disappear rather than adding avoidable moves inside the body.

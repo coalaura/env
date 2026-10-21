@@ -1,6 +1,6 @@
 ---
 name: pace
-description: Use PACE, the Progressive Augmented Compiler Extensions toolchain for Go. Use when working with the `pace` command, `//go:inline`, `//go:linkinternal`, `//go:abiinternal`, PACE-specific Go code, low-level Go compiler intrinsics or ABIInternal assembly, or when validating code with PACE instead of stock Go.
+description: Use PACE, the Progressive Augmented Compiler Extensions toolchain for Go. Use when working with the `pace` command, its directives (`//go:inline`, `//go:align`, `//go:nobounds`, `//go:makenozero`, `//go:muststack`, `//go:immutable`, `//go:readonly`, `//go:linkinternal`, `//go:abiinternal`), PACE-specific compiler intrinsics or ABIInternal assembly, or when validating code with PACE instead of stock Go.
 ---
 
 # PACE
@@ -39,7 +39,13 @@ PACE directives are opt-in. Do not add one merely because PACE is available.
 
 Preserve a valid stock-Go fallback unless the user explicitly does not require stock compatibility.
 
-Treat PACE features as compiler mechanisms, not portable language guarantees. Follow all constraints from the versioned reference exactly.
+Treat PACE features as compiler mechanisms, not portable language guarantees. Check declaration placement, supported types, directive combinations and target constraints against the versioned reference.
+
+For `//go:nobounds`, prove accesses are in bounds. For `//go:makenozero`, initialize all backing storage that will be read or exposed. Stock-Go tests cannot establish safety when these directives are active.
+
+`//go:muststack` asserts an allocation outcome; it does not override escape analysis. `//go:readonly` promises no writes through selected parameters; it does not imply `//go:noescape` or prevent mutation through other aliases.
+
+For `//go:immutable`, verify initializer ownership and every use. Immutable slices cannot expose mutable aliases, even through a `//go:readonly` parameter. Do not assume all immutable storage is readonly or that a particular optimization occurs; stock Go does not enforce immutability.
 
 For `//go:abiinternal`, never invent register names, ABI assignments, supported architectures, or relaxed assembly restrictions. Consult the reference.
 
