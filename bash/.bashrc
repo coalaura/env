@@ -474,10 +474,78 @@ function _apply_go_env() {
 }
 
 ##
-# Filtered File Completions
+# Path Completions
 ##
 
 declare -A _FILTER_COMPLETIONS_EXT
+
+function _case_insensitive_paths() (
+	local mode="$1"
+	local word="$2"
+	local path="" quote="" character next
+	local index
+
+	# COMP_WORDS retains shell quoting; decode it without evaluating shell code.
+	for (( index = 0; index < ${#word}; index++ )); do
+		character="${word:index:1}"
+
+		if [[ "$character" == "$quote" && -n "$quote" ]]; then
+			quote=""
+		elif [[ -z "$quote" && ( "$character" == "'" || "$character" == '"' ) ]]; then
+			quote="$character"
+		elif [[ "$character" == '\' && "$quote" != "'" ]]; then
+			next="${word:index+1:1}"
+
+			if [[ -n "$next" && ( -z "$quote" || "$next" == ['$`"\'] ) ]]; then
+				path+="$next"
+				((index++))
+			else
+				path+="$character"
+			fi
+		else
+			path+="$character"
+		fi
+	done
+
+	if [[ "$word" == '~/'* ]]; then
+		path="$HOME/${path:2}"
+	fi
+
+	local pattern="" match
+
+	# Every component needs a glob pattern: nocaseglob alone cannot fix literal parents.
+	for (( index = 0; index < ${#path}; index++ )); do
+		character="${path:index:1}"
+
+		case "$character" in
+			[[:alpha:]]) pattern+="[${character,,}${character^^}]" ;;
+			/) pattern+="/" ;;
+			*) pattern+="\\$character" ;;
+		esac
+	done
+
+	local IFS=""
+
+	unset GLOBIGNORE
+	set +f
+
+	shopt -u failglob dotglob
+	shopt -s nullglob
+
+	for match in $pattern*; do
+		if [[ "$mode" != "directory" || -d "$match" ]]; then
+			printf '%s\0' "$match"
+		fi
+	done
+)
+
+function _path_complete() {
+	mapfile -d '' -t COMPREPLY < <(_case_insensitive_paths file "${COMP_WORDS[COMP_CWORD]}")
+}
+
+function _directory_complete() {
+	mapfile -d '' -t COMPREPLY < <(_case_insensitive_paths directory "${COMP_WORDS[COMP_CWORD]}")
+}
 
 function _filtered_file_complete() {
 	local cur="${COMP_WORDS[COMP_CWORD]}"
@@ -488,7 +556,7 @@ function _filtered_file_complete() {
 	local exts="${_FILTER_COMPLETIONS_EXT[$cmd]}"
 
 	if [[ -z "$exts" ]]; then
-		COMPREPLY=( $(compgen -f -- "$cur") )
+		_path_complete
 
 		return 0
 	fi
@@ -501,16 +569,11 @@ function _filtered_file_complete() {
 
 	local -a matches=()
 
-	# include directories for navigation
-	while IFS= read -r dir; do
-		if [[ -n "$dir" ]]; then
-			matches+=("$dir")
-		fi
-	done < <(compgen -d -- "$cur")
+	# include directories for navigation and filter files by extension
+	while IFS= read -r -d '' file; do
+		if [[ -d "$file" ]]; then
+			matches+=("$file")
 
-	# filter files by extension
-	while IFS= read -r file; do
-		if [[ -z "$file" ]]; then
 			continue
 		fi
 
@@ -528,7 +591,7 @@ function _filtered_file_complete() {
 				break
 			fi
 		done
-	done < <(compgen -f -- "$cur")
+	done < <(_case_insensitive_paths file "$cur")
 
 	COMPREPLY=("${matches[@]}")
 
@@ -552,7 +615,7 @@ function filter_completions() {
 
 	_FILTER_COMPLETIONS_EXT[$cmd]="$exts"
 
-	complete -F _filtered_file_complete "$cmd"
+	complete -o filenames -F _filtered_file_complete "$cmd"
 }
 
 ##
@@ -2278,9 +2341,12 @@ function envup() {
 ##
 
 # Only show directories for certain completions
-complete -d cd
+complete -o filenames -o dirnames -F _directory_complete cd
 
-complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup gover perms
+complete -o filenames -o dirnames -F _directory_complete pull push tag dtag rtag tags git_ssh origin trash goup gover perms
+
+# Preserve Bash's other completion types when no path matches.
+complete -o filenames -o bashdefault -o default -F _path_complete -D
 
 # filtered extension completions
 filter_completions "sqlite3" "db"
