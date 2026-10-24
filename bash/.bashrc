@@ -1817,107 +1817,6 @@ function gover() {
 	)
 }
 
-# update github actions in workflows
-function ghup() (
-	set -euo pipefail
-
-	local target_dir="${1:-.}"
-	target_dir="$(realpath "$target_dir")"
-
-	local wf_dir="$target_dir/.github/workflows"
-
-	if [[ ! -d "$wf_dir" ]]; then
-		_print_error "no workflows directory found at $wf_dir"
-
-		return 1
-	fi
-
-	local total_workflows=0
-	local updated_workflows=0
-
-	shopt -s nullglob
-
-	bump() {
-		local action="$1"
-		local old_majors="$2"
-		local new_major="$3"
-
-		perl -0pe "s{(\Q$action\E\@v)[$old_majors](?![.\d])}{\${1}$new_major}g"
-	}
-
-	replace() {
-		local action="$1"
-		local replacement="$2"
-
-		# Match action@version OR action as a word boundaries (not followed by characters that can be part of action names)
-		perl -0pe "s{\Q$action\E(\@[a-zA-Z0-9_\-\.\/]+)?(?![a-zA-Z0-9_\-\.\/])}{$replacement}g"
-	}
-
-	local -a rules=(
-		# Format: "type|action|param1|param2|condition"
-		# Version bumps: "bump|action_name|old_majors|new_major"
-		"bump|actions/checkout|1-5|6"
-		"bump|actions/setup-go|1-5|6"
-		"bump|actions/cache|1-4|5"
-		"bump|actions/cache/restore|1-4|5"
-		"bump|actions/cache/save|1-4|5"
-		"bump|oven-sh/setup-bun|1|2"
-		"bump|biomejs/setup-biome|1|2"
-		"bump|actions/github-script|1-6|7"
-		"bump|actions/upload-artifact|4-5|6"
-		"bump|actions/download-artifact|4-7|8"
-		"bump|actions/setup-node|1-5|6|node_cond"
-
-		# Deprecations / replacements: "replace|old_action|replacement_with_version"
-		"replace|goto-bus-stop/setup-zig|mlugg/setup-zig@v2"
-	)
-
-	for workflow_path in "$wf_dir"/*.yml "$wf_dir"/*.yaml; do
-		if [[ ! -f "$workflow_path" ]]; then
-			continue
-		fi
-
-		((total_workflows += 1))
-
-		local content="$(cat "$workflow_path")"
-		local new_content="$content"
-
-		for rule in "${rules[@]}"; do
-			local type action param1 param2 cond
-
-			IFS='|' read -r type action param1 param2 cond <<< "$rule"
-
-			if [[ "$cond" == "node_cond" ]]; then
-				if grep -Eq '^[[:space:]-]*always-auth[[:space:]]*:' <<< "$new_content"; then
-					continue
-				fi
-			fi
-
-			if [[ "$type" == "bump" ]]; then
-				new_content="$(printf '%s' "$new_content" | bump "$action" "$param1" "$param2")"
-			elif [[ "$type" == "replace" ]]; then
-				new_content="$(printf '%s' "$new_content" | replace "$action" "$param1")"
-			fi
-		done
-
-		if [[ "$new_content" != "$content" ]]; then
-			printf '%s' "$new_content" > "$workflow_path"
-
-			_print_info "updated $(basename "$workflow_path")"
-
-			((updated_workflows += 1))
-		fi
-	done
-
-	if (( total_workflows == 0 )); then
-		_print_info "no workflows found"
-	elif (( updated_workflows == 0 )); then
-		_print_info "all actions are up to date ($total_workflows files checked)"
-	else
-		_print_success "updated actions in $updated_workflows/$total_workflows workflow(s)"
-	fi
-)
-
 # show TCP listeners and UDP bound sockets by port or process name
 function listen() (
 	local query="${1:-}"
@@ -2381,7 +2280,7 @@ function envup() {
 # Only show directories for certain completions
 complete -d cd
 
-complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup gover ghup perms
+complete -o dirnames -A directory pull push tag dtag rtag tags git_ssh origin trash goup gover perms
 
 # filtered extension completions
 filter_completions "sqlite3" "db"
