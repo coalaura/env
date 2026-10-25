@@ -28,6 +28,7 @@ Repository-local instructions and project conventions take precedence over these
 ## Go
 
 - Write modern, idiomatic Go for the project's declared Go version.
+- Since Go 1.27, `net/http` drains response bodies asynchronously on `Close`; avoid manual draining solely for connection reuse.
 - To take the address of a value, use `new(expr)` (e.g. `new(42)`, `new(cfg.Timeout)`) instead of a throwaway variable or a hand-rolled `ptr` helper.
 - One value per statement: assign first, then check. No initializers in `if` or `switch`, no function-local `const` or `type`, no anonymous struct types, no composite literals in `range` position. This holds in `_test.go` files too. Inline comma-ok for map lookups and type assertions is fine (in `if`), as is `struct{}{}`.
 - Organize Go files strictly top to bottom as: constants -> types -> package variables -> methods -> package-level functions -> helpers. Apply this to every file you create or edit, and re-check the ordering before finishing. Only deviate if the project already follows a different convention.
