@@ -2172,9 +2172,9 @@ function hist() {
 	local pattern="$*"
 
 	if [[ "$use_regex" == true ]]; then
-		history | grep --color=auto -e "$pattern"
+		history | grep --color=auto -i -e "$pattern"
 	else
-		history | grep --color=auto -F -e "$pattern"
+		history | grep --color=auto -i -F -e "$pattern"
 	fi
 }
 

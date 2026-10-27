@@ -1283,10 +1283,10 @@ commands["hist"] = function(args)
     end
 
     if use_regex then
-        return string.format("history | grep.exe --color=auto -e \"%s\"", utils.escape_input(pattern))
+        return string.format("history | grep.exe --color=auto -i -e \"%s\"", utils.escape_input(pattern))
     end
 
-    return string.format("history | grep.exe --color=auto -F -e \"%s\"", utils.escape_input(pattern))
+    return string.format("history | grep.exe --color=auto -i -F -e \"%s\"", utils.escape_input(pattern))
 end
 
 -- download and run vencord installer
