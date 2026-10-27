@@ -1,10 +1,4 @@
 {
 	"$schema": "https://opencode.ai/tui.json",
-	"theme": "catppuccin",
-	"keybinds": {
-		"input_paste": {
-			"key": "ctrl+v",
-			"preventDefault": false
-		},
-	}
+	"theme": "catppuccin"
 }

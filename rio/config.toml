@@ -1,6 +1,6 @@
 theme = "catppuccin-macchiato"
 padding-x = 2
-padding-y = [0,0]
+padding-y = [0, 0]
 confirm-before-quit = false
 
 [cursor]
@@ -78,7 +78,7 @@ keys = [
 	{ key = "w", with = "control", esc = "\u0003\r\nexit\r\n" },
 	{ key = "q", with = "control", action = "Quit" },
 	{ key = "n", with = "control", action = "CreateWindow" },
-	{ key = "c", with = "alt", esc = "\u0003\r\nclear\r\n" }
+	{ key = "c", with = "alt", esc = "\u0003\r\nclear\r\n" },
 ]
 
 [platform]
