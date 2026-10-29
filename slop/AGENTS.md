@@ -2,6 +2,11 @@
 
 Repository-local instructions and project conventions take precedence over these defaults.
 
+## Planning
+
+- When asked to plan, brainstorm or explore ideas, keep the discussion in chat. Keep it reasonably concise, organized and readable; do not create planning files or documents unless explicitly requested.
+- Planning is discussion only: do not change code or begin implementation until explicitly asked.
+
 ## Line wrapping
 
 - Never hard-wrap Markdown prose, including list-item paragraphs. Keep each paragraph on one source line; use line breaks for structure, not column limits.
