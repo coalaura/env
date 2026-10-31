@@ -311,7 +311,7 @@
 			"description": "OpenAI",
 			"color": "#f9e2af",
 			"mode": "primary",
-			"model": "openai/gpt-6.1-sol",
+			"model": "openai/gpt-6-astra",
 			"reasoningEffort": "high",
 			"permission": {
 				"task": {
