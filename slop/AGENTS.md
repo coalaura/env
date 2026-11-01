@@ -7,6 +7,12 @@ Repository-local instructions and project conventions take precedence over these
 - When asked to plan, brainstorm or explore ideas, keep the discussion in chat. Keep it reasonably concise, organized and readable; do not create planning files or documents unless explicitly requested.
 - Planning is discussion only: do not change code or begin implementation until explicitly asked.
 
+## Documentation
+
+- Update existing documentation only when requested or needed for correct use of changed behavior. Make the smallest relevant edit; prefer existing sections over new ones. A code change alone does not justify documentation. Not every change needs explicit documentation.
+- Keep task summaries, implementation history and resolved troubleshooting in chat unless requested. Do not record them in repository files or code comments.
+- Create documentation files only when explicitly requested. If documentation is out of scope, do not relocate it elsewhere.
+
 ## Line wrapping
 
 - Never hard-wrap Markdown prose, including list-item paragraphs. Keep each paragraph on one source line; use line breaks for structure, not column limits.
