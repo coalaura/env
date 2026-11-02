@@ -1321,12 +1321,6 @@ commands["vencord"] = function()
     os.remove(out)
 end
 
--- trigger terminal bell
-commands["beep"] = function()
-    ---@diagnostic disable-next-line banned-symbol
-    print("\7")
-end
-
 -- safer rm that confirms folder deletes
 commands["rm"] = function(args)
     if not args or args == "" then

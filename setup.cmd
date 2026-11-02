@@ -62,7 +62,7 @@ if errorlevel 1 goto :FAIL
 
 :INSTALL_PACKAGES
 
-"%TAP_BIN%" get go zig upx starship bun builder vet time wtf coreutils actup license mksvc
+"%TAP_BIN%" get go zig upx starship bun builder vet time wtf coreutils actup license mksvc beep
 
 if errorlevel 1 goto :FAIL
 

@@ -2185,11 +2185,6 @@ function vencord() {
 	sh -c "$(curl -sS https://vencord.dev/install.sh)"
 }
 
-# trigger terminal bell
-function beep() {
-	printf '\a'
-}
-
 # fix directory and file permissions for web hosting
 function perms() {
 	(
