@@ -781,6 +781,8 @@ commands["gover"] = function(args)
     utils.printf("finding minimum Go version for %s", utils.clean_path(target_dir))
 
     for _, version in ipairs(versions) do
+        utils.printf("testing %s", version)
+
         restore_module()
 
         local edit = utils.command_with_env(

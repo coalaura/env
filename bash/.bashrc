@@ -1838,6 +1838,8 @@ function gover() {
 		_print_info "finding minimum Go version for $target"
 
 		for version in "${versions[@]}"; do
+			_print_info "testing $version"
+
 			restore_go_mod
 
 			if ! GOWORK=off GOTOOLCHAIN=local go -C "$target" mod edit -go="$version" >"$log_file" 2>&1; then
