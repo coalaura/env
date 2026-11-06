@@ -181,10 +181,13 @@
 			"whitelist": [
 				"deepseek/deepseek-v4.1-flash-1017",
 				"google/gemini-3.8-flash",
-				"inception/mercury-3-preview",
+				"google/gemini-4-argon",
+				"inception/mercury-3",
+				"moonshotai/kimi-k3.1-pro",
 				"openai/gpt-6-astra-flex",
-				"openai/gpt-6-luna",
+				"openai/gpt-6.1-luna",
 				"openai/gpt-6.1-sol-flex",
+				"openai/gpt-6.1-terra",
 				"x-ai/grok-4.6",
 				"xiaomi/mimo-v2.6-pro",
 				"z-ai/glm-5.3-flash",
@@ -243,6 +246,19 @@
 						}
 					}
 				},
+				"moonshotai/kimi-k3.1-pro": {
+					"options": {
+						"reasoningEffort": "max",
+						"provider": {
+							"order": [
+								"nebius/fp4",
+								"akashml/fp4",
+								"parasail/fp4"
+							],
+							"allow_fallbacks": false
+						}
+					}
+				},
 
 				// Avoid retaining providers
 				"x-ai/grok-4.6": {
@@ -256,6 +272,16 @@
 					}
 				},
 				"google/gemini-3.8-flash": {
+					"options": {
+						"provider": {
+							"only": [
+								"google-vertex/global"
+							],
+							"allow_fallbacks": false
+						}
+					}
+				},
+				"google/gemini-4-argon": {
 					"options": {
 						"provider": {
 							"only": [
