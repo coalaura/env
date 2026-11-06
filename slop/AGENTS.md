@@ -55,6 +55,8 @@ Repository-local instructions and project conventions take precedence over these
 - Write object properties in explicit form: `{ name: name }`, not `{ name }`. Method shorthand (`{ run() { ... } }`) is fine.
 - Use template literals instead of `+` string concatenation: `` `Hello ${name}` ``, not `"Hello " + name`.
 - Build DOM with `document.createElement`, `textContent`, element properties and `append`/`replaceChildren`, not by assigning HTML strings to `innerHTML`, `outerHTML` or `insertAdjacentHTML`. Clear an element with `replaceChildren()`, not `innerHTML = ""`. Never put dynamic or user-provided data into an HTML string.
+- Write object literals across multiple lines, one property per line.
+- Keep an object on one line only when it is very short (one or two short properties, e.g. `{ type: chunk.data.mime }` or `{ reorderable: true }` passed as an argument) or when it is one of many objects with the same shape in a list or table. In that case, put each object on its own line.
 
 ## CSS
 
