@@ -7,6 +7,7 @@ GroupAdd "PTTApps", "ahk_exe FiveM_b3788_GTAProcess.exe"
 GroupAdd "PTTApps", "ahk_exe FiveM_b3889_GTAProcess.exe"
 GroupAdd "PTTApps", "Minecraft"
 GroupAdd "PTTApps", "Feather Client"
+GroupAdd "PTTApps", "Fortnite"
 
 IsPTTAppActive() => WinActive("ahk_group PTTApps")
 
