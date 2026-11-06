@@ -35,6 +35,7 @@ Repository-local instructions and project conventions take precedence over these
 - Split files by coherent responsibility and keep related behavior together.
 - Write fractional literals with a leading zero: `0.123`, not `.123` for readability.
 - Indent with tabs, never spaces (tab width 4). Use spaces only where the file format requires them (e.g. YAML) and never mix tabs and spaces within a file.
+- Never use `goto`, in any language, even if existing code uses it. Restructure with early returns, loops with `break`/`continue`, helper functions or the language's cleanup construct (`defer`, `try`/`finally`, RAII) instead.
 
 ## Go
 
