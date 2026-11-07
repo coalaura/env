@@ -92,7 +92,7 @@ fi
 export PATH="/usr/local/bin:$PATH"
 
 # skip coreutils (only needed on windows)
-TOOLS=(go time wtf)
+TOOLS=(go time wtf pakr)
 
 # skip development tools, if connected via ssh
 if [[ -z "${SSH_CLIENT:-}" ]]; then
