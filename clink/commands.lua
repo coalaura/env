@@ -826,6 +826,83 @@ end
 
 clink.argmatcher("gover"):addarg(clink.dirmatches)
 
+-- initialize a new go project
+commands["mkgo"] = function(args)
+    local name = utils.trim(args)
+
+    if not name:match("^[A-Za-z0-9_][A-Za-z0-9_%-]*$") then
+        utils.errorf("missing or invalid project name")
+
+        return
+    end
+
+    if utils.exists(name) then
+        utils.errorf("%s already exists", name)
+
+        return
+    end
+
+    utils.printf("creating %s", name)
+
+    local created, mk_err = os.mkdir(name)
+
+    if not created then
+        utils.errorf("failed to mkdir %s: %s", name, mk_err)
+
+        return
+    end
+
+    local changed, ch_error = os.chdir(name)
+
+    if not changed then
+        utils.errorf("failed to chdir %s: %s", name, ch_error)
+
+        return
+    end
+
+    local mod_name = name
+
+    local gh_user = utils.get_github_username()
+
+    if gh_user then
+        mod_name = string.format("github.com/%s/%s", gh_user, name)
+
+        utils.printf("initializing %s", mod_name)
+    else
+        utils.printf("initializing %s (local)", mod_name)
+    end
+
+    local go_init = string.format("go mod init \"%s\" >nul 2>&1", mod_name)
+
+    if not utils.command_ok(os.execute(go_init)) then
+        utils.errorf("failed to initialize mod")
+
+        os.chdir("..")
+
+        return
+    end
+
+    utils.printf("preparing git")
+
+    local git_init = {
+        "git init >nul 2>&1",
+        "git add go.mod >nul 2>&1",
+        "git commit -m \"initial commit\" >nul 2>&1"
+    }
+
+    for _, cmd in ipairs(git_init) do
+        if not utils.command_ok(os.execute(cmd)) then
+            utils.errorf("failed to initialize git")
+
+            os.chdir("..")
+
+            return
+        end
+    end
+
+    utils.successf("initialized %s", name)
+end
+
 -- show TCP listeners and UDP bound sockets by port or process name
 commands["listen"] = function(args)
     local parsed = utils.split_args(args or "")

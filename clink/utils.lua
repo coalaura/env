@@ -393,6 +393,29 @@ function _M.command_with_env(command, env)
     return result
 end
 
+function _M.get_github_username()
+    local handle = io.popen("gh api user --jq \".login | strings\" 2>nul")
+
+    if not handle then
+        return false
+    end
+
+    local output = handle:read("*a")
+    local success = handle:close()
+
+    if not success or not output then
+        return false
+    end
+
+    local gh_user = output:match("^([A-Za-z0-9_%-]+)\r?\n?$")
+
+    if not gh_user or #gh_user > 39 then
+        return false
+    end
+
+    return gh_user
+end
+
 function _M.looks_like_path(token)
     if not token or token == "" then
         return false
@@ -813,6 +836,24 @@ function _M.printf(format, ...)
     end
 
     print(string.format("\x1b[36m::\x1b[0m %s", format))
+end
+
+function _M.stepf(format, ...)
+    if not format then
+        return
+    end
+
+    if #{...} > 0 then
+        format = string.format(format, ...)
+    end
+
+    if format == "" then
+        print("")
+
+        return
+    end
+
+    print(string.format("\x1b[94m  >\x1b[0m %s", format))
 end
 
 function _M.successf(format, ...)

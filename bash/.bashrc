@@ -23,6 +23,14 @@ function _print_info() {
 	fi
 }
 
+function _print_step() {
+	if [[ -z "$1" ]]; then
+		echo ""
+	else
+		printf "\033[94m  >\033[0m %s\n" "$1"
+	fi
+}
+
 function _print_success() {
 	printf "\033[32m::\033[0m %s\n" "$1"
 }
@@ -213,6 +221,20 @@ function _end_timer() {
 	else
 		_print_sub "$action_name"
 	fi
+}
+
+# get the authenticated GitHub username
+function _get_github_username() {
+	local gh_user
+
+	gh_user=$(gh api user --jq ".login | strings" 2>/dev/null) || return 1
+	gh_user="${gh_user%$'\r'}"
+
+	if [[ ! "$gh_user" =~ ^[A-Za-z0-9_-]+$ ]] || (( ${#gh_user} > 39 )); then
+		return 1
+	fi
+
+	printf '%s\n' "$gh_user"
 }
 
 # get recent git tag preview lines
@@ -1880,6 +1902,71 @@ function gover() {
 
 		return 1
 	)
+}
+
+# initialize a new go project
+function mkgo() {
+	local name="${1:-}"
+
+	name="${name#"${name%%[![:space:]]*}"}"
+	name="${name%"${name##*[![:space:]]}"}"
+
+	if (( $# != 1 )) || [[ ! "$name" =~ ^[A-Za-z0-9_][A-Za-z0-9_-]*$ ]]; then
+		_print_error "missing or invalid project name"
+
+		return 1
+	fi
+
+	_print_info "creating $name"
+
+	if [[ -e "$name" || -L "$name" ]]; then
+		_print_error "$name already exists"
+
+		return 1
+	fi
+
+	if ! mkdir -- "$name"; then
+		_print_error "failed to mkdir $name"
+
+		return 1
+	fi
+
+	if ! cd -- "$name"; then
+		_print_error "failed to chdir $name"
+
+		return 1
+	fi
+
+	local mod_name="$name"
+	local gh_user
+
+	if gh_user=$(_get_github_username); then
+		mod_name="github.com/$gh_user/$name"
+
+		_print_info "initializing $mod_name"
+	else
+		_print_info "initializing $mod_name (local)"
+	fi
+
+	if ! go mod init "$mod_name" >/dev/null 2>&1; then
+		_print_error "failed to initialize mod"
+
+		cd .. || return 1
+
+		return 1
+	fi
+
+	_print_info "preparing git"
+
+	if ! { git init && git add go.mod && git commit -m "initial commit"; } >/dev/null 2>&1; then
+		_print_error "failed to initialize git"
+
+		cd .. || return 1
+
+		return 1
+	fi
+
+	_print_success "initialized $name"
 }
 
 # show TCP listeners and UDP bound sockets by port or process name
