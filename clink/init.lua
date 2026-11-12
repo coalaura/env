@@ -35,29 +35,6 @@ local function init_openssh()
     })
 end
 
-local function add_to_path(dirs)
-    local current = os.getenv("PATH") or ""
-    local parts = {}
-
-    for part in current:gmatch("[^;]+") do
-        if part ~= "" then
-            table.insert(parts, part)
-        end
-    end
-
-    for i = #dirs, 1, -1 do
-        local dir = dirs[i]
-
-        if dir and dir ~= "" and os.isdir(dir) and not utils.path_has(current, dir) then
-            table.insert(parts, 1, dir)
-
-            current = dir .. ";" .. current
-        end
-    end
-
-    os.setenv("PATH", table.concat(parts, ";"))
-end
-
 local function ensure_git_include()
     local wanted = "~/.config/.gitconfig_env"
     local handle = io.popen("git config --global --get-all include.path 2>nul")
