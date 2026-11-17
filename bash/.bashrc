@@ -719,9 +719,27 @@ function git_root() {
 	git -C "$path" rev-parse --show-toplevel 2>/dev/null || echo "$path"
 }
 
-# check nginx config and restart
+# check nginx config, restart and verify service status
 function ngx() {
-	nginx -t && service nginx restart
+	if ! nginx -t -q; then
+		_print_error "nginx config invalid"
+
+		return 1
+	fi
+
+	if ! service nginx restart > /dev/null; then
+		_print_error "nginx restart failed"
+
+		return 1
+	fi
+
+	if ! service nginx status > /dev/null 2>&1; then
+		_print_error "nginx not running"
+
+		return 1
+	fi
+
+	_print_success "nginx restarted"
 }
 
 # perform system maintenance and updates
