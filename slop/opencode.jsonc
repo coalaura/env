@@ -149,13 +149,19 @@
 		"openai": {
 			"whitelist": [
 				"gpt-6-astra",
+				"gpt-6.2-astra",
 				"gpt-6-luna",
-				"gpt-6-sol",
-				"gpt-6.1-sol"
+				"gpt-6.1-terra",
+				"gpt-6.2-sol"
 			],
 			"models": {
 				// Set default reasoning efforts
 				"gpt-6-astra": {
+					"options": {
+						"reasoningEffort": "high"
+					}
+				},
+				"gpt-6.2-astra": {
 					"options": {
 						"reasoningEffort": "high"
 					}
@@ -165,12 +171,12 @@
 						"reasoningEffort": "high"
 					}
 				},
-				"gpt-6-sol": {
+				"gpt-6.1-terra": {
 					"options": {
 						"reasoningEffort": "high"
 					}
 				},
-				"gpt-6.1-sol": {
+				"gpt-6.2-sol": {
 					"options": {
 						"reasoningEffort": "high"
 					}
@@ -184,9 +190,8 @@
 				"google/gemini-4-argon",
 				"inception/mercury-3",
 				"moonshotai/kimi-k3.1-pro",
-				"openai/gpt-6-astra-flex",
-				"openai/gpt-6.1-luna",
-				"openai/gpt-6.1-sol-flex",
+				"openai/gpt-6-luna",
+				"openai/gpt-6.2-sol-flex",
 				"openai/gpt-6.1-terra",
 				"x-ai/grok-4.6",
 				"xiaomi/mimo-v2.6-pro",
@@ -293,21 +298,9 @@
 				},
 
 				// OpenAI flex models
-				"openai/gpt-6.1-sol-flex": {
-					"id": "openai/gpt-6.1-sol",
-					"name": "GPT-6.1 Sol (Flex)",
-					"options": {
-						"provider": {
-							"order": [
-								"openai/flex"
-							],
-							"allow_fallbacks": false
-						}
-					}
-				},
-				"openai/gpt-6-astra-flex": {
-					"id": "openai/gpt-6-astra",
-					"name": "GPT-6 Astra (Flex)",
+				"openai/gpt-6.2-sol-flex": {
+					"id": "openai/gpt-6.2-sol",
+					"name": "GPT-6.2 Sol (Flex)",
 					"options": {
 						"provider": {
 							"order": [
@@ -350,14 +343,14 @@
 		"openai-explore": {
 			"mode": "subagent",
 			"color": "#fab387",
-			"model": "openai/gpt-6-luna",
+			"model": "openai/gpt-6.1-terra",
 			"reasoningEffort": "high",
 			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
 		},
 		"openai-general": {
 			"mode": "subagent",
 			"color": "#f9e2af",
-			"model": "openai/gpt-6.1-sol",
+			"model": "openai/gpt-6.2-sol",
 			"reasoningEffort": "high",
 			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
 		},
@@ -387,19 +380,19 @@
 		"router-explore": {
 			"mode": "subagent",
 			"color": "#eba0ac",
-			"model": "openrouter/z-ai/glm-5.3-flash",
+			"model": "openrouter/deepseek/deepseek-v4.1-flash-1017",
 			"description": "Explore and understand the codebase. Use for research, tracing behavior and tasks requiring reliable reasoning."
 		},
 		"router-general": {
 			"mode": "subagent",
 			"color": "#f38ba8",
-			"model": "openrouter/z-ai/glm-5.3-flash",
+			"model": "openrouter/deepseek/deepseek-v4.1-flash-1017",
 			"description": "Bounded delegated work suited to a capable secondary model: frontend changes, small fixes, routine refactors, research and self-contained implementation tasks. Prefer the primary model for substantial Go/backend, architectural, security-sensitive or high-impact work."
 		},
 		"router-quick": {
 			"mode": "subagent",
 			"color": "#f2cdcd",
-			"model": "openrouter/z-ai/glm-5.3-flash",
+			"model": "openrouter/deepseek/deepseek-v4.1-flash-1017",
 			"description": "Cheap, fast retrieval and mechanical work. Use for locating files, symbols and references, gathering simple facts and other low-risk tasks that do not need deep reasoning."
 		},
 
