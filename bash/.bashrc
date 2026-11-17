@@ -2307,7 +2307,9 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias home='cd ~'
 alias cls='clear'
-alias prun='php artisan serve --port=80'
+
+# easy journal usage
+alias journal='journalctl --no-pager -o cat -n 100 -u'
 
 # password-only ssh, ignoring ssh config
 alias sshpw='ssh -F /dev/null -o BatchMode=no -o PubkeyAuthentication=no -o PreferredAuthentications=password -o NumberOfPasswordPrompts=3'
