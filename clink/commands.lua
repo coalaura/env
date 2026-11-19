@@ -175,6 +175,12 @@ commands["tag"] = function(args)
         return
     end
 
+    if not utils.is_valid_tag_name(tag_name) then
+        utils.errorf("invalid tag name: use prefix1.2.3[-suffix]")
+
+        return
+    end
+
     local msg = utils.read_line("message: ", "")
 
     msg = utils.trim(msg)

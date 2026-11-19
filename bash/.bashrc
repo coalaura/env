@@ -1361,10 +1361,17 @@ function tag() {
 
 		_read_line "new tag: " tag_name
 
-		tag_name="$(echo "$tag_name" | xargs)"
-
 		if [[ -z "$tag_name" ]]; then
 			_print_error "tag name is required"
+
+			return 1
+		fi
+
+		local version_number='(0|[1-9][0-9]*)'
+		local tag_pattern="^[A-Za-z]+${version_number}\\.${version_number}\\.${version_number}(-[A-Za-z0-9]+)?$"
+
+		if [[ ! "$tag_name" =~ $tag_pattern ]]; then
+			_print_error "invalid tag name: use prefix1.2.3[-suffix]"
 
 			return 1
 		fi

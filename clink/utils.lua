@@ -124,6 +124,20 @@ function _M.is_git(dir)
     return true
 end
 
+function _M.is_valid_tag_name(tag_name)
+    local major, minor, patch, suffix = tag_name:match("^[A-Za-z]+([0-9]+)%.([0-9]+)%.([0-9]+)(.*)$")
+
+    if not major then
+        return false
+    end
+
+    if major:match("^0[0-9]") or minor:match("^0[0-9]") or patch:match("^0[0-9]") then
+        return false
+    end
+
+    return suffix == "" or suffix:match("^%-[A-Za-z0-9]+$") ~= nil
+end
+
 function _M.git_tag_lines(pRoot, pCount)
     local escaped_root = _M.escape_path(pRoot)
     local lines = {}
