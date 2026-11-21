@@ -1,5 +1,5 @@
 #!/bin/bash
-# ~/.bashrc
+# ~/.bash_profile
 # by coalaura
 
 if [ -f "$HOME/.shenv" ]; then
