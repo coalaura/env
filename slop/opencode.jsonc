@@ -187,7 +187,8 @@
 			"whitelist": [
 				"deepseek/deepseek-v4.1-flash-1017",
 				"google/gemini-3.8-flash",
-				"google/gemini-4-argon",
+				"google/gemini-4-carbon",
+				"google/gemini-4-neon",
 				"inception/mercury-3",
 				"moonshotai/kimi-k3.1-pro",
 				"openai/gpt-6-luna",
@@ -286,7 +287,17 @@
 						}
 					}
 				},
-				"google/gemini-4-argon": {
+				"google/gemini-4-carbon": {
+					"options": {
+						"provider": {
+							"only": [
+								"google-vertex/global"
+							],
+							"allow_fallbacks": false
+						}
+					}
+				},
+				"google/gemini-4-neon": {
 					"options": {
 						"provider": {
 							"only": [
