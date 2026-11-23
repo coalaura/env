@@ -73,7 +73,22 @@ clink.argmatcher("push"):addarg(clink.dirmatches)
 
 -- create and push a git tag
 commands["tag"] = function(args)
-    local target_dir = args or os.getcwd()
+    local force = false
+    local target_dir
+
+    for _, argument in ipairs(utils.split_args(args)) do
+        if argument == "--force" then
+            force = true
+        elseif not target_dir then
+            target_dir = argument
+        else
+            utils.errorf("usage: tag [--force] [directory]")
+
+            return
+        end
+    end
+
+    target_dir = target_dir or os.getcwd()
 
     local root = utils.git_root(target_dir)
 
@@ -106,7 +121,7 @@ commands["tag"] = function(args)
             commit_check:close()
         end
 
-        if not has_commits or has_commits == "" then
+        if not force and (not has_commits or has_commits == "") then
             utils.errorf("no new commits since %s", last_tag)
 
             return
@@ -221,7 +236,7 @@ commands["tag"] = function(args)
     utils.successf("tagged and pushed %s", tag_name)
 end
 
-clink.argmatcher("tag"):addarg(clink.dirmatches)
+clink.argmatcher("tag"):addarg(clink.dirmatches):addflags("--force")
 
 -- delete and push-delete a git tag
 commands["dtag"] = function(args)

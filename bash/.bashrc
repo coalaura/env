@@ -1312,7 +1312,23 @@ function tag() {
 	(
 		set -euo pipefail
 
-		local target="$(git_root "${1:-.}")"
+		local force=false
+		local target_dir=""
+		local arg
+
+		for arg in "$@"; do
+			if [[ "$arg" == "--force" ]]; then
+				force=true
+			elif [[ -z "$target_dir" ]]; then
+				target_dir="$arg"
+			else
+				_print_error "usage: tag [--force] [directory]"
+
+				return 1
+			fi
+		done
+
+		local target="$(git_root "${target_dir:-.}")"
 
 		if [[ ! -d "$target/.git" ]]; then
 			_print_error "$target is not a git repository"
@@ -1327,7 +1343,7 @@ function tag() {
 
 			local last_tag="${latest_line%%[[:space:]]*}"
 
-			if [[ -z "$(git -C "$target" log -1 --format='%h' "$last_tag..HEAD")" ]]; then
+			if [[ "$force" != true && -z "$(git -C "$target" log -1 --format='%h' "$last_tag..HEAD")" ]]; then
 				_print_error "no new commits since $last_tag"
 
 				return 1
@@ -2312,7 +2328,8 @@ function envup() {
 # Only show directories for certain completions
 complete -o filenames -o dirnames -F _directory_complete cd
 
-complete -o filenames -o dirnames -F _directory_complete pull push tag dtag rtag tags git_ssh origin trash goup gover perms
+complete -o filenames -o dirnames -F _directory_complete pull push dtag rtag tags git_ssh origin trash goup gover perms
+complete -o filenames -o dirnames -F _directory_complete -W '--force' tag
 
 # Preserve Bash's other completion types when no path matches.
 complete -o filenames -o bashdefault -o default -F _path_complete -D
