@@ -47,8 +47,8 @@
 		"julials": { "disabled": true }
 	},
 	"plugin": [
-		"@tarquinen/opencode-dcp@v3.1.15",
-		"context-mode@1.0.169"
+		"@tarquinen/opencode-dcp@v3.2.1",
+		"context-mode@2.2.4"
 	],
 	"permission": {
 		"read": {
@@ -65,8 +65,7 @@
 			"~/.ssh/*": "deny"
 		},
 		"bash": {
-			// block adding, committing or pushing
-			"git add*": "deny",
+			// block committing or pushing
 			"git commit*": "deny",
 			"git push*": "deny",
 

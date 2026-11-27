@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/Opencode-DCP/opencode-dynamic-context-pruning/v3.1.15/dcp.schema.json",
+	"$schema": "https://raw.githubusercontent.com/Opencode-DCP/opencode-dynamic-context-pruning/v3.2.1/dcp.schema.json",
 	"enabled": true,
 	"pruneNotification": "minimal",
 	"pruneNotificationType": "toast",
