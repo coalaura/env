@@ -47,7 +47,6 @@
 		"julials": { "disabled": true }
 	},
 	"plugin": [
-		"@tarquinen/opencode-dcp@v3.2.1",
 		"context-mode@2.2.4"
 	],
 	"permission": {
